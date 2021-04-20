@@ -1,0 +1,13 @@
+[package]
+name = "simple-log-book"
+version = "0.1.0"
+authors = ["fanchao <dev@fanchao.nz>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = "0"
+rocket_contrib = "0"
+diesel = { version = "1", features = ["sqlite"] }
+dotenv = "0"
