@@ -1,34 +1,27 @@
-use diesel::{SqliteConnection, Connection, prelude::*};
-use rocket::{get, State};
-use rocket::http::RawStr;
-use crate::models::Transaction;
-
-mod schema;
 mod models;
+mod service;
+mod state;
 
-struct AppState {
-    pub conn: SqliteConnection,
-}
+use crate::state::AppState;
+use sqlx::SqlitePool;
+use tide::log::LevelFilter;
 
-#[get("/transaction/search?<desc>")]
-fn search_transaction_by_desc(state: State<AppState>, desc: &RawStr) -> Vec<Transaction> {
-    use schema::transactions::dsl::*;
-    transactions.filter(desc.like(desc.as_str()))
-        .load(&state.conn)
-        .expect("To load")
-}
-
-fn main() {
+#[async_std::main]
+async fn main() {
     let _ = dotenv::dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be specified");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
 
-    let conn = SqliteConnection::establish(&database_url)
-        .expect(&format!("Unable to open database connection to {}", &database_url));
+    let conn = SqlitePool::connect(&database_url).await.expect(&format!(
+        "Unable to open database connection to {}",
+        &database_url
+    ));
 
-    rocket::ignite()
-        .manage(AppState {
-            conn,
-        });
+    tide::log::with_level(LevelFilter::Debug);
+
+    let mut app = tide::with_state(AppState { conn });
+    app.at("/transactions/search")
+        .get(service::search_transactions_by_desc);
+    app.at("/transactions").post(service::upsert_transaction);
+    app.listen("127.0.0.1:3000").await.expect("To run server");
 }
