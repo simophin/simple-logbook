@@ -15,7 +15,6 @@ pub async fn query(req: tide::Request<AppState>) -> tide::Result {
     let accounts: Vec<super::models::AccountSummary> =
         sqlx::query_as(include_str!("get_all_summary.sql"))
             .bind(before_date)
-            .bind(before_date)
             .fetch_all(&req.state().conn)
             .await?;
 

@@ -1,12 +1,15 @@
 import * as t from 'io-ts';
-import {CurrencyType} from "./currency";
 
 export const TransactionType = t.type({
     id: t.string,
     desc: t.string,
     fromAccount: t.string,
     toAccount: t.string,
-    amount: CurrencyType,
+    amount: t.number,
+    transDate: t.string,
+    createdDate: t.string,
 });
+
+export const TransactionArrayType = t.array(TransactionType);
 
 export type Transaction = t.TypeOf<typeof TransactionType>;

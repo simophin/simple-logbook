@@ -11,10 +11,11 @@ struct QueryParams {
 pub async fn query(req: tide::Request<AppState>) -> tide::Result {
     let QueryParams { desc } = req.query()?;
 
-    let rs: Vec<Transaction> = sqlx::query_as("SELECT * FROM transactions WHERE desc LIKE ?")
-        .bind(format!("%{}%", &desc))
-        .fetch_all(&req.state().conn)
-        .await?;
+    let rs: Vec<Transaction> =
+        sqlx::query_as("SELECT * FROM transactions WHERE TRIM(desc) LIKE TRIM(?)")
+            .bind(format!("%{}%", &desc))
+            .fetch_all(&req.state().conn)
+            .await?;
 
     Ok(Body::from_json(&rs)?.into())
 }

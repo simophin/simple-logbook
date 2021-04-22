@@ -24,5 +24,6 @@ async fn main() {
     app.at("/transactions").post(service::upsert_transactions);
     app.at("/accountSummaries")
         .get(service::get_all_account_summary);
+    app.at("/accounts/search").get(service::search_account);
     app.listen("127.0.0.1:3000").await.expect("To run server");
 }
