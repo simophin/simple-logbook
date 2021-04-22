@@ -1,9 +1,9 @@
 import {Autocomplete} from "@material-ui/lab";
 import {Button, Snackbar, TextField} from "@material-ui/core";
-import React, {useCallback, useMemo, useRef, useState} from "react";
+import React, {useCallback, useRef, useState} from "react";
 import {useDebounce} from "../hooks/useDebounce";
-import {State, useObservable} from "../hooks/useObservable";
-import {Observable, timer} from "rxjs";
+import {useObservable} from "../hooks/useObservable";
+import {Observable} from "rxjs";
 import {findTransactionsByDesc} from "../api/findTransactions";
 import {Transaction, TransactionArrayType} from "../models/Transaction";
 import {v4 as uuid} from 'uuid';
@@ -77,8 +77,8 @@ export default function TxEntry() {
     const [fromAccount, setFromAccount] = useState('');
     const [toAccount, setToAccount] = useState('');
     const [amount, setAmount] = useState('');
-    const amountRef = useRef<any | null>(null);
-    const descRef = useRef<any | null>(null);
+    const amountRef = useRef<HTMLInputElement | null>(null);
+    const descRef = useRef<HTMLInputElement | null>(null);
 
     const [isSubmitting, setSubmitting] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -93,7 +93,8 @@ export default function TxEntry() {
                 ioType: TransactionArrayType,
                 body: [
                     {
-                        id, desc, fromAccount, toAccount, amount: Number(BigInt(amount) * 100n),
+                        id, desc, fromAccount, toAccount,
+                        amount: Math.trunc(parseFloat(amount) * 100),
                         createdDate: new Date().toISOString(),
                         transDate: new Date().toISOString(),
                     } as Transaction
@@ -107,6 +108,7 @@ export default function TxEntry() {
             setAmount('');
             descRef.current?.focus();
         } catch (e) {
+            console.error(e);
             setSnackbarMessage(`Error submitting transaction: ${desc}`);
         } finally {
             setSubmitting(false);
@@ -119,8 +121,9 @@ export default function TxEntry() {
         setToAccount(v.toAccount);
         setAmount((BigInt(v.amount) / 100n).toString());
         console.log(amountRef.current);
-        amountRef.current?.focus();
+
         amountRef.current?.select();
+        amountRef.current?.focus();
     }, []);
 
     return <>
