@@ -1,8 +1,8 @@
-use crate::models::Transaction;
+use super::Transaction;
 use crate::state::AppState;
 use tide::Body;
 
-pub async fn upsert_transaction(mut req: tide::Request<AppState>) -> tide::Result {
+pub async fn query(mut req: tide::Request<AppState>) -> tide::Result {
     let mut transactions: Vec<Transaction> = req.body_json().await?;
     let mut t = req.state().conn.begin().await?;
     for transaction in &mut transactions {

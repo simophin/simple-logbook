@@ -1,4 +1,4 @@
-use crate::models::Transaction;
+use super::models::Transaction;
 use crate::state::AppState;
 use serde_derive::*;
 use tide::Body;

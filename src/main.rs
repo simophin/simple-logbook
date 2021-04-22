@@ -1,4 +1,3 @@
-mod models;
 mod service;
 mod state;
 
@@ -22,6 +21,8 @@ async fn main() {
     let mut app = tide::with_state(AppState { conn });
     app.at("/transactions/search")
         .get(service::search_transactions_by_desc);
-    app.at("/transactions").post(service::upsert_transaction);
+    app.at("/transactions").post(service::upsert_transactions);
+    app.at("/accountSummaries")
+        .get(service::get_all_account_summary);
     app.listen("127.0.0.1:3000").await.expect("To run server");
 }
