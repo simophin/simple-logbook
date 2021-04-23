@@ -21,6 +21,7 @@ export type State<T> = LoadingState | LoadedState<T> | ErrorState;
 export function useObservable<T>(factory: () => Observable<T>, deps: any[]): State<T> {
     const [result, setResult] = useState<State<T>>({type: 'loading'});
     useEffect(() => {
+        setResult({type: 'loading'});
         const subscription = factory().subscribe({
             next: (data) => setResult({
                 type: 'loaded',

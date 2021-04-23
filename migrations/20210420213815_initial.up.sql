@@ -2,29 +2,14 @@
 create table transactions
 (
     id          text     not null primary key,
-    desc        text     not null collate nocase,
-    fromAccount text     not null collate nocase,
-    toAccount   text     not null collate nocase,
+    desc        text     not null collate nocase check ( length(trim(desc)) > 0 ),
+    fromAccount text     not null collate nocase check ( length(trim(fromAccount)) > 0 ),
+    toAccount   text     not null collate nocase check ( length(trim(toAccount)) > 0 ),
     amount      integer  not null,
     transDate   date     not null,
-    updatedDate datetime not null default current_timestamp
+    updatedDate datetime not null default current_timestamp,
+    check ( trim(fromAccount) != trim(toAccount) collate nocase)
 );
-
-create trigger transactions_no_same_account_insert
-    before insert
-    on transactions
-    when trim(NEW.toAccount) = trim(NEW.fromAccount) collate nocase
-begin
-    select raise(abort, 'fromAccount == toAccount');
-end;
-
-create trigger transactions_no_same_account_update
-    before update of fromAccount, toAccount
-    on transactions
-    when trim(NEW.toAccount) = trim(NEW.fromAccount) collate nocase
-begin
-    select raise(abort, 'fromAccount == toAccount');
-end;
 
 create index transactions_from_account on transactions (trim(fromAccount));
 create index transactions_to_account on transactions (trim(toAccount));

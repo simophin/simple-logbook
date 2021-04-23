@@ -1,24 +1,23 @@
 import React, {useState} from 'react';
 import './App.css';
-import {AppBar, Tab, Tabs} from "@material-ui/core";
-import NewTransactionPage from "./page/NewTransactionPage";
+import {AppBar, Container, Tab, Tabs} from "@material-ui/core";
+import TransactionPage from "./page/TransactionPage";
 
 function App() {
     const [selectedTab, setSelectedTab] = useState(0);
 
-
-
     return <>
-        <AppBar position="static">
+        <AppBar>
             <Tabs value={selectedTab} onChange={(e, nv) => setSelectedTab(nv)}>
-                <Tab label="New transaction"/>
+                <Tab label="Transactions"/>
                 <Tab label="Spending report"/>
                 <Tab label="Income report"/>
             </Tabs>
         </AppBar>
 
-        {selectedTab === 0 && <NewTransactionPage/>}
-
+        <Container style={{ marginTop: 80 }}>
+            {selectedTab === 0 && <TransactionPage/>}
+        </Container>
     </>;
 }
 

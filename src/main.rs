@@ -43,5 +43,5 @@ async fn main() {
     app.at("/accounts/search").get(service::search_account);
     app.at("/account/balance").get(service::get_account_balance);
 
-    app.listen("127.0.0.1:3000").await.expect("To run server");
+    app.listen("127.0.0.1:4000").await.expect("To run server");
 }

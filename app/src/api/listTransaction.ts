@@ -4,12 +4,12 @@ import {request} from "./common";
 import config from "../config";
 
 
-type Filter = {
+export type Filter = {
     from?: Date,
     to?: Date,
     q?: string,
     limit?: number,
-    size?: number,
+    offset?: number,
     accounts?: string[],
 }
 
