@@ -15,7 +15,7 @@ function App() {
             </Tabs>
         </AppBar>
 
-        <Container style={{ marginTop: 80 }}>
+        <Container style={{marginTop: 80}}>
             {selectedTab === 0 && <TransactionPage/>}
         </Container>
     </>;

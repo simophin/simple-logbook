@@ -1,13 +1,16 @@
 import {
-    Button, Container,
+    Button,
+    Container,
+    Dialog,
+    DialogTitle,
+    Paper,
     Snackbar,
-    Table, TableBody, TableCell,
-    TableContainer,
+    Table,
+    TableBody,
+    TableCell,
     TableHead,
     TableRow,
-    Tabs,
-    TextField,
-    Typography
+    TextField
 } from "@material-ui/core";
 import React, {CSSProperties, useCallback, useRef, useState} from "react";
 import {Transaction} from "../models/Transaction";
@@ -22,17 +25,21 @@ import {listTransaction} from "../api/listTransaction";
 import {map, tap} from "rxjs/operators";
 import _ from 'lodash';
 import {of} from "rxjs";
+import {createTransaction} from "../api/createTransaction";
+import {getAccountBalance} from "../api/getAccountBalance";
 
 const DescriptionField = (props: AutoCompleteFieldProps<Transaction>) => AutoCompleteField(props);
 const AccountField = (props: AutoCompleteFieldProps<Account>) => AutoCompleteField(props);
 
 type Props = {
     editing?: Transaction,
-    onSubmit: (tx: Transaction) => Promise<AccountBalance[]>,
+    onClose?: () => unknown,
+    onSaved?: () => unknown,
 }
 
 const fieldStyle: CSSProperties = {
     marginTop: 16,
+    width: '100%',
 }
 
 function findTransactionsByDesc(searchTerm: string) {
@@ -41,19 +48,23 @@ function findTransactionsByDesc(searchTerm: string) {
         return of<Array<Transaction>>([]);
     }
 
-    return listTransaction({
-        q: searchTerm,
-        limit: 20,
-    }).pipe(
-        tap((v) => console.log('Got item before', v)),
+    const filter = {q: searchTerm, limit: 20};
+    return listTransaction(filter).pipe(
         map(({data}) => _.uniqBy(data, 'desc')),
-        tap((v) => console.log('Got item', v))
     );
+}
+
+async function submitTransaction(tx: Transaction) {
+    await createTransaction(tx);
+    return [
+        await getAccountBalance(tx.fromAccount).toPromise(),
+        await getAccountBalance(tx.toAccount).toPromise(),
+    ]
 }
 
 const dateFormat = 'yyyy-MM-dd';
 
-export default function TransactionEntry({editing, onSubmit}: Props) {
+export default function TransactionEntry({editing, onClose, onSaved}: Props) {
     const [id, setId] = useState(editing?.id ?? uuid());
     const [desc, setDesc] = useState(editing?.desc ?? '');
     const [fromAccount, setFromAccount] = useState(editing?.fromAccount ?? '');
@@ -67,12 +78,13 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
     const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
+    const [dialogOpen, setDialogOpen] = useState(true);
 
     const handleSubmit = useCallback(async () => {
         setSubmitting(true);
 
         try {
-            setAccountBalances(await onSubmit({
+            setAccountBalances(await submitTransaction({
                 id, desc, fromAccount, toAccount,
                 transDate,
                 updatedDate: new Date().toISOString(),
@@ -85,13 +97,17 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
             setToAccount('');
             setAmount('');
             descRef.current?.focus();
+
+            if (onSaved) {
+                onSaved();
+            }
         } catch (e) {
             console.error(e);
             setSnackbarMessage(`Error submitting transaction: ${desc}`);
         } finally {
             setSubmitting(false);
         }
-    }, [amount, desc, fromAccount, id, onSubmit, toAccount, transDate]);
+    }, [amount, desc, fromAccount, id, onSaved, toAccount, transDate]);
 
     const handleDescResultSelected = useCallback((v: Transaction) => {
         setDesc(v.desc);
@@ -111,9 +127,8 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                 <TableCell>{account}</TableCell>
                 <TableCell>{currency(balance / 100).format()}</TableCell>
             </TableRow>
-
         );
-        balanceTable = <TableContainer style={fieldStyle}>
+        balanceTable = <Paper variant="outlined" style={fieldStyle}>
             <Table size="small">
                 <TableHead>
                     <TableRow>
@@ -125,81 +140,92 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                     {balanceRows}
                 </TableBody>
             </Table>
-        </TableContainer>;
+        </Paper>;
     }
 
+    return <Dialog open={dialogOpen} disableEscapeKeyDown={true}>
+        <Container style={{display: 'flex', flexWrap: 'wrap', paddingBottom: 32}} maxWidth="xs">
+            <DialogTitle>
+                {editing ? 'Edit transaction' : 'Create transaction'}
+            </DialogTitle>
+            <DescriptionField label="Description"
+                              search={findTransactionsByDesc}
+                              value={desc}
+                              style={fieldStyle}
+                              inputRef={descRef}
+                              autoFocus={editing == null}
+                              getSearchResultLabel={(v) => v.desc}
+                              onSearchResultSelected={handleDescResultSelected}
+                              onValueChanged={setDesc}/>
 
-    return <Container style={{minWidth: 400, paddingBottom: 16}}>
-        <DescriptionField label="Description"
-                          search={findTransactionsByDesc}
-                          value={desc}
+            <AccountField label="From account"
+                          search={findAccountsByName}
                           style={fieldStyle}
-                          inputRef={descRef}
-                          getSearchResultLabel={(v) => v.desc}
-                          onSearchResultSelected={handleDescResultSelected}
-                          onValueChanged={setDesc}/>
+                          getSearchResultLabel={(v) => v}
+                          value={fromAccount}
+                          fullWidth={false}
+                          onValueChanged={setFromAccount}/>
 
-        <AccountField label="From account"
-                      search={findAccountsByName}
-                      style={fieldStyle}
-                      getSearchResultLabel={(v) => v}
-                      value={fromAccount}
-                      fullWidth={false}
-                      onValueChanged={setFromAccount}/>
+            <AccountField label="To account"
+                          search={(t) => findAccountsByName(t)}
+                          style={fieldStyle}
+                          getSearchResultLabel={(v) => v}
+                          value={toAccount}
+                          fullWidth={false}
+                          onValueChanged={setToAccount}/>
 
-        <AccountField label="To account"
-                      search={(t) => findAccountsByName(t)}
-                      style={fieldStyle}
-                      getSearchResultLabel={(v) => v}
-                      value={toAccount}
-                      fullWidth={false}
-                      onValueChanged={setToAccount}/>
+            <TextField label="Date" fullWidth={true}
+                       value={transDate}
+                       type="date"
+                       style={fieldStyle}
+                       variant="outlined"
+                       InputLabelProps={{
+                           shrink: true,
+                       }}
+                       onChange={(e) => setTransDate(e.target.value)}
+            />
 
-        <TextField label="Date" fullWidth={true}
-                   value={transDate}
-                   type="date"
-                   style={fieldStyle}
-                   variant="outlined"
-                   InputLabelProps={{
-                       shrink: true,
-                   }}
-                   onChange={(e) => setTransDate(e.target.value)}
-        />
+            <TextField label="Amount" fullWidth={true}
+                       value={amount}
+                       type="number"
+                       style={fieldStyle}
+                       variant="outlined"
+                       inputRef={amountRef}
+                       InputLabelProps={{
+                           shrink: true,
+                       }}
+                       onChange={(e) => {
+                           setAmount(e.target.value);
+                       }}
+            />
 
-        <TextField label="Amount" fullWidth={true}
-                   value={amount}
-                   type="number"
-                   style={fieldStyle}
-                   variant="outlined"
-                   inputRef={amountRef}
-                   InputLabelProps={{
-                       shrink: true,
-                   }}
-                   onChange={(e) => {
-                       setAmount(e.target.value);
-                   }}
-        />
+            <Button color="primary"
+                    onClick={handleSubmit}
+                    style={fieldStyle}
+                    variant="contained"
+                    disabled={
+                        desc.trim().length === 0 ||
+                        fromAccount.trim().length === 0 ||
+                        toAccount.trim().length === 0 ||
+                        amount.trim().length === 0 ||
+                        transDate.trim().length === 0 ||
+                        isSubmitting
+                    }
+            >{isSubmitting ? "Submitting" : "Submit"}</Button>
 
-        <Button color="primary"
-                onClick={handleSubmit}
-                style={fieldStyle}
-                variant="contained"
-                disabled={
-                    desc.trim().length === 0 ||
-                    fromAccount.trim().length === 0 ||
-                    toAccount.trim().length === 0 ||
-                    amount.trim().length === 0 ||
-                    transDate.trim().length === 0 ||
-                    isSubmitting
-                }
-        >{isSubmitting ? "Submitting" : "Submit"}</Button>
+            <Button color="secondary"
+                    variant="outlined"
+                    style={fieldStyle}
+                    onClick={() => onClose ? onClose() : setDialogOpen(false)}>
+                Close
+            </Button>
 
+            {balanceTable}
 
-        {balanceTable}
-
-        <Snackbar open={snackbarMessage.length > 0}
-                  autoHideDuration={5000}
-                  onClose={() => setSnackbarMessage('')}
-                  message={snackbarMessage}/>
-    </Container>
+            <Snackbar open={snackbarMessage.length > 0}
+                      autoHideDuration={5000}
+                      onClose={() => setSnackbarMessage('')}
+                      message={snackbarMessage}/>
+        </Container>
+    </Dialog>
 }

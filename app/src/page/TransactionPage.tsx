@@ -1,7 +1,10 @@
 import {
+    Box,
     CircularProgress,
-    Container, Dialog, DialogContent, DialogTitle, Fab,
+    Container,
+    Fab,
     Fade,
+    IconButton,
     Paper,
     Select,
     Table,
@@ -9,12 +12,13 @@ import {
     TableCell,
     TableHead,
     TableRow,
-    TextField
+    TextField,
+    Typography
 } from "@material-ui/core";
 import {useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
 import currency from 'currency.js';
-import React, {CSSProperties, useCallback, useState} from "react";
+import React, {CSSProperties, useCallback, useMemo, useState} from "react";
 import {getAccountSummaries} from "../api/getAccountSummaries";
 import {format} from 'date-fns';
 import {useDebounce} from "../hooks/useDebounce";
@@ -22,9 +26,8 @@ import {Autocomplete, Pagination} from "@material-ui/lab";
 import AddIcon from "@material-ui/icons/Add";
 import {Transaction} from "../models/Transaction";
 import TransactionEntry from "../components/TransactionEntry";
-import {AccountBalance} from "../models/AccountBalance";
-import {createTransaction} from "../api/createTransaction";
-import {getAccountBalance} from "../api/getAccountBalance";
+import EditIcon from '@material-ui/icons/Edit';
+import RemoveIcon from '@material-ui/icons/Delete';
 
 const tableHeadStyle: CSSProperties = {
     fontWeight: 'bold'
@@ -44,14 +47,6 @@ type NewTransactionState = {
 
 type TransactionDialogState = EditingTransactionState | NewTransactionState | undefined;
 
-async function submitTransaction(tx: Transaction) {
-    await createTransaction(tx);
-    return [
-        await getAccountBalance(tx.fromAccount).toPromise(),
-        await getAccountBalance(tx.toAccount).toPromise(),
-    ]
-}
-
 export default function Component() {
     const [to, setTo] = useState<Date | undefined>();
     const [from, setFrom] = useState<Date | undefined>();
@@ -60,6 +55,7 @@ export default function Component() {
     const [selectedAccount, setSelectedAccount] = useState<string | undefined>();
     const [searchTerm, setSearchTerm] = useState('');
     const searchTermDebounced = useDebounce(searchTerm, 200);
+    const [reloadTransaction, setReloadTransaction] = useState(1);
     const rows = useObservable(
         () => listTransaction({
             limit: pageSize,
@@ -68,11 +64,69 @@ export default function Component() {
             to, q: searchTermDebounced,
             accounts: selectedAccount ? [selectedAccount] : undefined,
         }),
-        [pageSize, currentPage, selectedAccount, from, to, searchTermDebounced]);
+        [pageSize, currentPage, selectedAccount, from, to, searchTermDebounced, reloadTransaction]);
     const numPages = rows.type === 'loaded' && pageSize > 0 ? Math.ceil(rows.data.total / pageSize) : 0;
     const accountBalances = useObservable(() => getAccountSummaries(), []);
 
     const [transactionDialogState, setTransactionDialogState] = useState<TransactionDialogState>();
+    const handleDialogClose = useCallback(() => {
+        setTransactionDialogState(undefined);
+        setReloadTransaction(reloadTransaction + 1);
+    }, [setTransactionDialogState, setReloadTransaction, reloadTransaction]);
+
+    const dataTable = useMemo(() => {
+        if (rows.type === 'loaded') {
+            return <Fade in>
+                <Table size="small" style={{width: '100%'}}>
+                    <TableHead>
+                        <TableCell style={tableHeadStyle}>Comment</TableCell>
+                        <TableCell style={tableHeadStyle}>From</TableCell>
+                        <TableCell style={tableHeadStyle}>To</TableCell>
+                        <TableCell style={tableHeadStyle}>Amount</TableCell>
+                        <TableCell style={tableHeadStyle}>Date</TableCell>
+                        <TableCell/>
+                    </TableHead>
+
+
+                    <TableBody>
+                        {rows.data.data.map((tx) =>
+                            <TableRow>
+                                <TableCell>{tx.desc}</TableCell>
+                                <TableCell>{tx.fromAccount}</TableCell>
+                                <TableCell>{tx.toAccount}</TableCell>
+                                <TableCell>{currency(tx.amount).divide(100).format()}</TableCell>
+                                <TableCell>{new Date(tx.transDate).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                    <IconButton color="primary"
+                                                aria-label="edit"
+                                                size="small"
+                                                onClick={() => setTransactionDialogState({
+                                                    type: 'editing',
+                                                    editing: tx
+                                                })}>
+                                        <EditIcon fontSize="small"/>
+                                    </IconButton>
+                                    <IconButton color="secondary"
+                                                aria-label="delete"
+                                                size="small"
+                                                onClick={() => {}}>
+                                        <RemoveIcon fontSize="small"/>
+                                    </IconButton>
+                                </TableCell>
+                            </TableRow>
+                        )}
+
+                        {rows.data.data.length === 0 &&
+                        <Typography variant="body2" style={{padding: 16}}>No records found</Typography>
+                        }
+                    </TableBody>
+
+                </Table>
+            </Fade>;
+        } else {
+            return <></>
+        }
+    }, [rows]);
 
     return <Container maxWidth="md" style={{display: 'flex', flexWrap: 'wrap'}}>
         <TextField
@@ -152,79 +206,37 @@ export default function Component() {
             justifyContent: 'end'
         }}
                variant="outlined">
-            <Table size="small" style={{width: '100%'}}>
-                <TableHead>
-                    <TableCell style={tableHeadStyle}>Comment</TableCell>
-                    <TableCell style={tableHeadStyle}>From</TableCell>
-                    <TableCell style={tableHeadStyle}>To</TableCell>
-                    <TableCell style={tableHeadStyle}>Amount</TableCell>
-                    <TableCell style={tableHeadStyle}>Date</TableCell>
-                </TableHead>
-                {rows.type === 'loading' &&
-                <Fade in>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell align="center" colSpan={5} style={{padding: 16}}>
-                                <CircularProgress size={40}/>
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Fade>
-                }
 
-                {rows.type === 'loaded' &&
-                <Fade in>
-                    <TableBody>
-                        {rows.data.data.map(({desc, fromAccount, toAccount, amount, transDate}) =>
-                            <TableRow>
-                                <TableCell>{desc}</TableCell>
-                                <TableCell>{fromAccount}</TableCell>
-                                <TableCell>{toAccount}</TableCell>
-                                <TableCell>{currency(amount).divide(100).format()}</TableCell>
-                                <TableCell>{new Date(transDate).toLocaleDateString()}</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Fade>
-                }
-            </Table>
+            {rows.type === 'loading' &&
+            <Fade in>
+                <Box style={{padding: 16}}>
+                    <CircularProgress size={40}/>
+                </Box>
+            </Fade>
+            }
 
-            <Pagination
+            {dataTable}
+
+            {numPages > 0 && <Pagination
                 style={{padding: 8, display: 'flex', justifyContent: 'end'}}
                 size="small"
                 count={numPages}
                 shape="rounded"
                 variant="outlined"
                 onChange={(e, p) => setCurrentPage(p)}
-                page={currentPage}/>
+                page={currentPage}/>}
 
         </Paper>
 
         {transactionDialogState?.type === 'new' &&
-        <Dialog open disableEscapeKeyDown={true} onClose={() => setTransactionDialogState(undefined)}>
-            <DialogTitle id="tx-dialog-title">New transaction</DialogTitle>
-            <TransactionEntry
-                onSubmit={submitTransaction}/>
-        </Dialog>
+        <TransactionEntry onClose={handleDialogClose}/>
         }
 
         {transactionDialogState?.type === 'editing' &&
-        <Dialog open
-                disableEscapeKeyDown={true}
-                onClose={() => setTransactionDialogState(undefined)}
-                aria-labelledby="tx-dialog-title">
-            <DialogTitle id="tx-dialog-title">New transaction</DialogTitle>
-            <DialogContent>
-                <TransactionEntry
-                    editing={transactionDialogState.editing}
-                    onSubmit={async (tx) => {
-                        const rs = await submitTransaction(tx);
-                        setTransactionDialogState(undefined);
-                        return rs;
-                    }
-                    }/>
-            </DialogContent>
-        </Dialog>
+        <TransactionEntry
+            editing={transactionDialogState.editing}
+            onSaved={handleDialogClose}
+            onClose={handleDialogClose}/>
         }
     </Container>;
 }
