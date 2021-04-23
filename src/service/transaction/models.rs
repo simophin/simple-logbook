@@ -10,6 +10,6 @@ pub struct Transaction {
     pub from_account: String,
     pub to_account: String,
     pub amount: i64,
-    pub trans_date: DateTime<Utc>,
-    pub created_date: DateTime<Utc>,
+    pub trans_date: String,
+    pub updated_date: DateTime<Utc>,
 }

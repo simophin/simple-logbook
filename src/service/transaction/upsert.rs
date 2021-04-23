@@ -1,23 +1,24 @@
-use super::Transaction;
+use super::models::Transaction;
 use crate::state::AppState;
-use tide::Body;
 
-pub async fn query(mut req: tide::Request<AppState>) -> tide::Result {
-    let mut transactions: Vec<Transaction> = req.body_json().await?;
-    let mut t = req.state().conn.begin().await?;
-    for transaction in &mut transactions {
-        sqlx::query("INSERT OR REPLACE INTO transactions (id, desc, fromAccount, toAccount, amount, transDate, createdDate) VALUES (?, ?, ?, ?, ?, ?, ?)")
+pub type QueryInput = Vec<Transaction>;
+pub type QueryOutput = Vec<Transaction>;
+
+pub async fn query(state: &AppState, input: QueryInput) -> anyhow::Result<QueryOutput> {
+    let mut t = state.conn.begin().await?;
+    for transaction in &input {
+        sqlx::query("INSERT OR REPLACE INTO transactions (id, desc, fromAccount, toAccount, amount, transDate, updatedDate) VALUES (?, ?, ?, ?, ?, ?, ?)")
             .bind(&transaction.id)
             .bind(&transaction.desc)
             .bind(&transaction.from_account)
             .bind(&transaction.to_account)
             .bind(transaction.amount)
-            .bind(transaction.trans_date)
-            .bind(transaction.created_date)
+            .bind(&transaction.trans_date)
+            .bind(&transaction.updated_date)
             .execute(&mut t)
             .await?;
     }
     t.commit().await?;
 
-    Ok(Body::from_json(&transactions)?.into())
+    Ok(input)
 }
