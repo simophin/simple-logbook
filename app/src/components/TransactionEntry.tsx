@@ -1,4 +1,14 @@
-import {Button, Snackbar, TextField, Typography} from "@material-ui/core";
+import {
+    Button,
+    Snackbar,
+    Table, TableBody, TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Tabs,
+    TextField,
+    Typography
+} from "@material-ui/core";
 import React, {CSSProperties, useCallback, useRef, useState} from "react";
 import {Transaction} from "../models/Transaction";
 import {v4 as uuid} from 'uuid';
@@ -93,10 +103,32 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
         amountRef.current?.focus();
     }, []);
 
+    let balanceTable: React.ReactElement | undefined;
 
-    const balanceRows = accountBalances.map(({account, balance}) =>
-        <Typography style={fieldStyle} variant="body2">Account <i>{account}</i>: {currency(balance / 100).format()}
-        </Typography>);
+    if (accountBalances.length > 0) {
+        const balanceRows = accountBalances.map(({account, balance}) =>
+            <TableRow>
+                <TableCell>{account}</TableCell>
+                <TableCell>{currency(balance / 100).format()}</TableCell>
+            </TableRow>
+
+        );
+        balanceTable = <TableContainer style={fieldStyle}>
+            <Table size="small">
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Account</TableCell>
+                        <TableCell>Balance</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {balanceRows}
+                </TableBody>
+            </Table>
+        </TableContainer>;
+    }
+
+
 
     return <>
         <DescriptionField label="Description"
@@ -147,12 +179,10 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                    }}
         />
 
-
-        {balanceRows}
-
         <Button color="primary"
                 onClick={handleSubmit}
                 style={fieldStyle}
+                variant="contained"
                 disabled={
                     desc.trim().length === 0 ||
                     fromAccount.trim().length === 0 ||
@@ -162,6 +192,9 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                     isSubmitting
                 }
         >{isSubmitting ? "Submitting" : "Submit"}</Button>
+
+
+        {balanceTable}
 
         <Snackbar open={snackbarMessage.length > 0}
                   autoHideDuration={5000}
