@@ -1,91 +1,34 @@
-import {Autocomplete} from "@material-ui/lab";
-import {Button, Snackbar, TextField} from "@material-ui/core";
-import React, {useCallback, useRef, useState} from "react";
-import {useDebounce} from "../hooks/useDebounce";
-import {useObservable} from "../hooks/useObservable";
-import {Observable} from "rxjs";
+import {Button, Snackbar, TextField, Typography} from "@material-ui/core";
+import React, {CSSProperties, useCallback, useRef, useState} from "react";
 import {findTransactionsByDesc} from "../api/findTransactions";
 import {Transaction} from "../models/Transaction";
 import {v4 as uuid} from 'uuid';
 import {Account} from "../models/Account";
 import {findAccountsByName} from "../api/findAccounts";
 import {AccountBalance} from "../models/AccountBalance";
-import {createTransaction} from "../api/createTransaction";
-import {getAccountBalance} from "../api/getAccountBalance";
 import currency from 'currency.js';
 import {format} from 'date-fns';
-
-type AutoCompleteFieldProps<SearchResult> = {
-    label: string,
-    fullWidth?: boolean,
-
-    value?: string,
-    onValueChanged: (v: string) => void,
-
-    search: (term: string) => Observable<SearchResult[]>,
-    onSearchResultSelected?: (r: SearchResult) => void,
-
-    getSearchResultLabel: (s: SearchResult) => string,
-
-    inputRef?: any,
-}
-
-function AutoCompleteField<SearchResult>({
-                                             getSearchResultLabel,
-                                             label,
-                                             onSearchResultSelected,
-                                             onValueChanged,
-                                             search,
-                                             value,
-                                             inputRef,
-                                             fullWidth,
-                                         }: AutoCompleteFieldProps<SearchResult>) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 200);
-    const searchResults = useObservable(() => search(debouncedSearchTerm), [debouncedSearchTerm]);
-
-    return <Autocomplete
-        onInputChange={(event, value) => {
-            setSearchTerm(value);
-            onValueChanged(value);
-        }}
-        onChange={((event, value) => {
-            if (value && typeof value === 'object' && value.type === 'search-result' && onSearchResultSelected) {
-                onSearchResultSelected(value.value);
-            }
-        })}
-        loading={searchResults.type === 'loading'}
-        onClose={() => setSearchTerm('')}
-        inputValue={value}
-        freeSolo={true}
-        fullWidth={fullWidth}
-        autoComplete={true}
-        renderInput={(params) => (
-            <TextField {...params} label={label} inputRef={inputRef} InputLabelProps={{
-                shrink: true,
-            }}/>
-        )}
-        options={searchResults.type === 'loaded' ? searchResults.data.map((value) => {
-            return {
-                type: 'search-result',
-                value,
-            };
-        }) : []}
-        getOptionLabel={(v) => getSearchResultLabel(v.value)}
-        getOptionSelected={(option, value) => option.value === value.value}
-    />;
-}
+import {AutoCompleteField, AutoCompleteFieldProps} from "./AutoCompleteField";
 
 const DescriptionField = (props: AutoCompleteFieldProps<Transaction>) => AutoCompleteField(props);
 const AccountField = (props: AutoCompleteFieldProps<Account>) => AutoCompleteField(props);
 
-export default function TxEntry() {
-    const [id, setId] = useState(uuid());
-    const [desc, setDesc] = useState('');
-    const [fromAccount, setFromAccount] = useState('');
-    const [toAccount, setToAccount] = useState('');
-    const [amount, setAmount] = useState('');
-    const [transDate, setTransDate] = useState<Date>(new Date());
+type TxEntryProps = {
+    editing?: Transaction,
+    onSubmit: (tx: Transaction) => Promise<AccountBalance[]>,
+}
+
+const fieldStyle: CSSProperties = {
+    marginTop: 8,
+}
+
+export default function TxEntry({editing, onSubmit}: TxEntryProps) {
+    const [id, setId] = useState(editing?.id ?? uuid());
+    const [desc, setDesc] = useState(editing?.desc ?? '');
+    const [fromAccount, setFromAccount] = useState(editing?.fromAccount ?? '');
+    const [toAccount, setToAccount] = useState(editing?.toAccount ?? '');
+    const [amount, setAmount] = useState(editing ? currency(editing.amount).divide(100).toString() : '');
+    const [transDate, setTransDate] = useState<Date>(editing ? new Date(editing.transDate) : new Date());
     const amountRef = useRef<HTMLInputElement | null>(null);
     const descRef = useRef<HTMLInputElement | null>(null);
 
@@ -98,15 +41,11 @@ export default function TxEntry() {
         setSubmitting(true);
 
         try {
-            await createTransaction({
+            setAccountBalances(await onSubmit({
                 id, desc, fromAccount, toAccount, transDate: transDate.toISOString(),
-                amount: Math.trunc(parseFloat(amount) * 100),
-            }).toPromise();
-
-            setAccountBalances([
-                await getAccountBalance(fromAccount).toPromise(),
-                await getAccountBalance(toAccount).toPromise(),
-            ]);
+                createdDate: new Date().toISOString(),
+                amount: currency(amount).multiply(100).value,
+            }));
 
             setId(uuid());
             setDesc('');
@@ -120,14 +59,13 @@ export default function TxEntry() {
         } finally {
             setSubmitting(false);
         }
-    }, [amount, desc, fromAccount, id, toAccount, transDate]);
+    }, [amount, desc, fromAccount, id, onSubmit, toAccount, transDate]);
 
     const handleDescResultSelected = useCallback((v: Transaction) => {
         setDesc(v.desc);
         setFromAccount(v.fromAccount);
         setToAccount(v.toAccount);
-        setAmount(currency(v.amount / 100).toString());
-        console.log(amountRef.current);
+        setAmount(currency(v.amount).divide(100).toString());
 
         amountRef.current?.select();
         amountRef.current?.focus();
@@ -135,12 +73,13 @@ export default function TxEntry() {
 
 
     const balanceRows = accountBalances.map(({account, balance}) =>
-        <p>Account "{account}": {currency(balance / 100).format()}</p>)
+        <Typography style={fieldStyle} variant="body2">Account <i>{account}</i>: {currency(balance / 100).format()}</Typography>);
 
     return <>
         <DescriptionField label="Description"
                           search={findTransactionsByDesc}
                           value={desc}
+                          style={fieldStyle}
                           inputRef={descRef}
                           getSearchResultLabel={(v) => v.desc}
                           onSearchResultSelected={handleDescResultSelected}
@@ -148,6 +87,7 @@ export default function TxEntry() {
 
         <AccountField label="From account"
                       search={findAccountsByName}
+                      style={fieldStyle}
                       getSearchResultLabel={(v) => v}
                       value={fromAccount}
                       fullWidth={false}
@@ -155,6 +95,7 @@ export default function TxEntry() {
 
         <AccountField label="To account"
                       search={(t) => findAccountsByName(t)}
+                      style={fieldStyle}
                       getSearchResultLabel={(v) => v}
                       value={toAccount}
                       fullWidth={false}
@@ -163,11 +104,12 @@ export default function TxEntry() {
         <TextField label="Date" fullWidth={true}
                    value={format(transDate, 'yyyy-MM-dd')}
                    type="date"
+                   style={fieldStyle}
                    InputLabelProps={{
                        shrink: true,
                    }}
                    onChange={(e) => {
-                       setTransDate(e.target.value.trim().length == 0 ? new Date() : new Date(e.target.value));
+                       setTransDate(e.target.value.trim().length === 0 ? new Date() : new Date(e.target.value));
 
                    }}
         />
@@ -175,11 +117,14 @@ export default function TxEntry() {
         <TextField label="Amount" fullWidth={true}
                    value={amount}
                    type="number"
+                   style={fieldStyle}
                    inputRef={amountRef}
                    InputLabelProps={{
                        shrink: true,
                    }}
-                   onChange={(e) => setAmount(e.target.value)}
+                   onChange={(e) => {
+                       setAmount(e.target.value);
+                   }}
         />
 
 
@@ -187,6 +132,7 @@ export default function TxEntry() {
 
         <Button color="primary"
                 onClick={handleSubmit}
+                style={fieldStyle}
                 disabled={
                     desc.trim().length === 0 ||
                     fromAccount.trim().length === 0 ||

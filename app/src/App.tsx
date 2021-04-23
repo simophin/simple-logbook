@@ -1,14 +1,24 @@
-import React from 'react';
+import React, {useState} from 'react';
 import './App.css';
-import {Button} from "@material-ui/core";
-import TxEntry from "./components/TxEntry";
+import {AppBar, Tab, Tabs} from "@material-ui/core";
+import NewTransactionPage from "./page/NewTransactionPage";
 
 function App() {
+    const [selectedTab, setSelectedTab] = useState(0);
+
+
 
     return <>
-        <Button color="primary">Hello, world</Button>
+        <AppBar position="static">
+            <Tabs value={selectedTab} onChange={(e, nv) => setSelectedTab(nv)}>
+                <Tab label="New transaction"/>
+                <Tab label="Spending report"/>
+                <Tab label="Income report"/>
+            </Tabs>
+        </AppBar>
 
-        <TxEntry/>
+        {selectedTab === 0 && <NewTransactionPage/>}
+
     </>;
 }
 
