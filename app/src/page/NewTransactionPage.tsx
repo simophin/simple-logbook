@@ -4,7 +4,7 @@ import {Transaction} from "../models/Transaction";
 import {AccountBalance} from "../models/AccountBalance";
 import {createTransaction} from "../api/createTransaction";
 import {getAccountBalance} from "../api/getAccountBalance";
-import TxEntry from "../components/TxEntry";
+import TransactionEntry from "../components/TransactionEntry";
 
 
 export default function NewTransactionPage() {
@@ -25,6 +25,6 @@ export default function NewTransactionPage() {
         marginBottom: 8,
     }
     }>
-        <TxEntry onSubmit={handleNewTxSubmit} />
+        <TransactionEntry onSubmit={handleNewTxSubmit} />
     </Box>
 }

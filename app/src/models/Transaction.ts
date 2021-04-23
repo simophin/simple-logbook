@@ -7,7 +7,7 @@ export const TransactionType = t.type({
     toAccount: t.string,
     amount: t.number,
     transDate: t.string,
-    createdDate: t.string,
+    updatedDate: t.string,
 });
 
 export const TransactionArrayType = t.array(TransactionType);

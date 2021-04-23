@@ -1,6 +1,5 @@
 import {Button, Snackbar, TextField, Typography} from "@material-ui/core";
 import React, {CSSProperties, useCallback, useRef, useState} from "react";
-import {findTransactionsByDesc} from "../api/findTransactions";
 import {Transaction} from "../models/Transaction";
 import {v4 as uuid} from 'uuid';
 import {Account} from "../models/Account";
@@ -9,11 +8,15 @@ import {AccountBalance} from "../models/AccountBalance";
 import currency from 'currency.js';
 import {format} from 'date-fns';
 import {AutoCompleteField, AutoCompleteFieldProps} from "./AutoCompleteField";
+import {listTransaction} from "../api/listTransaction";
+import {map, tap} from "rxjs/operators";
+import _ from 'lodash';
+import {of} from "rxjs";
 
 const DescriptionField = (props: AutoCompleteFieldProps<Transaction>) => AutoCompleteField(props);
 const AccountField = (props: AutoCompleteFieldProps<Account>) => AutoCompleteField(props);
 
-type TxEntryProps = {
+type Props = {
     editing?: Transaction,
     onSubmit: (tx: Transaction) => Promise<AccountBalance[]>,
 }
@@ -22,13 +25,31 @@ const fieldStyle: CSSProperties = {
     marginTop: 8,
 }
 
-export default function TxEntry({editing, onSubmit}: TxEntryProps) {
+function findTransactionsByDesc(searchTerm: string) {
+    searchTerm = searchTerm.trim();
+    if (searchTerm.length === 0) {
+        return of<Array<Transaction>>([]);
+    }
+
+    return listTransaction({
+        q: searchTerm,
+        limit: 20,
+    }).pipe(
+        tap((v) => console.log('Got item before', v)),
+        map(({data}) => _.uniqBy(data, 'desc')),
+        tap((v) => console.log('Got item', v))
+    );
+}
+
+const dateFormat = 'yyyy-MM-dd';
+
+export default function TransactionEntry({editing, onSubmit}: Props) {
     const [id, setId] = useState(editing?.id ?? uuid());
     const [desc, setDesc] = useState(editing?.desc ?? '');
     const [fromAccount, setFromAccount] = useState(editing?.fromAccount ?? '');
     const [toAccount, setToAccount] = useState(editing?.toAccount ?? '');
     const [amount, setAmount] = useState(editing ? currency(editing.amount).divide(100).toString() : '');
-    const [transDate, setTransDate] = useState<Date>(editing ? new Date(editing.transDate) : new Date());
+    const [transDate, setTransDate] = useState(editing ? editing.transDate : format(new Date(), dateFormat));
     const amountRef = useRef<HTMLInputElement | null>(null);
     const descRef = useRef<HTMLInputElement | null>(null);
 
@@ -42,8 +63,9 @@ export default function TxEntry({editing, onSubmit}: TxEntryProps) {
 
         try {
             setAccountBalances(await onSubmit({
-                id, desc, fromAccount, toAccount, transDate: transDate.toISOString(),
-                createdDate: new Date().toISOString(),
+                id, desc, fromAccount, toAccount,
+                transDate,
+                updatedDate: new Date().toISOString(),
                 amount: currency(amount).multiply(100).value,
             }));
 
@@ -73,7 +95,8 @@ export default function TxEntry({editing, onSubmit}: TxEntryProps) {
 
 
     const balanceRows = accountBalances.map(({account, balance}) =>
-        <Typography style={fieldStyle} variant="body2">Account <i>{account}</i>: {currency(balance / 100).format()}</Typography>);
+        <Typography style={fieldStyle} variant="body2">Account <i>{account}</i>: {currency(balance / 100).format()}
+        </Typography>);
 
     return <>
         <DescriptionField label="Description"
@@ -102,16 +125,13 @@ export default function TxEntry({editing, onSubmit}: TxEntryProps) {
                       onValueChanged={setToAccount}/>
 
         <TextField label="Date" fullWidth={true}
-                   value={format(transDate, 'yyyy-MM-dd')}
+                   value={transDate}
                    type="date"
                    style={fieldStyle}
                    InputLabelProps={{
                        shrink: true,
                    }}
-                   onChange={(e) => {
-                       setTransDate(e.target.value.trim().length === 0 ? new Date() : new Date(e.target.value));
-
-                   }}
+                   onChange={(e) => setTransDate(e.target.value)}
         />
 
         <TextField label="Amount" fullWidth={true}
@@ -138,7 +158,7 @@ export default function TxEntry({editing, onSubmit}: TxEntryProps) {
                     fromAccount.trim().length === 0 ||
                     toAccount.trim().length === 0 ||
                     amount.trim().length === 0 ||
-                    !transDate ||
+                    transDate.trim().length === 0 ||
                     isSubmitting
                 }
         >{isSubmitting ? "Submitting" : "Submit"}</Button>
