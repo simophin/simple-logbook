@@ -5,15 +5,19 @@ import {useDebounce} from "../hooks/useDebounce";
 import {useObservable} from "../hooks/useObservable";
 import {Observable} from "rxjs";
 import {findTransactionsByDesc} from "../api/findTransactions";
-import {Transaction, TransactionArrayType} from "../models/Transaction";
+import {Transaction} from "../models/Transaction";
 import {v4 as uuid} from 'uuid';
 import {Account} from "../models/Account";
 import {findAccountsByName} from "../api/findAccounts";
-import {request} from "../api/common";
-import config from "../config";
+import {AccountBalance} from "../models/AccountBalance";
+import {createTransaction} from "../api/createTransaction";
+import {getAccountBalance} from "../api/getAccountBalance";
+import currency from 'currency.js';
+import {format} from 'date-fns';
 
 type AutoCompleteFieldProps<SearchResult> = {
     label: string,
+    fullWidth?: boolean,
 
     value?: string,
     onValueChanged: (v: string) => void,
@@ -34,9 +38,10 @@ function AutoCompleteField<SearchResult>({
                                              search,
                                              value,
                                              inputRef,
+                                             fullWidth,
                                          }: AutoCompleteFieldProps<SearchResult>) {
     const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+    const debouncedSearchTerm = useDebounce(searchTerm, 200);
     const searchResults = useObservable(() => search(debouncedSearchTerm), [debouncedSearchTerm]);
 
     return <Autocomplete
@@ -53,9 +58,12 @@ function AutoCompleteField<SearchResult>({
         onClose={() => setSearchTerm('')}
         inputValue={value}
         freeSolo={true}
+        fullWidth={fullWidth}
         autoComplete={true}
         renderInput={(params) => (
-            <TextField {...params} label={label} inputRef={inputRef}/>
+            <TextField {...params} label={label} inputRef={inputRef} InputLabelProps={{
+                shrink: true,
+            }}/>
         )}
         options={searchResults.type === 'loaded' ? searchResults.data.map((value) => {
             return {
@@ -77,29 +85,28 @@ export default function TxEntry() {
     const [fromAccount, setFromAccount] = useState('');
     const [toAccount, setToAccount] = useState('');
     const [amount, setAmount] = useState('');
+    const [transDate, setTransDate] = useState<Date>(new Date());
     const amountRef = useRef<HTMLInputElement | null>(null);
     const descRef = useRef<HTMLInputElement | null>(null);
 
     const [isSubmitting, setSubmitting] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
+    const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
+
     const handleSubmit = useCallback(async () => {
         setSubmitting(true);
 
         try {
-            await request({
-                url: `${config.baseUrl}/transactions`,
-                method: 'post',
-                ioType: TransactionArrayType,
-                body: [
-                    {
-                        id, desc, fromAccount, toAccount,
-                        amount: Math.trunc(parseFloat(amount) * 100),
-                        createdDate: new Date().toISOString(),
-                        transDate: new Date().toISOString(),
-                    } as Transaction
-                ]
+            await createTransaction({
+                id, desc, fromAccount, toAccount, transDate: transDate.toISOString(),
+                amount: Math.trunc(parseFloat(amount) * 100),
             }).toPromise();
+
+            setAccountBalances([
+                await getAccountBalance(fromAccount).toPromise(),
+                await getAccountBalance(toAccount).toPromise(),
+            ]);
 
             setId(uuid());
             setDesc('');
@@ -113,18 +120,22 @@ export default function TxEntry() {
         } finally {
             setSubmitting(false);
         }
-    }, [amount, desc, fromAccount, id, toAccount]);
+    }, [amount, desc, fromAccount, id, toAccount, transDate]);
 
     const handleDescResultSelected = useCallback((v: Transaction) => {
         setDesc(v.desc);
         setFromAccount(v.fromAccount);
         setToAccount(v.toAccount);
-        setAmount((BigInt(v.amount) / 100n).toString());
+        setAmount(currency(v.amount / 100).toString());
         console.log(amountRef.current);
 
         amountRef.current?.select();
         amountRef.current?.focus();
     }, []);
+
+
+    const balanceRows = accountBalances.map(({account, balance}) =>
+        <p>Account "{account}": {currency(balance / 100).format()}</p>)
 
     return <>
         <DescriptionField label="Description"
@@ -139,20 +150,40 @@ export default function TxEntry() {
                       search={findAccountsByName}
                       getSearchResultLabel={(v) => v}
                       value={fromAccount}
+                      fullWidth={false}
                       onValueChanged={setFromAccount}/>
 
         <AccountField label="To account"
                       search={(t) => findAccountsByName(t)}
                       getSearchResultLabel={(v) => v}
                       value={toAccount}
+                      fullWidth={false}
                       onValueChanged={setToAccount}/>
+
+        <TextField label="Date" fullWidth={true}
+                   value={format(transDate, 'yyyy-MM-dd')}
+                   type="date"
+                   InputLabelProps={{
+                       shrink: true,
+                   }}
+                   onChange={(e) => {
+                       setTransDate(e.target.value.trim().length == 0 ? new Date() : new Date(e.target.value));
+
+                   }}
+        />
 
         <TextField label="Amount" fullWidth={true}
                    value={amount}
                    type="number"
                    inputRef={amountRef}
+                   InputLabelProps={{
+                       shrink: true,
+                   }}
                    onChange={(e) => setAmount(e.target.value)}
         />
+
+
+        {balanceRows}
 
         <Button color="primary"
                 onClick={handleSubmit}
@@ -161,6 +192,7 @@ export default function TxEntry() {
                     fromAccount.trim().length === 0 ||
                     toAccount.trim().length === 0 ||
                     amount.trim().length === 0 ||
+                    !transDate ||
                     isSubmitting
                 }
         >{isSubmitting ? "Submitting" : "Submit"}</Button>
@@ -169,6 +201,5 @@ export default function TxEntry() {
                   autoHideDuration={5000}
                   onClose={() => setSnackbarMessage('')}
                   message={snackbarMessage}/>
-
-    </>;
+    </>
 }
