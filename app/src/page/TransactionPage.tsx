@@ -1,7 +1,6 @@
 import {
-    Box,
     CircularProgress,
-    Container,
+    Container, Dialog, DialogContent, DialogTitle, Fab,
     Fade,
     Paper,
     Select,
@@ -15,11 +14,17 @@ import {
 import {useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
 import currency from 'currency.js';
-import {CSSProperties, useState} from "react";
+import React, {CSSProperties, useCallback, useState} from "react";
 import {getAccountSummaries} from "../api/getAccountSummaries";
 import {format} from 'date-fns';
 import {useDebounce} from "../hooks/useDebounce";
 import {Autocomplete, Pagination} from "@material-ui/lab";
+import AddIcon from "@material-ui/icons/Add";
+import {Transaction} from "../models/Transaction";
+import TransactionEntry from "../components/TransactionEntry";
+import {AccountBalance} from "../models/AccountBalance";
+import {createTransaction} from "../api/createTransaction";
+import {getAccountBalance} from "../api/getAccountBalance";
 
 const tableHeadStyle: CSSProperties = {
     fontWeight: 'bold'
@@ -27,6 +32,25 @@ const tableHeadStyle: CSSProperties = {
 
 const dateISOFormat = 'yyyy-MM-dd';
 const availablePageSizes = [10, 30, 50, 100, 200];
+
+type EditingTransactionState = {
+    type: 'editing',
+    editing: Transaction,
+}
+
+type NewTransactionState = {
+    type: 'new',
+}
+
+type TransactionDialogState = EditingTransactionState | NewTransactionState | undefined;
+
+async function submitTransaction(tx: Transaction) {
+    await createTransaction(tx);
+    return [
+        await getAccountBalance(tx.fromAccount).toPromise(),
+        await getAccountBalance(tx.toAccount).toPromise(),
+    ]
+}
 
 export default function Component() {
     const [to, setTo] = useState<Date | undefined>();
@@ -47,6 +71,8 @@ export default function Component() {
         [pageSize, currentPage, selectedAccount, from, to, searchTermDebounced]);
     const numPages = rows.type === 'loaded' && pageSize > 0 ? Math.ceil(rows.data.total / pageSize) : 0;
     const accountBalances = useObservable(() => getAccountSummaries(), []);
+
+    const [transactionDialogState, setTransactionDialogState] = useState<TransactionDialogState>();
 
     return <Container maxWidth="md" style={{display: 'flex', flexWrap: 'wrap'}}>
         <TextField
@@ -77,7 +103,7 @@ export default function Component() {
             renderInput={(params) =>
                 <TextField variant="outlined" label="Page size" {...params} InputLabelProps={{
                     shrink: true,
-                }} />
+                }}/>
             }
             style={{marginLeft: 16}}
             value={pageSize}
@@ -109,7 +135,22 @@ export default function Component() {
             onChange={(e) => setSearchTerm(e.target.value.trim())}
         />
 
-        <Paper style={{marginTop: 16, marginBottom: 16, width: '100%', display: 'flex', flexWrap: 'wrap', justifyContent: 'end'}}
+        <Fab
+            color="primary"
+            aria-label="add"
+            style={{position: 'fixed', bottom: 24, right: 24}}
+            onClick={() => setTransactionDialogState({type: 'new'})}>
+            <AddIcon/>
+        </Fab>
+
+        <Paper style={{
+            marginTop: 16,
+            marginBottom: 16,
+            width: '100%',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'end'
+        }}
                variant="outlined">
             <Table size="small" style={{width: '100%'}}>
                 <TableHead>
@@ -158,5 +199,32 @@ export default function Component() {
                 page={currentPage}/>
 
         </Paper>
+
+        {transactionDialogState?.type === 'new' &&
+        <Dialog open disableEscapeKeyDown={true} onClose={() => setTransactionDialogState(undefined)}>
+            <DialogTitle id="tx-dialog-title">New transaction</DialogTitle>
+            <TransactionEntry
+                onSubmit={submitTransaction}/>
+        </Dialog>
+        }
+
+        {transactionDialogState?.type === 'editing' &&
+        <Dialog open
+                disableEscapeKeyDown={true}
+                onClose={() => setTransactionDialogState(undefined)}
+                aria-labelledby="tx-dialog-title">
+            <DialogTitle id="tx-dialog-title">New transaction</DialogTitle>
+            <DialogContent>
+                <TransactionEntry
+                    editing={transactionDialogState.editing}
+                    onSubmit={async (tx) => {
+                        const rs = await submitTransaction(tx);
+                        setTransactionDialogState(undefined);
+                        return rs;
+                    }
+                    }/>
+            </DialogContent>
+        </Dialog>
+        }
     </Container>;
 }

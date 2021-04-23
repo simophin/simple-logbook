@@ -31,7 +31,7 @@ export function AutoCompleteField<SearchResult>({
                                                     value,
                                                     inputRef,
                                                     style,
-                                                    fullWidth = false,
+                                                    fullWidth = true,
                                                     autoFocus = false
                                                 }: AutoCompleteFieldProps<SearchResult>) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +56,9 @@ export function AutoCompleteField<SearchResult>({
         fullWidth={fullWidth}
         autoComplete={true}
         renderInput={(params) => (
-            <TextField autoFocus={autoFocus} {...params} label={label} inputRef={inputRef} InputLabelProps={{
+            <TextField autoFocus={autoFocus} {...params}
+                       variant="outlined"
+                       label={label} inputRef={inputRef} InputLabelProps={{
                 shrink: true,
             }}/>
         )}

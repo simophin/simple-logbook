@@ -1,5 +1,5 @@
 import {
-    Button,
+    Button, Container,
     Snackbar,
     Table, TableBody, TableCell,
     TableContainer,
@@ -32,7 +32,7 @@ type Props = {
 }
 
 const fieldStyle: CSSProperties = {
-    marginTop: 8,
+    marginTop: 16,
 }
 
 function findTransactionsByDesc(searchTerm: string) {
@@ -129,8 +129,7 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
     }
 
 
-
-    return <>
+    return <Container style={{minWidth: 400, paddingBottom: 16}}>
         <DescriptionField label="Description"
                           search={findTransactionsByDesc}
                           value={desc}
@@ -160,6 +159,7 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                    value={transDate}
                    type="date"
                    style={fieldStyle}
+                   variant="outlined"
                    InputLabelProps={{
                        shrink: true,
                    }}
@@ -170,6 +170,7 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                    value={amount}
                    type="number"
                    style={fieldStyle}
+                   variant="outlined"
                    inputRef={amountRef}
                    InputLabelProps={{
                        shrink: true,
@@ -200,5 +201,5 @@ export default function TransactionEntry({editing, onSubmit}: Props) {
                   autoHideDuration={5000}
                   onClose={() => setSnackbarMessage('')}
                   message={snackbarMessage}/>
-    </>
+    </Container>
 }
