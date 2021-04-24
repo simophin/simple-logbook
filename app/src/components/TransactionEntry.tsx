@@ -55,7 +55,7 @@ function findTransactionsByDesc(searchTerm: string) {
 }
 
 async function submitTransaction(tx: Transaction) {
-    await createTransaction(tx);
+    await createTransaction(tx).toPromise();
     return [
         await getAccountBalance(tx.fromAccount).toPromise(),
         await getAccountBalance(tx.toAccount).toPromise(),

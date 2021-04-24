@@ -4,7 +4,7 @@ import {
     Container,
     Fab,
     Fade,
-    IconButton,
+    IconButton, Menu, MenuItem,
     Paper,
     Select,
     Table,
@@ -28,6 +28,8 @@ import {Transaction} from "../models/Transaction";
 import TransactionEntry from "../components/TransactionEntry";
 import EditIcon from '@material-ui/icons/Edit';
 import RemoveIcon from '@material-ui/icons/Delete';
+import AlertDialog from "../components/AlertDialog";
+import deleteTransaction from "../api/deleteTransaction";
 
 const tableHeadStyle: CSSProperties = {
     fontWeight: 'bold'
@@ -69,50 +71,53 @@ export default function Component() {
     const accountBalances = useObservable(() => getAccountSummaries(), []);
 
     const [transactionDialogState, setTransactionDialogState] = useState<TransactionDialogState>();
-    const handleDialogClose = useCallback(() => {
+    const handleDialogClose = useCallback((reload: boolean) => {
         setTransactionDialogState(undefined);
-        setReloadTransaction(reloadTransaction + 1);
+        if (reload) setReloadTransaction(reloadTransaction + 1);
     }, [setTransactionDialogState, setReloadTransaction, reloadTransaction]);
+
+    const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number, y: number, tx: Transaction } | undefined>();
+    const handleContextMenuClose = useCallback(() => {
+        setContextMenuPosition(undefined);
+    }, [setContextMenuPosition]);
+
+    const [pendingDeletion, setPendingDeletion] = useState<Transaction | undefined>();
+    const handleDeleteConfirm = useCallback(async () => {
+        try {
+            if (pendingDeletion && await deleteTransaction(pendingDeletion.id).toPromise()) {
+                setReloadTransaction(reloadTransaction + 1)
+            }
+        } catch (e) {
+            console.error('Error deleting transaction', e);
+        }
+    }, [pendingDeletion, reloadTransaction, setReloadTransaction]);
 
     const dataTable = useMemo(() => {
         if (rows.type === 'loaded') {
             return <Fade in>
                 <Table size="small" style={{width: '100%'}}>
                     <TableHead>
-                        <TableCell style={tableHeadStyle}>Comment</TableCell>
-                        <TableCell style={tableHeadStyle}>From</TableCell>
-                        <TableCell style={tableHeadStyle}>To</TableCell>
-                        <TableCell style={tableHeadStyle}>Amount</TableCell>
-                        <TableCell style={tableHeadStyle}>Date</TableCell>
-                        <TableCell/>
+                        <TableCell size="small" style={tableHeadStyle}>Comment</TableCell>
+                        <TableCell size="small" style={tableHeadStyle}>From</TableCell>
+                        <TableCell size="small" style={tableHeadStyle}>To</TableCell>
+                        <TableCell size="small" style={tableHeadStyle}>Amount</TableCell>
+                        <TableCell size="small" style={tableHeadStyle}>Date</TableCell>
                     </TableHead>
 
 
                     <TableBody>
                         {rows.data.data.map((tx) =>
-                            <TableRow>
-                                <TableCell>{tx.desc}</TableCell>
-                                <TableCell>{tx.fromAccount}</TableCell>
-                                <TableCell>{tx.toAccount}</TableCell>
-                                <TableCell>{currency(tx.amount).divide(100).format()}</TableCell>
-                                <TableCell>{new Date(tx.transDate).toLocaleDateString()}</TableCell>
-                                <TableCell>
-                                    <IconButton color="primary"
-                                                aria-label="edit"
-                                                size="small"
-                                                onClick={() => setTransactionDialogState({
-                                                    type: 'editing',
-                                                    editing: tx
-                                                })}>
-                                        <EditIcon fontSize="small"/>
-                                    </IconButton>
-                                    <IconButton color="secondary"
-                                                aria-label="delete"
-                                                size="small"
-                                                onClick={() => {}}>
-                                        <RemoveIcon fontSize="small"/>
-                                    </IconButton>
-                                </TableCell>
+                            <TableRow
+                                style={{cursor: 'context-menu'}}
+                                onContextMenu={(e) => {
+                                    setContextMenuPosition({x: e.clientX - 2, y: e.clientY - 4, tx});
+                                    e.preventDefault();
+                                }}>
+                                <TableCell size="small">{tx.desc}</TableCell>
+                                <TableCell size="small">{tx.fromAccount}</TableCell>
+                                <TableCell size="small">{tx.toAccount}</TableCell>
+                                <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
+                                <TableCell size="small">{new Date(tx.transDate).toLocaleDateString()}</TableCell>
                             </TableRow>
                         )}
 
@@ -127,6 +132,7 @@ export default function Component() {
             return <></>
         }
     }, [rows]);
+
 
     return <Container maxWidth="md" style={{display: 'flex', flexWrap: 'wrap'}}>
         <TextField
@@ -229,14 +235,46 @@ export default function Component() {
         </Paper>
 
         {transactionDialogState?.type === 'new' &&
-        <TransactionEntry onClose={handleDialogClose}/>
+        <TransactionEntry onClose={() => handleDialogClose(false)}
+                          onSaved={() => setReloadTransaction(reloadTransaction + 1)}/>
         }
 
         {transactionDialogState?.type === 'editing' &&
         <TransactionEntry
             editing={transactionDialogState.editing}
-            onSaved={handleDialogClose}
-            onClose={handleDialogClose}/>
+            onSaved={() => handleDialogClose(true)}
+            onClose={() => handleDialogClose(false)}/>
         }
+
+        <Menu
+            keepMounted
+            open={!!contextMenuPosition}
+            anchorReference="anchorPosition"
+            anchorPosition={contextMenuPosition ? {top: contextMenuPosition.y, left: contextMenuPosition.x} : undefined}
+            onClose={handleContextMenuClose}>
+            <MenuItem onClick={() => {
+                if (contextMenuPosition) {
+                    setTransactionDialogState({type: 'editing', editing: contextMenuPosition.tx});
+                }
+                handleContextMenuClose();
+            }}>Edit</MenuItem>
+            <MenuItem onClick={() => {
+                if (contextMenuPosition) {
+                    setPendingDeletion(contextMenuPosition.tx);
+                }
+                handleContextMenuClose();
+            }}>Remove</MenuItem>
+        </Menu>
+
+        {pendingDeletion &&
+        <AlertDialog
+            title={`Delete "${pendingDeletion.desc}"?`}
+            positiveButton="Delete"
+            negativeButton="No"
+            onPositiveClicked={() => {
+                handleDeleteConfirm();
+                setPendingDeletion(undefined);
+            }}
+        />}
     </Container>;
 }

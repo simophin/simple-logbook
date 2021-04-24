@@ -37,6 +37,14 @@ async fn main() {
                 &query(&req.state(), input).await?,
             )?))
         });
+    app.at("/transactions")
+        .delete(move |mut req: tide::Request<AppState>| async move {
+            use service::transaction::delete::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &execute(&req.state(), input).await?,
+            )?))
+        });
 
     app.at("/accountSummaries")
         .get(service::get_all_account_summary);
