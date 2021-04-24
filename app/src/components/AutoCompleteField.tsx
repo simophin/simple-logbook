@@ -39,9 +39,11 @@ export function AutoCompleteField<SearchResult>({
     const searchResults = useObservable(() => search(debouncedSearchTerm), [debouncedSearchTerm]);
 
     return <Autocomplete
-        onInputChange={(event, value) => {
-            setSearchTerm(value);
-            onValueChanged(value);
+        onInputChange={(event, value, reason) => {
+            if (reason !== 'reset') {
+                setSearchTerm(value);
+                onValueChanged(value);
+            }
         }}
         onChange={((event, value) => {
             if (value && typeof value === 'object' && value.type === 'search-result' && onSearchResultSelected) {

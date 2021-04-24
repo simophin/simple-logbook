@@ -25,7 +25,7 @@ import {format} from 'date-fns';
 import {useDebounce} from "../hooks/useDebounce";
 import {Autocomplete, Pagination} from "@material-ui/lab";
 import AddIcon from "@material-ui/icons/Add";
-import MenuIcon from "@material-ui/icons/";
+import MenuIcon from "@material-ui/icons/MoreVert";
 import {Transaction} from "../models/Transaction";
 import TransactionEntry from "../components/TransactionEntry";
 import AlertDialog from "../components/AlertDialog";
@@ -68,7 +68,7 @@ export default function Component() {
         }),
         [pageSize, currentPage, selectedAccount, from, to, searchTermDebounced, reloadTransaction]);
     const numPages = rows.type === 'loaded' && pageSize > 0 ? Math.ceil(rows.data.total / pageSize) : 0;
-    const accountBalances = useObservable(() => getAccountSummaries(), []);
+    const accountBalances = useObservable(() => getAccountSummaries(), [reloadTransaction]);
 
     const [transactionDialogState, setTransactionDialogState] = useState<TransactionDialogState>();
     const handleDialogClose = useCallback((reload: boolean) => {
@@ -93,34 +93,29 @@ export default function Component() {
     }, [pendingDeletion, reloadTransaction, setReloadTransaction]);
 
     const dataTable = useMemo(() => {
-        if (rows.type === 'loaded') {
             return <Fade in>
                 <Table size="small" style={{width: '100%'}}>
                     <TableHead>
-                        <TableCell size="small" style={tableHeadStyle}>Comment</TableCell>
-                        <TableCell size="small" style={tableHeadStyle}>From</TableCell>
-                        <TableCell size="small" style={tableHeadStyle}>To</TableCell>
-                        <TableCell size="small" style={tableHeadStyle}>Amount</TableCell>
-                        <TableCell size="small" style={tableHeadStyle}>Date</TableCell>
+                        <TableCell size="small" style={{...tableHeadStyle, width: '25%'}}>Comment</TableCell>
+                        <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>From</TableCell>
+                        <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>To</TableCell>
+                        <TableCell size="small" style={{...tableHeadStyle, width: '16%'}}>Amount</TableCell>
+                        <TableCell size="small" style={{...tableHeadStyle, width: '15%'}}>Date</TableCell>
                     </TableHead>
 
-
-                    <TableBody>
+                    {rows.type === 'loaded' && <TableBody>
                         {rows.data.data.map((tx) =>
-                            <TableRow
-                                style={{cursor: 'context-menu'}}
-                                onContextMenu={(e) => {
-                                    setContextMenuPosition({x: e.clientX - 2, y: e.clientY - 4, tx});
-                                    e.preventDefault();
-                                }}>
+                            <TableRow>
                                 <TableCell size="small">{tx.desc}</TableCell>
                                 <TableCell size="small">{tx.fromAccount}</TableCell>
                                 <TableCell size="small">{tx.toAccount}</TableCell>
                                 <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
-                                <TableCell size="small">
+                                <TableCell size="small" style={{paddingRight: 0}}>
                                     {new Date(tx.transDate).toLocaleDateString()}
-                                    <IconButton size="small">
-                                        <MenuIcon />
+                                    <IconButton size="small" onClick={(e) => {
+                                        setContextMenuPosition({x: e.clientX, y: e.clientY, tx});
+                                    }}>
+                                        <MenuIcon/>
                                     </IconButton>
                                 </TableCell>
                             </TableRow>
@@ -130,12 +125,18 @@ export default function Component() {
                         <Typography variant="body2" style={{padding: 16}}>No records found</Typography>
                         }
                     </TableBody>
+                    }
 
+                    {rows.type === 'loading' && <TableBody>
+                        <TableRow>
+                            <TableCell colSpan={5} align="center">
+                                <CircularProgress size={30} />
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                    }
                 </Table>
             </Fade>;
-        } else {
-            return <></>
-        }
     }, [rows]);
 
 
@@ -214,27 +215,24 @@ export default function Component() {
             width: '100%',
             display: 'flex',
             flexWrap: 'wrap',
-            justifyContent: 'end'
+            justifyContent: 'end',
+            alignItems: 'center'
         }}
                variant="outlined">
 
-            {rows.type === 'loading' &&
-            <Fade in>
-                <Box style={{padding: 16}}>
-                    <CircularProgress size={40}/>
-                </Box>
-            </Fade>
-            }
-
             {dataTable}
 
+            {rows.type === 'loaded' && <Typography variant="body2">
+                {rows.data.total} record(s)
+            </Typography> }
+
             {numPages > 0 && <Pagination
-                style={{padding: 8, display: 'flex', justifyContent: 'end'}}
+                style={{padding: 8}}
                 size="small"
                 count={numPages}
                 shape="rounded"
                 variant="outlined"
-                onChange={(e, p) => setCurrentPage(p)}
+                onChange={(e, p) => setCurrentPage(p - 1)}
                 page={currentPage}/>}
 
         </Paper>
@@ -280,6 +278,8 @@ export default function Component() {
                 handleDeleteConfirm();
                 setPendingDeletion(undefined);
             }}
+            onNegativeClicked={() => setPendingDeletion(undefined)}
+            onClose={() => setPendingDeletion(undefined)}
         />}
     </Container>;
 }

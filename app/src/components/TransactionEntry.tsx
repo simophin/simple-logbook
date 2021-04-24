@@ -143,6 +143,7 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
         </Paper>;
     }
 
+    console.log('description is', desc);
     return <Dialog open={dialogOpen} disableEscapeKeyDown={true}>
         <Container style={{display: 'flex', flexWrap: 'wrap', paddingBottom: 32}} maxWidth="xs">
             <DialogTitle>
@@ -156,7 +157,10 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
                               autoFocus={editing == null}
                               getSearchResultLabel={(v) => v.desc}
                               onSearchResultSelected={handleDescResultSelected}
-                              onValueChanged={setDesc}/>
+                              onValueChanged={(v) => {
+                                  console.log("Value changed to", v);
+                                  setDesc(v);
+                              }}/>
 
             <AccountField label="From account"
                           search={findAccountsByName}
