@@ -1,0 +1,23 @@
+image: docker:stable
+services:
+  - docker:dind
+
+stages:
+  - build
+  - deploy
+
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+
+push:
+  stage: deploy
+  only:
+    - master
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:latest

@@ -4,6 +4,7 @@ use tide::log::LevelFilter;
 use tide::{Body, Response, StatusCode};
 
 use crate::state::AppState;
+use sqlx::migrate::MigrateDatabase;
 
 mod service;
 mod state;
@@ -37,12 +38,20 @@ async fn main() {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
 
+    if !sqlx::Sqlite::database_exists(&database_url).await.unwrap() {
+        sqlx::Sqlite::create_database(&database_url)
+            .await
+            .expect("To be able to create a db");
+    }
+
     let conn = AnyPool::connect(&database_url).await.expect(&format!(
         "Unable to open database connection to {}",
         &database_url
     ));
 
-    tide::log::with_level(LevelFilter::Debug);
+    sqlx::migrate!().run(&conn).await.expect("Migration to run");
+
+    tide::log::with_level(LevelFilter::Info);
 
     let mut app = tide::with_state(AppState { conn });
     app.at("/api/transactions")
@@ -80,5 +89,5 @@ async fn main() {
     app.at("/public/*").get(serve_static_assert);
     app.at("/").get(serve_static_assert);
 
-    app.listen("127.0.0.1:4000").await.expect("To run server");
+    app.listen("0.0.0.0:4000").await.expect("To run server");
 }

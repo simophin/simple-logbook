@@ -93,50 +93,50 @@ export default function Component() {
     }, [pendingDeletion, reloadTransaction, setReloadTransaction]);
 
     const dataTable = useMemo(() => {
-            return <Fade in>
-                <Table size="small" style={{width: '100%'}}>
-                    <TableHead>
-                        <TableCell size="small" style={{...tableHeadStyle, width: '25%'}}>Comment</TableCell>
-                        <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>From</TableCell>
-                        <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>To</TableCell>
-                        <TableCell size="small" style={{...tableHeadStyle, width: '16%'}}>Amount</TableCell>
-                        <TableCell size="small" style={{...tableHeadStyle, width: '15%'}}>Date</TableCell>
-                    </TableHead>
+        return <Fade in>
+            <Table size="small" style={{width: '100%'}}>
+                <TableHead>
+                    <TableCell size="small" style={{...tableHeadStyle, width: '25%'}}>Comment</TableCell>
+                    <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>From</TableCell>
+                    <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>To</TableCell>
+                    <TableCell size="small" style={{...tableHeadStyle, width: '16%'}}>Amount</TableCell>
+                    <TableCell size="small" style={{...tableHeadStyle, width: '15%'}}>Date</TableCell>
+                </TableHead>
 
-                    {rows.type === 'loaded' && <TableBody>
-                        {rows.data.data.map((tx) =>
-                            <TableRow>
-                                <TableCell size="small">{tx.description}</TableCell>
-                                <TableCell size="small">{tx.fromAccount}</TableCell>
-                                <TableCell size="small">{tx.toAccount}</TableCell>
-                                <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
-                                <TableCell size="small" style={{paddingRight: 0}}>
-                                    {new Date(tx.transDate).toLocaleDateString()}
-                                    <IconButton size="small" onClick={(e) => {
-                                        setContextMenuPosition({x: e.clientX, y: e.clientY, tx});
-                                    }}>
-                                        <MenuIcon/>
-                                    </IconButton>
-                                </TableCell>
-                            </TableRow>
-                        )}
-
-                        {rows.data.data.length === 0 &&
-                        <Typography variant="body2" style={{padding: 16}}>No records found</Typography>
-                        }
-                    </TableBody>
-                    }
-
-                    {rows.type === 'loading' && <TableBody>
+                {rows.type === 'loaded' && <TableBody>
+                    {rows.data.data.map((tx) =>
                         <TableRow>
-                            <TableCell colSpan={5} align="center">
-                                <CircularProgress size={30} />
+                            <TableCell size="small">{tx.description}</TableCell>
+                            <TableCell size="small">{tx.fromAccount}</TableCell>
+                            <TableCell size="small">{tx.toAccount}</TableCell>
+                            <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
+                            <TableCell size="small" style={{paddingRight: 0}}>
+                                {new Date(tx.transDate).toLocaleDateString()}
+                                <IconButton size="small" onClick={(e) => {
+                                    setContextMenuPosition({x: e.clientX, y: e.clientY, tx});
+                                }}>
+                                    <MenuIcon/>
+                                </IconButton>
                             </TableCell>
                         </TableRow>
-                    </TableBody>
+                    )}
+
+                    {rows.data.data.length === 0 &&
+                    <Typography variant="body2" style={{padding: 16}}>No records found</Typography>
                     }
-                </Table>
-            </Fade>;
+                </TableBody>
+                }
+
+                {rows.type === 'loading' && <TableBody>
+                    <TableRow>
+                        <TableCell colSpan={5} align="center">
+                            <CircularProgress size={30}/>
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
+                }
+            </Table>
+        </Fade>;
     }, [rows]);
 
 
@@ -222,9 +222,11 @@ export default function Component() {
 
             {dataTable}
 
-            {rows.type === 'loaded' && <Typography variant="body2">
+            {rows.type === 'loaded' && rows.data.total > 0 &&
+            <Typography variant="body2">
                 {rows.data.total} record(s)
-            </Typography> }
+            </Typography>
+            }
 
             {numPages > 0 && <Pagination
                 style={{padding: 8}}

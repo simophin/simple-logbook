@@ -680,26 +680,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dirs"
-version = "3.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30baa043103c9d0c2a57cf537cc2f35623889dc0d405e6c3cccfadbc81c71309"
-dependencies = [
- "dirs-sys",
-]
-
-[[package]]
-name = "dirs-sys"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03d86534ed367a67548dc68113a0f5db55432fdfbb6e6f9d77704397d95d5780"
-dependencies = [
- "libc",
- "redox_users",
- "winapi",
-]
-
-[[package]]
 name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1066,16 +1046,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indexmap"
-version = "1.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
-dependencies = [
- "autocfg",
- "hashbrown",
-]
-
-[[package]]
 name = "infer"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1189,17 +1159,6 @@ name = "matches"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
-
-[[package]]
-name = "md-5"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b5a279bb9607f9f53c22d496eade00d138d1bdcccd07d74650387cf94942a15"
-dependencies = [
- "block-buffer",
- "digest",
- "opaque-debug",
-]
 
 [[package]]
 name = "memchr"
@@ -1577,16 +1536,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "redox_users"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
-dependencies = [
- "getrandom 0.2.2",
- "redox_syscall",
-]
-
-[[package]]
 name = "regex"
 version = "1.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1766,7 +1715,6 @@ version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "799e97dc9fdae36a5c8b8f2cae9ce2ee9fdce2058c57a93e6099d919fd982f79"
 dependencies = [
- "indexmap",
  "itoa",
  "ryu",
  "serde",
@@ -1794,19 +1742,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "sha-1"
-version = "0.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfebf75d25bd900fd1e7d11501efab59bc846dbc76196839663e6637bba9f25f"
-dependencies = [
- "block-buffer",
- "cfg-if 1.0.0",
- "cpuid-bool 0.1.2",
- "digest",
- "opaque-debug",
 ]
 
 [[package]]
@@ -1926,7 +1861,6 @@ checksum = "de52d1d473cebb2abb79c886ef6a8023e965e34c0676a99cfeac2cc7f0fde4c1"
 dependencies = [
  "ahash 0.7.2",
  "atoi",
- "base64 0.13.0",
  "bitflags",
  "byteorder",
  "bytes",
@@ -1935,29 +1869,22 @@ dependencies = [
  "crossbeam-channel",
  "crossbeam-queue",
  "crossbeam-utils",
- "dirs",
  "either",
  "futures-channel",
  "futures-core",
  "futures-util",
  "hashlink",
  "hex",
- "hmac 0.10.1",
  "itoa",
  "libc",
  "libsqlite3-sys",
  "log",
- "md-5",
  "memchr",
  "num-bigint",
  "once_cell",
  "parking_lot",
  "percent-encoding",
- "rand 0.8.3",
  "rust_decimal",
- "serde",
- "serde_json",
- "sha-1",
  "sha2",
  "smallvec",
  "sqlformat",
@@ -1980,7 +1907,6 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "serde_json",
  "sha2",
  "sqlx-core",
  "sqlx-rt",
