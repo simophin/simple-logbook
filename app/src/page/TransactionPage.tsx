@@ -3,8 +3,9 @@ import {
     CircularProgress,
     Container,
     Fab,
-    Fade,
-    IconButton, Menu, MenuItem,
+    Fade, IconButton,
+    Menu,
+    MenuItem,
     Paper,
     Select,
     Table,
@@ -24,10 +25,9 @@ import {format} from 'date-fns';
 import {useDebounce} from "../hooks/useDebounce";
 import {Autocomplete, Pagination} from "@material-ui/lab";
 import AddIcon from "@material-ui/icons/Add";
+import MenuIcon from "@material-ui/icons/";
 import {Transaction} from "../models/Transaction";
 import TransactionEntry from "../components/TransactionEntry";
-import EditIcon from '@material-ui/icons/Edit';
-import RemoveIcon from '@material-ui/icons/Delete';
 import AlertDialog from "../components/AlertDialog";
 import deleteTransaction from "../api/deleteTransaction";
 
@@ -117,7 +117,12 @@ export default function Component() {
                                 <TableCell size="small">{tx.fromAccount}</TableCell>
                                 <TableCell size="small">{tx.toAccount}</TableCell>
                                 <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
-                                <TableCell size="small">{new Date(tx.transDate).toLocaleDateString()}</TableCell>
+                                <TableCell size="small">
+                                    {new Date(tx.transDate).toLocaleDateString()}
+                                    <IconButton size="small">
+                                        <MenuIcon />
+                                    </IconButton>
+                                </TableCell>
                             </TableRow>
                         )}
 
