@@ -67,7 +67,7 @@ pub async fn query(state: &AppState, params: QueryInput) -> anyhow::Result<Query
 
     if let Some(q) = q {
         cond += &format!(
-            " AND t.desc LIKE ('%' || ?{} || '%') COLLATE NOCASE",
+            " AND t.description LIKE ('%' || ?{} || '%') COLLATE NOCASE",
             binds.len() + 1
         );
         binds.push(q);

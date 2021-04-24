@@ -22,7 +22,7 @@ import currency from 'currency.js';
 import {format} from 'date-fns';
 import {AutoCompleteField, AutoCompleteFieldProps} from "./AutoCompleteField";
 import {listTransaction} from "../api/listTransaction";
-import {map, tap} from "rxjs/operators";
+import {map} from "rxjs/operators";
 import _ from 'lodash';
 import {of} from "rxjs";
 import {createTransaction} from "../api/createTransaction";
@@ -50,7 +50,7 @@ function findTransactionsByDesc(searchTerm: string) {
 
     const filter = {q: searchTerm, limit: 20};
     return listTransaction(filter).pipe(
-        map(({data}) => _.uniqBy(data, 'desc')),
+        map(({data}) => _.uniqBy(data, 'description')),
     );
 }
 
@@ -66,7 +66,7 @@ const dateFormat = 'yyyy-MM-dd';
 
 export default function TransactionEntry({editing, onClose, onSaved}: Props) {
     const [id, setId] = useState(editing?.id ?? uuid());
-    const [desc, setDesc] = useState(editing?.desc ?? '');
+    const [desc, setDesc] = useState(editing?.description ?? '');
     const [fromAccount, setFromAccount] = useState(editing?.fromAccount ?? '');
     const [toAccount, setToAccount] = useState(editing?.toAccount ?? '');
     const [amount, setAmount] = useState(editing ? currency(editing.amount).divide(100).toString() : '');
@@ -85,7 +85,7 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
 
         try {
             setAccountBalances(await submitTransaction({
-                id, desc, fromAccount, toAccount,
+                id, description: desc, fromAccount, toAccount,
                 transDate,
                 updatedDate: new Date().toISOString(),
                 amount: currency(amount).multiply(100).value,
@@ -110,7 +110,7 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
     }, [amount, desc, fromAccount, id, onSaved, toAccount, transDate]);
 
     const handleDescResultSelected = useCallback((v: Transaction) => {
-        setDesc(v.desc);
+        setDesc(v.description);
         setFromAccount(v.fromAccount);
         setToAccount(v.toAccount);
         setAmount(currency(v.amount).divide(100).toString());
@@ -143,7 +143,6 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
         </Paper>;
     }
 
-    console.log('description is', desc);
     return <Dialog open={dialogOpen} disableEscapeKeyDown={true}>
         <Container style={{display: 'flex', flexWrap: 'wrap', paddingBottom: 32}} maxWidth="xs">
             <DialogTitle>
@@ -155,7 +154,7 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
                               style={fieldStyle}
                               inputRef={descRef}
                               autoFocus={editing == null}
-                              getSearchResultLabel={(v) => v.desc}
+                              getSearchResultLabel={(v) => v.description}
                               onSearchResultSelected={handleDescResultSelected}
                               onValueChanged={(v) => {
                                   console.log("Value changed to", v);

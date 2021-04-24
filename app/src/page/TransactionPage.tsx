@@ -1,9 +1,9 @@
 import {
-    Box,
     CircularProgress,
     Container,
     Fab,
-    Fade, IconButton,
+    Fade,
+    IconButton,
     Menu,
     MenuItem,
     Paper,
@@ -106,7 +106,7 @@ export default function Component() {
                     {rows.type === 'loaded' && <TableBody>
                         {rows.data.data.map((tx) =>
                             <TableRow>
-                                <TableCell size="small">{tx.desc}</TableCell>
+                                <TableCell size="small">{tx.description}</TableCell>
                                 <TableCell size="small">{tx.fromAccount}</TableCell>
                                 <TableCell size="small">{tx.toAccount}</TableCell>
                                 <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
@@ -271,7 +271,7 @@ export default function Component() {
 
         {pendingDeletion &&
         <AlertDialog
-            title={`Delete "${pendingDeletion.desc}"?`}
+            title={`Delete "${pendingDeletion.description}"?`}
             positiveButton="Delete"
             negativeButton="No"
             onPositiveClicked={() => {

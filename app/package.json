@@ -2,6 +2,7 @@
   "name": "simple-log-book",
   "version": "0.1.0",
   "private": true,
+  "homepage": "public",
   "dependencies": {
     "@material-ui/core": "^4.11.3",
     "@material-ui/data-grid": "^4.0.0-alpha.26",

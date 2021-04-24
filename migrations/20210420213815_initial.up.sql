@@ -2,7 +2,7 @@
 create table transactions
 (
     id          text     not null primary key,
-    desc        text     not null collate nocase check ( length(trim(desc)) > 0 ),
+    description text     not null collate nocase check ( length(trim(description)) > 0 ),
     fromAccount text     not null collate nocase check ( length(trim(fromAccount)) > 0 ),
     toAccount   text     not null collate nocase check ( length(trim(toAccount)) > 0 ),
     amount      integer  not null,
@@ -14,7 +14,7 @@ create table transactions
 create index transactions_from_account on transactions (trim(fromAccount));
 create index transactions_to_account on transactions (trim(toAccount));
 create index transactions_updated on transactions (updatedDate);
-create index transactions_desc on transactions (desc);
+create index transactions_desc on transactions (description);
 create index transactions_trans_date on transactions (transDate);
 create index transactions_amount on transactions (amount);
 
