@@ -16,8 +16,6 @@ import React, {CSSProperties, useCallback, useRef, useState} from "react";
 import {Transaction} from "../models/Transaction";
 import {v4 as uuid} from 'uuid';
 import {Account} from "../models/Account";
-import {findAccountsByName} from "../api/findAccounts";
-import {AccountBalance} from "../models/AccountBalance";
 import currency from 'currency.js';
 import {format} from 'date-fns';
 import {AutoCompleteField, AutoCompleteFieldProps} from "./AutoCompleteField";
@@ -26,10 +24,10 @@ import {map} from "rxjs/operators";
 import _ from 'lodash';
 import {of} from "rxjs";
 import {createTransaction} from "../api/createTransaction";
-import {getAccountBalance} from "../api/getAccountBalance";
+import listAccounts from "../api/listAccount";
 
 const DescriptionField = (props: AutoCompleteFieldProps<Transaction>) => AutoCompleteField(props);
-const AccountField = (props: AutoCompleteFieldProps<Account>) => AutoCompleteField(props);
+const AccountField = (props: AutoCompleteFieldProps<string>) => AutoCompleteField(props);
 
 type Props = {
     editing?: Transaction,
@@ -54,12 +52,19 @@ function findTransactionsByDesc(searchTerm: string) {
     );
 }
 
+function findAccountsByName(searchTerm: string) {
+    searchTerm = searchTerm.trim();
+    if (searchTerm.length === 0) {
+        return of<Array<string>>([]);
+    }
+
+    return listAccounts({q: searchTerm})
+        .pipe(map((accounts) => accounts.map(({name}) => name)));
+}
+
 async function submitTransaction(tx: Transaction) {
     await createTransaction(tx).toPromise();
-    return [
-        await getAccountBalance(tx.fromAccount).toPromise(),
-        await getAccountBalance(tx.toAccount).toPromise(),
-    ]
+    return await listAccounts({includes: [tx.fromAccount, tx.toAccount]}).toPromise();
 }
 
 const dateFormat = 'yyyy-MM-dd';
@@ -77,7 +82,7 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
     const [isSubmitting, setSubmitting] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
-    const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
+    const [accountBalances, setAccountBalances] = useState<Account[]>([]);
     const [dialogOpen, setDialogOpen] = useState(true);
 
     const handleSubmit = useCallback(async () => {
@@ -122,9 +127,9 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
     let balanceTable: React.ReactElement | undefined;
 
     if (accountBalances.length > 0) {
-        const balanceRows = accountBalances.map(({account, balance}) =>
+        const balanceRows = accountBalances.map(({name, balance}) =>
             <TableRow>
-                <TableCell>{account}</TableCell>
+                <TableCell>{name}</TableCell>
                 <TableCell>{currency(balance / 100).format()}</TableCell>
             </TableRow>
         );
@@ -167,14 +172,16 @@ export default function TransactionEntry({editing, onClose, onSaved}: Props) {
                           getSearchResultLabel={(v) => v}
                           value={fromAccount}
                           fullWidth={false}
+                          onSearchResultSelected={setFromAccount}
                           onValueChanged={setFromAccount}/>
 
             <AccountField label="To account"
-                          search={(t) => findAccountsByName(t)}
+                          search={findAccountsByName}
                           style={fieldStyle}
                           getSearchResultLabel={(v) => v}
                           value={toAccount}
                           fullWidth={false}
+                          onSearchResultSelected={setToAccount}
                           onValueChanged={setToAccount}/>
 
             <TextField label="Date" fullWidth={true}

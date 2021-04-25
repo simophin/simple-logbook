@@ -1,7 +1,9 @@
+#[cfg(not(debug_assertions))]
 use rust_embed::*;
+
 use sqlx::AnyPool;
 use tide::log::LevelFilter;
-use tide::{Body, Response, StatusCode};
+use tide::{Body, Error, Response, StatusCode};
 
 use crate::state::AppState;
 use sqlx::migrate::MigrateDatabase;
@@ -9,11 +11,13 @@ use sqlx::migrate::MigrateDatabase;
 mod service;
 mod state;
 
+#[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
 #[folder = "app/build"]
 #[prefix = "public/"]
 struct Asset;
 
+#[cfg(not(debug_assertions))]
 async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
     let path = match req.url().path() {
         p if p.eq_ignore_ascii_case("/") => "public/index.html",
@@ -30,6 +34,11 @@ async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
         .header("Cache-Control", "max-age=2678400")
         .body(Body::from(asset.as_ref()))
         .build())
+}
+
+#[cfg(debug_assertions)]
+async fn serve_static_assert(_: tide::Request<AppState>) -> tide::Result {
+    Err(Error::from_str(StatusCode::NotFound, "Not found"))
 }
 
 #[async_std::main]
@@ -49,6 +58,7 @@ async fn main() {
         &database_url
     ));
 
+    #[cfg(not(debug_assertions))]
     sqlx::migrate!().run(&conn).await.expect("Migration to run");
 
     tide::log::with_level(LevelFilter::Info);
@@ -80,11 +90,41 @@ async fn main() {
             )?))
         });
 
-    app.at("/api/accountSummaries")
-        .get(service::get_all_account_summary);
-    app.at("/api/accounts/search").get(service::search_account);
-    app.at("/api/account/balance")
-        .get(service::get_account_balance);
+    app.at("/api/accounts/list")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::account::list::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &query(&req.state(), input).await?,
+            )?))
+        });
+
+    // account group
+    app.at("/api/accountGroups")
+        .get(move |req: tide::Request<AppState>| async move {
+            use service::account_group::list::query;
+            Ok(Response::from(Body::from_json(
+                &query(&req.state()).await?,
+            )?))
+        });
+
+    app.at("/api/accountGroups")
+        .delete(move |mut req: tide::Request<AppState>| async move {
+            use service::account_group::delete::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &execute(&req.state(), input).await?,
+            )?))
+        });
+
+    app.at("/api/accountGroups")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::account_group::replace::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &execute(&req.state(), input).await?,
+            )?))
+        });
 
     app.at("/public/*").get(serve_static_assert);
     app.at("/").get(serve_static_assert);
