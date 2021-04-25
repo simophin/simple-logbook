@@ -20,7 +20,6 @@ import {useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
 import currency from 'currency.js';
 import React, {CSSProperties, useCallback, useMemo, useState} from "react";
-import {getAccountSummaries} from "../api/getAccountSummaries";
 import {format} from 'date-fns';
 import {useDebounce} from "../hooks/useDebounce";
 import {Autocomplete, Pagination} from "@material-ui/lab";
@@ -30,6 +29,7 @@ import {Transaction} from "../models/Transaction";
 import TransactionEntry from "../components/TransactionEntry";
 import AlertDialog from "../components/AlertDialog";
 import deleteTransaction from "../api/deleteTransaction";
+import listAccounts from "../api/listAccount";
 
 const tableHeadStyle: CSSProperties = {
     fontWeight: 'bold'
@@ -68,7 +68,7 @@ export default function Component() {
         }),
         [pageSize, currentPage, selectedAccount, from, to, searchTermDebounced, reloadTransaction]);
     const numPages = rows.type === 'loaded' && pageSize > 0 ? Math.ceil(rows.data.total / pageSize) : 0;
-    const accountBalances = useObservable(() => getAccountSummaries(), [reloadTransaction]);
+    const accountBalances = useObservable(() => listAccounts({}), [reloadTransaction]);
 
     const [transactionDialogState, setTransactionDialogState] = useState<TransactionDialogState>();
     const handleDialogClose = useCallback((reload: boolean) => {

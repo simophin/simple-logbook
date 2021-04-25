@@ -1,7 +1,9 @@
 import React, {useState} from 'react';
 import './App.css';
-import {AppBar, Container, Tab, Tabs} from "@material-ui/core";
+import {AppBar, Container, Fade, Tab, Tabs} from "@material-ui/core";
+import AccountsPage from "./page/AccountsPage";
 import TransactionPage from "./page/TransactionPage";
+import AccountGroupEntry from "./components/AccountGroupEntry";
 
 function App() {
     const [selectedTab, setSelectedTab] = useState(0);
@@ -10,13 +12,13 @@ function App() {
         <AppBar>
             <Tabs value={selectedTab} onChange={(e, nv) => setSelectedTab(nv)}>
                 <Tab label="Transactions"/>
-                <Tab label="Spending report"/>
-                <Tab label="Income report"/>
+                <Tab label="Accounts"/>
             </Tabs>
         </AppBar>
 
         <Container style={{marginTop: 80}}>
-            {selectedTab === 0 && <TransactionPage/>}
+            {selectedTab === 0 && <Fade in><TransactionPage/></Fade>}
+            {selectedTab === 1 && <Fade in><AccountsPage/></Fade>}
         </Container>
     </>;
 }
