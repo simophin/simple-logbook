@@ -14,7 +14,7 @@ import {
     TableHead,
     TableRow,
     TextField,
-    Typography
+    Typography, useMediaQuery
 } from "@material-ui/core";
 import {useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
@@ -30,6 +30,7 @@ import TransactionEntry from "../components/TransactionEntry";
 import AlertDialog from "../components/AlertDialog";
 import deleteTransaction from "../api/deleteTransaction";
 import listAccounts from "../api/listAccount";
+import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
 
 const tableHeadStyle: CSSProperties = {
     fontWeight: 'bold'
@@ -92,23 +93,25 @@ export default function Component() {
         }
     }, [pendingDeletion, reloadTransaction, setReloadTransaction]);
 
+    const isBig = useMediaQuery('(min-width: 840)');
+
     const dataTable = useMemo(() => {
         return <Fade in>
             <Table size="small" style={{width: '100%'}}>
                 <TableHead>
-                    <TableCell size="small" style={{...tableHeadStyle, width: '25%'}}>Comment</TableCell>
-                    <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>From</TableCell>
-                    <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>To</TableCell>
-                    <TableCell size="small" style={{...tableHeadStyle, width: '16%'}}>Amount</TableCell>
-                    <TableCell size="small" style={{...tableHeadStyle, width: '15%'}}>Date</TableCell>
+                    <TableCell size="small" style={{...tableHeadStyle}}>Comment</TableCell>
+                    {isBig && <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>From</TableCell>}
+                    {isBig && <TableCell size="small" style={{...tableHeadStyle, width: '22%'}}>To</TableCell>}
+                    <TableCell size="small" style={{...tableHeadStyle, width: 140}}>Amount</TableCell>
+                    <TableCell size="small" style={{...tableHeadStyle, width: 160}}>Date</TableCell>
                 </TableHead>
 
                 {rows.type === 'loaded' && <TableBody>
                     {rows.data.data.map((tx) =>
                         <TableRow>
                             <TableCell size="small">{tx.description}</TableCell>
-                            <TableCell size="small">{tx.fromAccount}</TableCell>
-                            <TableCell size="small">{tx.toAccount}</TableCell>
+                            {isBig && <TableCell size="small">{tx.fromAccount}</TableCell>}
+                            {isBig && <TableCell size="small">{tx.toAccount}</TableCell>}
                             <TableCell size="small">{currency(tx.amount).divide(100).format()}</TableCell>
                             <TableCell size="small" style={{paddingRight: 0}}>
                                 {new Date(tx.transDate).toLocaleDateString()}
@@ -137,12 +140,11 @@ export default function Component() {
                 }
             </Table>
         </Fade>;
-    }, [rows]);
+    }, [rows, isBig]);
 
-
-    return <Container maxWidth="md" style={{display: 'flex', flexWrap: 'wrap'}}>
+    return <Container maxWidth="md" style={flexContainer}>
         <TextField
-            style={{flexGrow: 1}}
+            style={flexItem}
             variant="outlined"
             InputLabelProps={{shrink: true}}
             value={from ? format(from, dateISOFormat) : ''}
@@ -154,7 +156,7 @@ export default function Component() {
         />
 
         <TextField
-            style={{marginLeft: 16, flexGrow: 1}}
+            style={flexItem}
             variant="outlined"
             InputLabelProps={{shrink: true}}
             value={to ? format(to, dateISOFormat) : ''}
@@ -165,22 +167,8 @@ export default function Component() {
             label="To"
         />
 
-        <Autocomplete
-            renderInput={(params) =>
-                <TextField variant="outlined" label="Page size" {...params} InputLabelProps={{
-                    shrink: true,
-                }}/>
-            }
-            style={{marginLeft: 16}}
-            value={pageSize}
-            options={availablePageSizes}
-            getOptionLabel={(p) => p.toString()}
-            onChange={(e, value) =>
-                setPageSize(value ?? availablePageSizes[0])}
-        />
-
         <Select
-            style={{marginTop: 16, width: '100%'}}
+            style={flexFullLineItem}
             variant="outlined"
             native
             value={selectedAccount}
@@ -194,11 +182,25 @@ export default function Component() {
         </Select>
 
         <TextField
-            style={{marginTop: 16, width: '100%'}}
+            style={flexFullLineItem}
             variant="outlined"
             InputLabelProps={{shrink: true}}
             label="Keyword"
             onChange={(e) => setSearchTerm(e.target.value.trim())}
+        />
+
+        <Autocomplete
+            renderInput={(params) =>
+                <TextField variant="outlined" label="Page size" {...params} InputLabelProps={{
+                    shrink: true,
+                }}/>
+            }
+            style={flexItem}
+            value={pageSize}
+            options={availablePageSizes}
+            getOptionLabel={(p) => p.toString()}
+            onChange={(e, value) =>
+                setPageSize(value ?? availablePageSizes[0])}
         />
 
         <Fab
@@ -210,11 +212,8 @@ export default function Component() {
         </Fab>
 
         <Paper style={{
-            marginTop: 16,
-            marginBottom: 16,
-            width: '100%',
-            display: 'flex',
-            flexWrap: 'wrap',
+            ...flexFullLineItem,
+            ...flexContainer,
             justifyContent: 'end',
             alignItems: 'center'
         }}
@@ -223,7 +222,7 @@ export default function Component() {
             {dataTable}
 
             {rows.type === 'loaded' && rows.data.total > 0 &&
-            <Typography variant="body2">
+            <Typography variant="body2" style={flexItem}>
                 {rows.data.total} record(s)
             </Typography>
             }

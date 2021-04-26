@@ -1,4 +1,4 @@
-import {Box, Container} from "@material-ui/core";
+import {Box, Container, useMediaQuery, useTheme} from "@material-ui/core";
 import {DataGrid, GridColumns} from "@material-ui/data-grid";
 import {useObservable} from "../hooks/useObservable";
 import listAccounts from "../api/listAccount";
@@ -7,20 +7,7 @@ import {useMemo, useState} from "react";
 import {AccountGroup} from "../models/AccountGroup";
 import _ from "lodash";
 import AccountGroupSelect from "../components/AccountGroupSelect";
-
-const accountColumns: GridColumns = [
-    {field: "name", headerName: "Name", flex: 25},
-    {
-        field: "balance", headerName: "Balance", flex: 10,
-        valueFormatter: (v) =>
-            currency(v.value as unknown as number).divide(100).format()
-    },
-    {
-        field: "lastTransDate", headerName: "Last activity", flex: 10,
-        valueFormatter: (v) =>
-            new Date(v.value as unknown as string).toLocaleDateString()
-    },
-];
+import {flexContainer, flexFullLineItem} from "../styles/common";
 
 
 export default function AccountsPage() {
@@ -40,13 +27,33 @@ export default function AccountsPage() {
         }
     }, [accounts, selectedAccountGroup]);
 
+    const isSmall = useMediaQuery('(max-width: 500px)');
 
-    return <Container maxWidth="md" style={{display: "flex", flexWrap: 'wrap'}}>
+    const accountColumns = useMemo(() => {
+        const values: GridColumns = [
+            {field: "name", headerName: "Name", flex: 1},
+            {
+                field: "balance", headerName: "Balance", width: 120,
+                valueFormatter: (v) =>
+                    currency(v.value as unknown as number).divide(100).format()
+            }];
+        if (!isSmall) {
+            values.push({
+                field: "lastTransDate", headerName: "Last activity", width: 140,
+                valueFormatter: (v) =>
+                    new Date(v.value as unknown as string).toLocaleDateString()
+            });
+        }
+        return values;
+    }, [isSmall]);
+
+
+    return <Container maxWidth="md" style={flexContainer}>
 
         <AccountGroupSelect onSelected={setSelectedAccountGroup}
                             persistedKey="accountPageSelectedGroup" />
 
-        <Box style={{width: '100%', height: 800, marginTop: 16}}>
+        <Box style={{...flexFullLineItem, height: 600}}>
             <DataGrid
                 loading={accounts.type === 'loading'}
                 error={accounts.type === 'error' ? accounts.error.message : undefined}

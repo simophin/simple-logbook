@@ -9,6 +9,7 @@ import _ from "lodash";
 import AccountGroupEntry from "./AccountGroupEntry";
 import AlertDialog from "./AlertDialog";
 import replaceAccountGroups from "../api/replaceAccountGroups";
+import {flexContainer, flexFullLineItem} from "../styles/common";
 
 type Props = {
     onSelected: (value: AccountGroup | undefined) => unknown,
@@ -93,7 +94,7 @@ export default function AccountGroupSelect({persistedKey, onSelected, selectedCo
         }
     }, []);
 
-    return <Box style={{display: "flex", flexWrap: 'wrap', width: '100%'}}>
+    return <Box style={{...flexContainer, width: '100%'}}>
         <Chip
             style={accountGroupButtonStyle}
             onClick={() => handleSelect()}
