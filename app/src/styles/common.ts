@@ -11,7 +11,7 @@ export const fullWidth = {
 } as CSSProperties;
 
 export const flexItem = {
-    margin: 8,
+    margin: 4,
 } as CSSProperties;
 
 export const flexFullLineItem = {

@@ -1,15 +1,15 @@
 import {Observable} from "rxjs";
 import {isLeft} from "fp-ts/Either";
 import {PathReporter} from "io-ts/PathReporter";
-import {Type} from "io-ts";
+import {Type, Any, default as t} from "io-ts";
 
-export function request<T>({
+export function request<IOType extends Any>({
                                url,
                                method,
                                ioType,
                                body
-                           }: { url: string, method: "get" | "post" | "delete" | "put", ioType: Type<T>, body?: object }): Observable<T> {
-    return new Observable<T>((sub) => {
+                           }: { url: string, method: "get" | "post" | "delete" | "put", ioType: IOType, body?: object }): Observable<t.TypeOf<IOType>> {
+    return new Observable((sub) => {
             const controller = new AbortController();
             (async () => {
                 try {

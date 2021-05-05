@@ -1,76 +1,65 @@
-import {Observable} from "rxjs";
-import React, {CSSProperties, useState} from "react";
-import {useDebounce} from "../hooks/useDebounce";
+import {Observable, of} from "rxjs";
 import {useObservable} from "../hooks/useObservable";
-import {Autocomplete} from "@material-ui/lab";
-import {TextField} from "@material-ui/core";
+import {Ref, useState} from "react";
+import {Either, left, right} from "fp-ts/Either";
+import Autosuggest from "react-autosuggest";
+import {useDebounce} from "../hooks/useDebounce";
+import {Form, FormControlProps} from "react-bootstrap";
 
-export type AutoCompleteFieldProps<SearchResult> = {
-    label: string,
-    fullWidth?: boolean,
+type Props<T> = Omit<Omit<FormControlProps, 'value'>, 'onChange'> & {
+    search: (term: string) => Observable<T[]>,
+    onChange: (value: Either<string, T>) => unknown,
+    getLabel: (v: T) => string,
+    value: string | undefined,
+    placeholder?: string,
+    ref?: Ref<HTMLInputElement>,
+    autofocus?: boolean,
+};
 
-    value?: string,
-    onValueChanged: (v: string) => void,
+export default function AutoCompleteField<T extends object>(
+    {search, onChange, getLabel, value, size, ref, ...formProps}: Props<T>) {
+    const [term, setTerm] = useState('');
+    const debouncedTerm = useDebounce(term, 500);
+    const rows = useObservable(
+        () => debouncedTerm.trim().length > 0 ? search(debouncedTerm) : of([]),
+        [debouncedTerm, search]
+    );
 
-    search: (term: string) => Observable<SearchResult[]>,
-    onSearchResultSelected?: (r: SearchResult) => void,
+    const theme = {
+        container: 'autosuggest',
+        input: 'form-control',
+        suggestionsContainer: 'dropdown',
+        suggestionsList: `dropdown-menu ${rows.type === 'loaded' && rows.data.length > 0 ? 'show' : ''}`,
+        suggestion: 'dropdown-item',
+        suggestionHighlighted: 'active'
+    };
 
-    getSearchResultLabel: (s: SearchResult) => string,
-
-    inputRef?: any,
-    autoFocus?: boolean,
-    style?: CSSProperties,
-}
-
-export function AutoCompleteField<SearchResult>({
-                                                    getSearchResultLabel,
-                                                    label,
-                                                    onSearchResultSelected,
-                                                    onValueChanged,
-                                                    search,
-                                                    value,
-                                                    inputRef,
-                                                    style,
-                                                    fullWidth = true,
-                                                    autoFocus = false
-                                                }: AutoCompleteFieldProps<SearchResult>) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 200);
-    const searchResults = useObservable(() => search(debouncedSearchTerm), [debouncedSearchTerm]);
-
-    return <Autocomplete
-        onInputChange={(event, value, reason) => {
-            if (reason !== 'reset') {
-                setSearchTerm(value);
-                onValueChanged(value);
+    return <Autosuggest
+        suggestions={rows.type === 'loaded' ? rows.data : []}
+        onSuggestionsFetchRequested={({value, reason}) => {
+            if (reason === 'input-changed') {
+                setTerm(value);
             }
         }}
-        onChange={((event, value) => {
-            if (value && typeof value === 'object' && value.type === 'search-result' && onSearchResultSelected) {
-                onSearchResultSelected(value.value);
+        onSuggestionSelected={(e, d) => {
+            onChange(right(d.suggestion));
+        }}
+        onSuggestionsClearRequested={() => setTerm('')}
+        getSuggestionValue={getLabel}
+        renderInputComponent={(p) =>
+            <Form.Control type='input' {...p}
+                          size={size} />}
+        theme={theme}
+        inputProps={
+            {
+                value: value ?? '',
+                onChange: (e) => {
+                    onChange(left((e.target as HTMLInputElement).value));
+                },
+                ref,
+                ...formProps
             }
-        })}
-        loading={searchResults.type === 'loading'}
-        onClose={() => setSearchTerm('')}
-        inputValue={value}
-        freeSolo={true}
-        style={style}
-        fullWidth={fullWidth}
-        autoComplete={true}
-        renderInput={(params) => (
-            <TextField autoFocus={autoFocus} {...params}
-                       variant="outlined"
-                       label={label} inputRef={inputRef} InputLabelProps={{
-                shrink: true,
-            }}/>
-        )}
-        options={searchResults.type === 'loaded' ? searchResults.data.map((value) => {
-            return {
-                type: 'search-result',
-                value,
-            };
-        }) : []}
-        getOptionLabel={(v) => getSearchResultLabel(v.value)}
-        getOptionSelected={(option, value) => option.value === value.value}
-    />;
+        }
+        renderSuggestion={(value) => <span>{getLabel(value)}</span>}
+    />
 }

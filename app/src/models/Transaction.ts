@@ -1,13 +1,16 @@
 import * as t from 'io-ts';
+import * as codec from 'io-ts-types';
+import {currency} from "../api/currencyCodec";
+import {localDate, zonedDateTime} from "../api/DateCodecs";
 
 export const TransactionType = t.type({
-    id: t.string,
-    description: t.string,
-    fromAccount: t.string,
-    toAccount: t.string,
-    amount: t.number,
-    transDate: t.string,
-    updatedDate: t.string,
+    id: codec.NonEmptyString,
+    description: codec.NonEmptyString,
+    fromAccount: codec.NonEmptyString,
+    toAccount: codec.NonEmptyString,
+    amount: currency,
+    transDate: localDate,
+    updatedDate: zonedDateTime,
 });
 
 export const TransactionArrayType = t.array(TransactionType);
