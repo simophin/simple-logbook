@@ -1,6 +1,6 @@
-import {DropdownButton, Nav, Navbar} from "react-bootstrap";
+import {DropdownButton, Nav, Navbar, NavDropdown} from "react-bootstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import {Route, Switch, useLocation} from 'react-router-dom';
 import {LinkContainer} from 'react-router-bootstrap';
 import TransactionListPage from "./pages/TransactionListPage";
 import 'react-bootstrap-typeahead/css/Typeahead.css';
@@ -11,25 +11,39 @@ import TransactionEntry from "./components/TransactionEntry";
 import {TransactionStateContext} from "./state/TransactionState";
 import {BehaviorSubject} from "rxjs";
 import {useMediaPredicate} from "react-media-hook";
+import SpendingReportPage from "./pages/SpendingReportPage";
+import qs from 'qs';
+import _ from "lodash";
 
 function App() {
     let [addingTransaction, setAddingTransaction] = useState(false);
     let transactionState = useMemo(() => new BehaviorSubject<unknown>(undefined), []);
 
     const bigScreen = useMediaPredicate('(min-width: 420px)');
+    const location = useLocation();
 
-    return <Router>
+    return <>
         <Navbar expand={bigScreen} collapseOnSelect>
             <Navbar.Brand>Logbook</Navbar.Brand>
-            <Navbar.Toggle />
+            <Navbar.Toggle/>
             <Navbar.Collapse>
                 <Nav>
                     <LinkContainer to='/'>
-                        <Nav.Link>Transactions</Nav.Link>
+                        <Nav.Link active={location.pathname === '/' || location.pathname === '/transactions'}>
+                            Transactions
+                        </Nav.Link>
                     </LinkContainer>
                     <LinkContainer to='/accounts'>
-                        <Nav.Link>Accounts</Nav.Link>
+                        <Nav.Link active={location.pathname === '/accounts'}>Accounts</Nav.Link>
                     </LinkContainer>
+                    <NavDropdown id="nav-dropdown" title='Reports'>
+                        <LinkContainer to='/reports/spending'>
+                            <NavDropdown.Item
+                                active={location.pathname === '/reports/spending'}>
+                                Spending
+                            </NavDropdown.Item>
+                        </LinkContainer>
+                    </NavDropdown>
                 </Nav>
 
             </Navbar.Collapse>
@@ -43,7 +57,23 @@ function App() {
 
         <TransactionStateContext.Provider value={transactionState}>
             <Switch>
+                <Route path="/reports/spending" exact><SpendingReportPage/></Route>
                 <Route path="/accounts"><AccountListPage/></Route>
+                <Route path="/transactions">
+                    {(props) => {
+                        const query = qs.parse(props.location.search.substr(1), {parseArrays: true});
+                        let accounts: string[] | undefined;
+                        if (typeof query.account === 'string') {
+                            accounts = [query.account];
+                        } else if (_.isArray(query.accounts)) {
+                            accounts = query.accounts as string[];
+                        }
+                        return <TransactionListPage
+                            accounts={accounts}
+                            showNewButton={!bigScreen}/>;
+                    }}
+
+                </Route>
                 <Route path="/"><TransactionListPage showNewButton={!bigScreen}/></Route>
             </Switch>
         </TransactionStateContext.Provider>
@@ -53,9 +83,9 @@ function App() {
                 transactionState.next(undefined);
                 setAddingTransaction(false);
             }}
-            onClose={() => setAddingTransaction(false)} />
+            onClose={() => setAddingTransaction(false)}/>
         }
-    </Router>
+    </>
 }
 
 export default App;

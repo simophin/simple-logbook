@@ -25,10 +25,10 @@ type Props = {
     showNewButton?: boolean
 };
 
-export default function TransactionListPage({showNewButton, accounts: initialAccounts = []}: Props) {
+export default function TransactionListPage({showNewButton, accounts: showAccounts = []}: Props) {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(20);
-    const [accounts, setAccounts] = useState<string[]>(initialAccounts);
+    const [accounts, setAccounts] = useState<string[]>(showAccounts);
     const [searchTerm, setSearchTerm] = useState('');
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
@@ -153,7 +153,7 @@ export default function TransactionListPage({showNewButton, accounts: initialAcc
                 </InputGroup.Prepend>
                 <AccountSelect
                     placeholder='Accounts'
-                    persistedKey='txlist-selected-accounts'
+                    selected={accounts}
                     onChange={setAccounts}/>
             </InputGroup>
         </span>

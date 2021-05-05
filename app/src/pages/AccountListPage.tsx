@@ -5,6 +5,7 @@ import {AccountGroup} from "../models/AccountGroup";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import listAccounts from "../api/listAccount";
 import {Table} from "react-bootstrap";
+import {Link} from 'react-router-dom';
 
 
 export default function AccountListPage() {
@@ -17,7 +18,7 @@ export default function AccountListPage() {
         return (getLoadedValue(allAccounts) ?? [])
             .map(({name, balance}) =>
                 <tr>
-                    <td>{name}</td>
+                    <td><Link to={`/transactions?account=${encodeURIComponent(name)}`}>{name}</Link></td>
                     <td>{balance.format()}</td>
                 </tr>
             );
