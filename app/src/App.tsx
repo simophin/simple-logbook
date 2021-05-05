@@ -10,14 +10,18 @@ import {useMemo, useState} from "react";
 import TransactionEntry from "./components/TransactionEntry";
 import {TransactionStateContext} from "./state/TransactionState";
 import {BehaviorSubject} from "rxjs";
+import {useMediaPredicate} from "react-media-hook";
 
 function App() {
     let [addingTransaction, setAddingTransaction] = useState(false);
     let transactionState = useMemo(() => new BehaviorSubject<unknown>(undefined), []);
 
+    const bigScreen = useMediaPredicate('(min-width: 420px)');
+
     return <Router>
-        <Navbar expand='md'>
+        <Navbar expand={bigScreen} collapseOnSelect>
             <Navbar.Brand>Logbook</Navbar.Brand>
+            <Navbar.Toggle />
             <Navbar.Collapse>
                 <Nav>
                     <LinkContainer to='/'>
@@ -27,18 +31,20 @@ function App() {
                         <Nav.Link>Accounts</Nav.Link>
                     </LinkContainer>
                 </Nav>
+
             </Navbar.Collapse>
-            <DropdownButton title='Add' size='sm' menuAlign='right'>
+
+            {bigScreen && <DropdownButton title='Add' size='sm' menuAlign='right'>
                 <DropdownItem onClick={() => setAddingTransaction(true)}>
                     Transaction
                 </DropdownItem>
-            </DropdownButton>
+            </DropdownButton>}
         </Navbar>
 
         <TransactionStateContext.Provider value={transactionState}>
             <Switch>
                 <Route path="/accounts"><AccountListPage/></Route>
-                <Route path="/"><TransactionListPage/></Route>
+                <Route path="/"><TransactionListPage showNewButton={!bigScreen}/></Route>
             </Switch>
         </TransactionStateContext.Provider>
 

@@ -5,7 +5,7 @@ import {useCallback, useContext, useMemo, useState} from "react";
 import {useMediaPredicate} from "react-media-hook";
 import Pagination from 'react-js-pagination';
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
-import {FoldUpIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
+import {FoldUpIcon, PencilIcon, PlusCircleIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
 import SortedArray from "../components/SortedArray";
 import {Transaction} from "../models/Transaction";
 import {EditState} from "../components/EditState";
@@ -20,7 +20,12 @@ import {debounceTime, switchMap} from "rxjs/operators";
 
 type TransactionId = Transaction['id'];
 
-export default function TransactionListPage({accounts: initialAccounts = []}: {accounts?: string[]}) {
+type Props = {
+    accounts?: string[],
+    showNewButton?: boolean
+};
+
+export default function TransactionListPage({showNewButton, accounts: initialAccounts = []}: Props) {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(20);
     const [accounts, setAccounts] = useState<string[]>(initialAccounts);
@@ -120,6 +125,14 @@ export default function TransactionListPage({accounts: initialAccounts = []}: {a
     const [editState, setEditState] = useState<EditState<Transaction>>();
 
     return <div style={flexContainer}>
+        {showNewButton &&
+        <Button size='sm'
+                onClick={() => setEditState({state: 'new'})}
+                style={flexFullLineItem}>
+            <PlusCircleIcon size={14} />&nbsp;New transaction
+        </Button>
+        }
+
         <span style={bigScreen ? {...flexItem, flex: 2} : flexFullLineItem}>
             <InputGroup size='sm'>
                 <InputGroup.Prepend>
@@ -146,7 +159,7 @@ export default function TransactionListPage({accounts: initialAccounts = []}: {a
         </span>
 
         <div style={flexFullLineItem}>
-            <Table bordered hover>
+            <Table bordered hover size='sm'>
                 <thead>
                 <tr>
                     <th>Comments</th>
@@ -191,9 +204,9 @@ export default function TransactionListPage({accounts: initialAccounts = []}: {a
             confirmInProgressText='Deleting'/>
         }
 
-        {editState?.state === 'edit' &&
+        {(editState?.state === 'edit' || editState?.state === 'new') &&
         <TransactionEntry
-            editing={editState.editing}
+            editing={editState?.state === 'edit' ? editState.editing : undefined}
             onFinish={() => {
                 setEditState(undefined);
                 reloadObservable.next(undefined);
