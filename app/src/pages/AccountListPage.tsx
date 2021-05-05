@@ -25,11 +25,12 @@ export default function AccountListPage() {
 
     return <div style={flexContainer}>
         <AccountGroupSelect
+            persistKey='account-list-group'
             style={{padding: 0}}
             onChange={setAccountGroup}/>
 
         <div style={flexFullLineItem}>
-            <Table hover striped>
+            <Table hover striped bordered>
                 <thead>
                 <tr>
                     <th>Account</th>

@@ -20,10 +20,10 @@ import {debounceTime, switchMap} from "rxjs/operators";
 
 type TransactionId = Transaction['id'];
 
-export default function TransactionListPage() {
+export default function TransactionListPage({accounts: initialAccounts = []}: {accounts?: string[]}) {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(20);
-    const [accounts, setAccounts] = useState<string[]>([]);
+    const [accounts, setAccounts] = useState<string[]>(initialAccounts);
     const [searchTerm, setSearchTerm] = useState('');
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
