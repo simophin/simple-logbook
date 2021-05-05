@@ -30,7 +30,7 @@ export default function AccountListPage() {
             onChange={setAccountGroup}/>
 
         <div style={flexFullLineItem}>
-            <Table hover striped bordered>
+            <Table hover striped bordered size='sm'>
                 <thead>
                 <tr>
                     <th>Account</th>
