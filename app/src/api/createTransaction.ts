@@ -9,7 +9,7 @@ export function createTransaction(tx: Transaction) {
         method: 'post',
         ioType: t.array(TransactionType),
         body: [
-            tx
+            TransactionType.encode(tx)
         ]
     });
 }

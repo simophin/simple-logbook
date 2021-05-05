@@ -2,8 +2,9 @@ import {useEffect, useState} from "react";
 import {Observable} from "rxjs";
 
 
-interface LoadingState {
+interface LoadingState<T> {
     type: 'loading';
+    previous?: T;
 }
 
 interface LoadedState<T> {
@@ -16,12 +17,23 @@ interface ErrorState {
     error: Error;
 }
 
-export type State<T> = LoadingState | LoadedState<T> | ErrorState;
+export type State<T> = LoadingState<T> | LoadedState<T> | ErrorState;
+
+export function getLoadedValue<T>(s: State<T>) {
+    switch (s.type) {
+        case 'loaded': return s.data;
+        case 'loading': return s.previous;
+    }
+    return undefined;
+}
 
 export function useObservable<T>(factory: () => Observable<T>, deps: any[]): State<T> {
     const [result, setResult] = useState<State<T>>({type: 'loading'});
     useEffect(() => {
-        setResult({type: 'loading'});
+        setResult({
+            type: 'loading',
+            previous: getLoadedValue(result)
+        });
         const subscription = factory().subscribe({
             next: (data) => setResult({
                 type: 'loaded',

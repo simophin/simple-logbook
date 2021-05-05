@@ -1,9 +1,11 @@
 import * as t from 'io-ts';
+import * as codec from 'io-ts-types';
+import {currency} from "../api/currencyCodec";
 
 export const AccountType = t.type({
-    name: t.string,
-    balance: t.number,
-    lastTransDate: t.string,
+    name: codec.NonEmptyString,
+    balance: currency,
+    lastTransDate: codec.DateFromISOString,
 });
 
 export const AccountArrayType = t.array(AccountType);

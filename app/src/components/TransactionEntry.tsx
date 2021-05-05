@@ -1,241 +1,229 @@
-import {
-    Button,
-    Container,
-    Dialog,
-    DialogTitle,
-    Paper,
-    Snackbar,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
-    TextField
-} from "@material-ui/core";
-import React, {CSSProperties, useCallback, useRef, useState} from "react";
 import {Transaction} from "../models/Transaction";
-import {v4 as uuid} from 'uuid';
 import {Account} from "../models/Account";
-import currency from 'currency.js';
-import {format} from 'date-fns';
-import {AutoCompleteField, AutoCompleteFieldProps} from "./AutoCompleteField";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {Button, Col, Form, InputGroup, Modal} from "react-bootstrap";
+import AutoCompleteField from "./AutoCompleteField";
 import {listTransaction} from "../api/listTransaction";
 import {map} from "rxjs/operators";
-import _ from 'lodash';
-import {of} from "rxjs";
-import {createTransaction} from "../api/createTransaction";
+import _ from "lodash";
+import {Either, isLeft} from "fp-ts/Either";
 import listAccounts from "../api/listAccount";
-
-const DescriptionField = (props: AutoCompleteFieldProps<Transaction>) => AutoCompleteField(props);
-const AccountField = (props: AutoCompleteFieldProps<string>) => AutoCompleteField(props);
+import {createTransaction} from "../api/createTransaction";
+import {v4 as uuid} from 'uuid';
+import currency from 'currency.js';
+import AlertDialog from "./AlertDialog";
+import {DateTimeFormatter, LocalDate, ZonedDateTime} from "@js-joda/core";
+import {NonEmptyString} from "io-ts-types";
 
 type Props = {
     editing?: Transaction,
-    onClose?: () => unknown,
-    onSaved?: () => unknown,
-}
+    onFinish: () => unknown,
+    onClose: () => unknown,
+};
 
-const fieldStyle: CSSProperties = {
-    marginTop: 16,
-    width: '100%',
-}
+const numericRegExp = new RegExp(/^\d*\.?\d{0,2}$/);
 
-function findTransactionsByDesc(searchTerm: string) {
-    searchTerm = searchTerm.trim();
-    if (searchTerm.length === 0) {
-        return of<Array<Transaction>>([]);
-    }
-
-    const filter = {q: searchTerm, limit: 20};
-    return listTransaction(filter).pipe(
-        map(({data}) => _.uniqBy(data, 'description')),
-    );
-}
-
-function findAccountsByName(searchTerm: string) {
-    searchTerm = searchTerm.trim();
-    if (searchTerm.length === 0) {
-        return of<Array<string>>([]);
-    }
-
-    return listAccounts({q: searchTerm})
-        .pipe(map((accounts) => accounts.map(({name}) => name)));
-}
-
-async function submitTransaction(tx: Transaction) {
-    await createTransaction(tx).toPromise();
-    return await listAccounts({includes: [tx.fromAccount, tx.toAccount]}).toPromise();
-}
-
-const dateFormat = 'yyyy-MM-dd';
-
-export default function TransactionEntry({editing, onClose, onSaved}: Props) {
-    const [id, setId] = useState(editing?.id ?? uuid());
+export default function TransactionEntry({editing, onFinish, onClose}: Props) {
+    const [id, setId] = useState(() => editing?.id ?? uuid());
     const [desc, setDesc] = useState(editing?.description ?? '');
     const [fromAccount, setFromAccount] = useState(editing?.fromAccount ?? '');
     const [toAccount, setToAccount] = useState(editing?.toAccount ?? '');
-    const [amount, setAmount] = useState(editing ? currency(editing.amount).divide(100).toString() : '');
-    const [transDate, setTransDate] = useState(editing ? editing.transDate : format(new Date(), dateFormat));
-    const amountRef = useRef<HTMLInputElement | null>(null);
-    const descRef = useRef<HTMLInputElement | null>(null);
+    const [amount, setAmount] = useState(editing?.amount.toString() ?? '');
+    const [date, setDate] = useState((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE));
 
-    const [isSubmitting, setSubmitting] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const descRef = useRef<HTMLDivElement>(null);
+    const amountRef = useRef<HTMLInputElement>(null);
 
-    const [accountBalances, setAccountBalances] = useState<Account[]>([]);
-    const [dialogOpen, setDialogOpen] = useState(true);
+    const isValid = desc.trim().length > 0 &&
+        fromAccount.trim().length > 0 &&
+        toAccount.trim().length > 0 &&
+        amount.length > 0 &&
+        date.trim().length > 0;
 
-    const handleSubmit = useCallback(async () => {
-        setSubmitting(true);
-
-        try {
-            setAccountBalances(await submitTransaction({
-                id, description: desc, fromAccount, toAccount,
-                transDate,
-                updatedDate: new Date().toISOString(),
-                amount: currency(amount).multiply(100).value,
-            }));
-
-            setId(uuid());
-            setDesc('');
-            setFromAccount('');
-            setToAccount('');
-            setAmount('');
-            descRef.current?.focus();
-
-            if (onSaved) {
-                onSaved();
-            }
-        } catch (e) {
-            console.error(e);
-            setSnackbarMessage(`Error submitting transaction: ${desc}`);
-        } finally {
-            setSubmitting(false);
-        }
-    }, [amount, desc, fromAccount, id, onSaved, toAccount, transDate]);
-
-    const handleDescResultSelected = useCallback((v: Transaction) => {
-        setDesc(v.description);
-        setFromAccount(v.fromAccount);
-        setToAccount(v.toAccount);
-        setAmount(currency(v.amount).divide(100).toString());
-
-        amountRef.current?.select();
-        amountRef.current?.focus();
+    const handleDescSearch = useCallback((q: string) => {
+        return listTransaction({q: q.trim(), limit: 30})
+            .pipe(map(({data}) =>
+                _.uniqBy(data, 'transaction')));
     }, []);
 
-    let balanceTable: React.ReactElement | undefined;
+    const handleAccountSearch = useCallback((q: string) => {
+        return listAccounts({q});
+    }, []);
 
-    if (accountBalances.length > 0) {
-        const balanceRows = accountBalances.map(({name, balance}) =>
-            <TableRow>
-                <TableCell>{name}</TableCell>
-                <TableCell>{currency(balance / 100).format()}</TableCell>
-            </TableRow>
-        );
-        balanceTable = <Paper variant="outlined" style={fieldStyle}>
-            <Table size="small">
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Account</TableCell>
-                        <TableCell>Balance</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {balanceRows}
-                </TableBody>
-            </Table>
-        </Paper>;
-    }
+    const handleDescChange = useCallback((v: Either<string, Transaction>) => {
+        if (isLeft(v)) {
+            setDesc(v.left);
+        } else {
+            setDesc(v.right.description);
+            setFromAccount(v.right.fromAccount);
+            setToAccount(v.right.toAccount);
+            setAmount(v.right.amount.toString());
+            setTimeout(() => {
+                amountRef.current?.focus();
+                amountRef.current?.select();
+            }, 100);
+        }
+    }, []);
 
-    return <Dialog open={dialogOpen} disableEscapeKeyDown={true}>
-        <Container style={{display: 'flex', flexWrap: 'wrap', paddingBottom: 32}} maxWidth="xs">
-            <DialogTitle>
-                {editing ? 'Edit transaction' : 'Create transaction'}
-            </DialogTitle>
-            <DescriptionField label="Description"
-                              search={findTransactionsByDesc}
-                              value={desc}
-                              style={fieldStyle}
-                              inputRef={descRef}
-                              autoFocus={editing == null}
-                              getSearchResultLabel={(v) => v.description}
-                              onSearchResultSelected={handleDescResultSelected}
-                              onValueChanged={(v) => {
-                                  console.log("Value changed to", v);
-                                  setDesc(v);
-                              }}/>
+    const handleFromAccountChange = useCallback((v: Either<string, Account>) => {
+        setFromAccount(isLeft(v) ? v.left : v.right.name);
+    }, []);
 
-            <AccountField label="From account"
-                          search={findAccountsByName}
-                          style={fieldStyle}
-                          getSearchResultLabel={(v) => v}
-                          value={fromAccount}
-                          fullWidth={false}
-                          onSearchResultSelected={setFromAccount}
-                          onValueChanged={setFromAccount}/>
+    const handleToAccountChange = useCallback((v: Either<string, Account>) => {
+        setToAccount(isLeft(v) ? v.left : v.right.name);
+    }, []);
 
-            <AccountField label="To account"
-                          search={findAccountsByName}
-                          style={fieldStyle}
-                          getSearchResultLabel={(v) => v}
-                          value={toAccount}
-                          fullWidth={false}
-                          onSearchResultSelected={setToAccount}
-                          onValueChanged={setToAccount}/>
+    const [isSaving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | undefined>();
 
-            <TextField label="Date" fullWidth={true}
-                       value={transDate}
-                       type="date"
-                       style={fieldStyle}
-                       variant="outlined"
-                       InputLabelProps={{
-                           shrink: true,
-                       }}
-                       onChange={(e) => setTransDate(e.target.value)}
-            />
+    const [showingAccountIDs, setShowingAccountIDs] = useState<string[]>([]);
+    const [showingAccounts, setShowingAccounts] = useState<Account[]>([]);
 
-            <TextField label="Amount" fullWidth={true}
-                       value={amount}
-                       type="number"
-                       style={fieldStyle}
-                       variant="outlined"
-                       inputRef={amountRef}
-                       InputLabelProps={{
-                           shrink: true,
-                       }}
-                       onChange={(e) => {
-                           setAmount(e.target.value);
-                       }}
-            />
+    useEffect(() => {
+        const sub = listAccounts({includes: showingAccountIDs})
+            .subscribe((v) => setShowingAccounts(v),
+                () => setShowingAccounts([]));
+        return () => sub.unsubscribe();
+    }, [showingAccountIDs]);
 
-            <Button color="primary"
-                    onClick={handleSubmit}
-                    style={fieldStyle}
-                    variant="contained"
-                    disabled={
-                        desc.trim().length === 0 ||
-                        fromAccount.trim().length === 0 ||
-                        toAccount.trim().length === 0 ||
-                        amount.trim().length === 0 ||
-                        transDate.trim().length === 0 ||
-                        isSubmitting
+    const handleSave = () => {
+        setSaving(true);
+
+        createTransaction({
+            id: id as NonEmptyString,
+            fromAccount: fromAccount as NonEmptyString,
+            toAccount: toAccount as NonEmptyString,
+            transDate: LocalDate.parse(date),
+            amount: currency(amount),
+            description: desc as NonEmptyString,
+            updatedDate: ZonedDateTime.now(),
+        }).subscribe(
+            () => {
+                setSaving(false);
+                onFinish();
+                setShowingAccountIDs([fromAccount, toAccount]);
+
+                if (!editing) {
+                    setId(uuid());
+                    setFromAccount('');
+                    setToAccount('');
+                    setAmount('');
+                    setDesc('');
+                    setTimeout(() =>
+                            _.get(descRef.current?.getElementsByTagName('input'), 0)?.focus(),
+                        100);
+                }
+            },
+            (e: Error) => {
+                setSaveError(e?.message ?? 'Unknown error');
+                setSaving(false);
+            },
+        )
+    };
+
+    return <>
+        <Modal show onHide={onClose}>
+            <Modal.Header>
+                {editing ? 'Edit transaction' : 'New transaction'}
+            </Modal.Header>
+            <Modal.Body>
+                <Form>
+                    <Form.Group>
+                        <Form.Label>Description</Form.Label>
+                        <div ref={descRef}>
+                            <AutoCompleteField
+                                size='sm'
+                                search={handleDescSearch}
+                                onChange={handleDescChange}
+                                getLabel={({description}) => description}
+                                value={desc}/>
+                        </div>
+                    </Form.Group>
+
+                    <Form.Group>
+                        <Form.Label>From</Form.Label>
+                        <AutoCompleteField
+                            size='sm'
+                            search={handleAccountSearch}
+                            onChange={handleFromAccountChange}
+                            getLabel={({name}) => name}
+                            value={fromAccount}/>
+                    </Form.Group>
+
+                    <Form.Group>
+                        <Form.Label>To</Form.Label>
+                        <AutoCompleteField
+                            size='sm'
+                            search={handleAccountSearch}
+                            onChange={handleToAccountChange}
+                            getLabel={({name}) => name}
+                            value={toAccount}/>
+                    </Form.Group>
+
+                    <Form.Row>
+                        <Col>
+                            <Form.Group>
+                                <Form.Label>Amount</Form.Label>
+                                <InputGroup size='sm'>
+                                    <InputGroup.Prepend>
+                                        <InputGroup.Text>$</InputGroup.Text>
+                                    </InputGroup.Prepend>
+                                    <Form.Control
+                                        ref={amountRef}
+                                        value={amount}
+                                        onChange={(e) => {
+                                            if (numericRegExp.test(e.target.value)) {
+                                                setAmount(e.target.value);
+                                            }
+                                        }}
+                                        type='numeric'/>
+                                </InputGroup>
+                            </Form.Group>
+                        </Col>
+
+                        <Col>
+                            <Form.Group>
+                                <Form.Label>Date</Form.Label>
+                                <Form.Control
+                                    size='sm'
+                                    value={date}
+                                    onChange={(e) => {
+                                        setDate(e.target.value);
+                                    }}
+                                    type='date'/>
+                            </Form.Group>
+                        </Col>
+                    </Form.Row>
+
+                    {showingAccounts.length > 0 &&
+                    <Form.Group>
+                        <Form.Label>Account summary</Form.Label>
+                        <Form.Text>
+                            {showingAccounts.map((v) =>
+                                <div><strong>{v.name}: </strong>{v.balance.format()}</div>
+                            )}
+                        </Form.Text>
+                    </Form.Group>
                     }
-            >{isSubmitting ? "Submitting" : "Submit"}</Button>
+                </Form>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant='link'
+                        tabIndex={-1}
+                        disabled={isSaving}
+                        onClick={onClose}>Close</Button>
 
-            <Button color="secondary"
-                    variant="outlined"
-                    style={fieldStyle}
-                    onClick={() => onClose ? onClose() : setDialogOpen(false)}>
-                Close
-            </Button>
+                <Button disabled={!isValid || isSaving}
+                        onClick={handleSave}>{isSaving ? 'Saving' : 'Save'}</Button>
+            </Modal.Footer>
+        </Modal>
 
-            {balanceTable}
-
-            <Snackbar open={snackbarMessage.length > 0}
-                      autoHideDuration={5000}
-                      onClose={() => setSnackbarMessage('')}
-                      message={snackbarMessage}/>
-        </Container>
-    </Dialog>
+        {
+            saveError && <AlertDialog
+                cancelText=''
+                onOk={() => setSaveError(undefined)}
+                onCancel={() => setSaveError(undefined)}
+                body={`Error saving transaction: ${saveError}`}/>
+        }
+    </>
 }

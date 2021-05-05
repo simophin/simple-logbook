@@ -1,166 +1,121 @@
 import {AccountGroup} from "../models/AccountGroup";
-import {Box, Chip, Container, Dialog, DialogContent, DialogTitle, PropTypes} from "@material-ui/core";
-import {Add, Edit} from "@material-ui/icons";
-import {CSSProperties, useCallback, useMemo, useState} from "react";
+import {Button, Dropdown, SplitButton} from "react-bootstrap";
+import {CSSProperties, useEffect, useMemo, useState} from "react";
 import {useObservable} from "../hooks/useObservable";
 import listAccountGroups from "../api/listAccountGroup";
 import {map} from "rxjs/operators";
 import _ from "lodash";
-import AccountGroupEntry from "./AccountGroupEntry";
-import AlertDialog from "./AlertDialog";
+import {flexContainer, flexItem} from "../styles/common";
 import replaceAccountGroups from "../api/replaceAccountGroups";
-import {flexContainer, flexFullLineItem} from "../styles/common";
+import {PlusIcon} from "@primer/octicons-react";
+import {EditState} from "./EditState";
+import AsyncConfirm from "./AsyncConfirm";
+import AccountGroupEntry from "./AccountGroupEntry";
 
 type Props = {
-    onSelected: (value: AccountGroup | undefined) => unknown,
-    selectedColor?: Exclude<PropTypes.Color, 'inherit'>,
-    persistedKey?: string,
-}
+    onChange: (a: AccountGroup | undefined) => unknown,
+    persistKey?: string,
+    style?: CSSProperties,
+};
 
-const accountGroupButtonStyle: CSSProperties = {
-    marginRight: 8,
-    marginTop: 8
-}
-
-function sortAccountGroupAccounts(accountGroups: AccountGroup[]) {
-    return accountGroups.map(({accounts, groupName}) => {
-        return {
-            groupName,
-            accounts: _.sortBy(accounts),
-        }
+export default function AccountGroupSelect({onChange, persistKey, style}: Props) {
+    const [selectedName, setSelectedName] = useState(() => {
+        return persistKey ? (localStorage.getItem(persistKey) ?? '') : '';
     });
-}
+    const [reloadSeq, setReloadSeq] = useState(0);
 
-interface NewGroupState {
-    state: 'new',
-}
+    const [editState, setEditState] = useState<EditState<AccountGroup>>();
 
-interface EditGroupState {
-    state: 'edit',
-    value: AccountGroup,
-}
+    const groups = useObservable(() => listAccountGroups()
+        .pipe(
+            map((groups) =>
+                _.sortBy(groups, 'groupName'))
+        ), [reloadSeq]);
 
-interface DeleteGroupState {
-    state: 'delete',
-    groupName: string,
-}
-
-type ModifyGroupState = NewGroupState | EditGroupState | DeleteGroupState | undefined;
-
-export default function AccountGroupSelect({persistedKey, onSelected, selectedColor = 'primary'}: Props) {
-    const [reloadCounter, setReloadCounter] = useState(0);
-    const accountGroups = useObservable(() =>
-        listAccountGroups().pipe(map(sortAccountGroupAccounts)), [reloadCounter]);
-
-    const [selectedName, setSelectedAccountGroup] = useState<string | undefined>(() => {
-        return persistedKey ? (localStorage.getItem(persistedKey) ?? undefined) : undefined;
-    });
-
-    const [lastNotifiedGroup, setLastNotifiedGroup] = useState<AccountGroup | undefined>();
-
-    const selected = useMemo(() => {
-        return accountGroups.type === 'loaded'
-            ? _.find(accountGroups.data, ({groupName}) => groupName === selectedName)
-            : undefined;
-    }, [accountGroups, selectedName]);
-
-    if (lastNotifiedGroup !== selected) {
-        onSelected(selected);
-        setLastNotifiedGroup(selected);
-        if (selected && persistedKey) {
-            localStorage.setItem(persistedKey, selected.groupName);
-        } else if (persistedKey) {
-            localStorage.removeItem(persistedKey);
-        }
-    }
-
-    const handleSelect = useCallback((group?: AccountGroup) => {
-        setSelectedAccountGroup(group?.groupName);
-    }, []);
-
-    const [modifyState, setModifyState] = useState<ModifyGroupState>();
-
-    const [pendingError, setPendingError] = useState('');
-
-    const handleDeleteConfirm = useCallback(async (name: string) => {
-        try {
-            await replaceAccountGroups([{
-                groupName: name,
-                accounts: [],
-            }]).toPromise();
-            setReloadCounter(reloadCounter + 1);
-        } catch (e) {
-            setPendingError(`Error deleting account group: ${e?.message ?? 'Unknown error'}`);
-        }
-    }, []);
-
-    return <Box style={{...flexContainer, width: '100%'}}>
-        <Chip
-            style={accountGroupButtonStyle}
-            onClick={() => handleSelect()}
-            label="All account groups"
-            color={selectedName ? undefined : selectedColor}/>
-
-        {
-            accountGroups.type === 'loaded' && accountGroups.data.map((g) =>
-                <Chip
-                    label={g.groupName}
-                    style={accountGroupButtonStyle}
-                    onClick={() => handleSelect(g)}
-                    onDelete={() => setModifyState({state: 'delete', groupName: g.groupName})}
-                    color={selectedName === g.groupName ? selectedColor : 'default'}/>)
+    const selectedGroup = useMemo(() => {
+        if (groups.type !== 'loaded') {
+            return undefined;
         }
 
-        <Chip style={accountGroupButtonStyle}
-              label="New group"
-              onClick={() => setModifyState({state: 'new'})}
-              icon={<Add/>}/>
-
-        {selected &&
-        <Chip style={accountGroupButtonStyle}
-              label={`Edit "${selected.groupName}"`}
-              onClick={() => setModifyState({state: 'edit', value: selected})}
-        />
+        const index = _.sortedIndexOf(groups.data.map(g => g.groupName), selectedName);
+        if (index >= 0) {
+            return groups.data[index];
         }
 
-        {(modifyState?.state === 'new' || modifyState?.state === 'edit') &&
-        <Dialog
-            open
-            onClose={() => setModifyState(undefined)}
-            disableEscapeKeyDown={true}
-            fullScreen={true}
-            aria-labelledby="ag-modify-dialog-title"
-        >
-            <DialogTitle id="ag-modify-dialog-title">
-                {modifyState.state === 'new' && 'New account group'}
-                {modifyState.state === 'edit' && `Edit account group "${modifyState.value.groupName}"`}
-            </DialogTitle>
-            <DialogContent>
-                <Container>
-                    <AccountGroupEntry
-                        editing={modifyState.state === 'edit' ? modifyState.value : undefined}
-                        onSubmit={() => {
-                            setModifyState(undefined);
-                            setReloadCounter(reloadCounter + 1);
-                        }}
-                        onClose={() => setModifyState(undefined)}/>
-                </Container>
-            </DialogContent>
-        </Dialog>}
+        return undefined;
+    }, [selectedName, groups]);
 
+    useEffect(() => {
+        onChange(selectedGroup);
 
-        {modifyState?.state === 'delete' &&
-        <AlertDialog
-            title={`Delete "${modifyState.groupName}"?`}
-            positiveButton="Delete"
-            negativeButton="Cancel"
-            body="This only deletes the grouping of accounts. None of the transaction will be deleted."
-            onNegativeClicked={() => setModifyState(undefined)}
-            onPositiveClicked={() => {
-                handleDeleteConfirm(modifyState.groupName);
-                setReloadCounter(reloadCounter + 1);
-                setModifyState(undefined);
-            }}/>
+        if (persistKey && selectedGroup) {
+            localStorage.setItem(persistKey, selectedGroup.groupName);
+        } else if (persistKey) {
+            localStorage.removeItem(persistKey);
         }
-    </Box>
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedGroup]);
+
+
+    const children = (groups.type === 'loaded' ? groups.data : [])
+        .map((ag) =>
+            <SplitButton id={ag.groupName}
+                         title={ag.groupName}
+                         size='sm'
+                         style={flexItem}
+                         onClick={() => setSelectedName(ag.groupName)}
+                         variant={ag.groupName === selectedGroup?.groupName ? 'primary' : 'light'}>
+                <Dropdown.Item onClick={() =>
+                    setEditState({state: 'edit', editing: ag})}>
+                    Edit
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => setEditState({state: 'delete', deleting: ag})}>
+                    Delete
+                </Dropdown.Item>
+            </SplitButton>
+        );
+
+    return <div style={{...flexContainer, ...style}}>
+        <Button id='all'
+                style={flexItem}
+                title='All accounts'
+                onClick={() => setSelectedName('')}
+                variant={selectedGroup ? 'light' : 'primary'}
+                size='sm'>
+            All accounts
+        </Button>
+        {children}
+        <Button id='new'
+                style={flexItem}
+                title='New'
+                variant='link'
+                onClick={() => setEditState({state: 'new'})}
+                size='sm'>
+            <PlusIcon size='small'/>&nbsp;New group
+        </Button>
+
+        {editState?.state === 'delete' &&
+        <AsyncConfirm
+            body={`Are you sure to delete "${editState.deleting.groupName}"?`}
+            doConfirm={() => replaceAccountGroups([{...editState.deleting, accounts: []}])}
+            onCancel={() => setEditState(undefined)}
+            onConfirmed={() => {
+                setEditState(undefined);
+                setReloadSeq(reloadSeq + 1);
+            }}
+            okText='Delete'
+            okVariant='danger'
+            confirmInProgressText='Deleting'/>
+        }
+
+        {(editState?.state === 'edit' || editState?.state === 'new') &&
+        <AccountGroupEntry onClose={() => setEditState(undefined)}
+                           onFinish={() => {
+                               setEditState(undefined);
+                               setReloadSeq(reloadSeq + 1);
+                           }}
+                           editing={editState.state === 'edit' ? editState.editing : undefined}/>
+        }
+    </div>;
 }
