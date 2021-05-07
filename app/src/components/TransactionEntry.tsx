@@ -43,7 +43,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const handleDescSearch = useCallback((q: string) => {
         return listTransaction({q: q.trim(), limit: 30})
             .pipe(map(({data}) =>
-                _.uniqBy(data, 'transaction')));
+                _.uniqBy(data, 'description')));
     }, []);
 
     const handleAccountSearch = useCallback((q: string) => {
