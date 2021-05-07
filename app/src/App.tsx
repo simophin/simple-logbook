@@ -81,9 +81,10 @@ function App() {
         {addingTransaction && <TransactionEntry
             onFinish={() => {
                 transactionState.next(undefined);
-                setAddingTransaction(false);
             }}
-            onClose={() => setAddingTransaction(false)}/>
+            onClose={() => {
+                setAddingTransaction(false);
+            }}/>
         }
     </>
 }
