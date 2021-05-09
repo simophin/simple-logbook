@@ -6,9 +6,9 @@ import {useMediaPredicate} from "react-media-hook";
 import Pagination from 'react-js-pagination';
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
 import {FoldUpIcon, PencilIcon, PlusCircleIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
-import SortedArray from "../components/SortedArray";
+import SortedArray from "../utils/SortedArray";
 import {Transaction} from "../models/Transaction";
-import {EditState} from "../components/EditState";
+import {EditState} from "../utils/EditState";
 import AsyncConfirm from "../components/AsyncConfirm";
 import deleteTransaction from "../api/deleteTransaction";
 import TransactionEntry from "../components/TransactionEntry";
@@ -53,7 +53,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
         setPage(numPages - 1);
     }
 
-    const [selected, setSelected] = useState(SortedArray.empty<TransactionId>());
+    const [selected, setSelected] = useState(new SortedArray<TransactionId>([]));
     const bigScreen = useMediaPredicate('(min-width: 800px)');
 
     const toggleExpanded = useCallback((id: TransactionId) => {

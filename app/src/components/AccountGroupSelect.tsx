@@ -8,7 +8,7 @@ import _ from "lodash";
 import {flexContainer, flexItem} from "../styles/common";
 import replaceAccountGroups from "../api/replaceAccountGroups";
 import {PlusIcon} from "@primer/octicons-react";
-import {EditState} from "./EditState";
+import {EditState} from "../utils/EditState";
 import AsyncConfirm from "./AsyncConfirm";
 import AccountGroupEntry from "./AccountGroupEntry";
 

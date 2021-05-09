@@ -126,6 +126,25 @@ async fn main() {
             )?))
         });
 
+    // reports
+    app.at("/api/reports/sum")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::report::sum::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &query(&req.state(), input).await?,
+            )?))
+        });
+
+    app.at("/api/reports/balance")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::report::balance::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &query(&req.state(), input).await?,
+            )?))
+        });
+
     app.at("/public/*").get(serve_static_assert);
     app.at("/").get(serve_static_assert);
 
