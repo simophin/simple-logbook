@@ -71,7 +71,7 @@ export default function MultipleSeriesEdit({persistKey, onChange, containerProps
 
     const edits = useMemo(() => seriesConfigs.map(
         (c) =>
-            <div {...containerProps}><SeriesEdit value={c}
+            <div {...containerProps} key={`series-edit-${c.id}`}><SeriesEdit value={c}
                              removable={seriesConfigs.length > 1}
                              removeSeries={handleRemoveSeries}
                              addSeries={handleAddSeries}

@@ -14,6 +14,8 @@ import currency from 'currency.js';
 import AlertDialog from "./AlertDialog";
 import {DateTimeFormatter, LocalDate, ZonedDateTime} from "@js-joda/core";
 import {NonEmptyString} from "io-ts-types";
+import useAuthProps from "../hooks/useAuthProps";
+import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
 
 type Props = {
     editing?: Transaction,
@@ -41,13 +43,13 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
         date.trim().length > 0;
 
     const handleDescSearch = useCallback((q: string) => {
-        return listTransaction({q: q.trim(), limit: 30})
+        return listTransaction({filter: {q: q.trim(), limit: 30}})
             .pipe(map(({data}) =>
                 _.uniqBy(data, 'description')));
     }, []);
 
     const handleAccountSearch = useCallback((q: string) => {
-        return listAccounts({q});
+        return listAccounts({filter: {q}});
     }, []);
 
     const handleDescChange = useCallback((v: Either<string, Transaction>) => {
@@ -80,23 +82,29 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [showingAccounts, setShowingAccounts] = useState<Account[]>([]);
 
     useEffect(() => {
-        const sub = listAccounts({includes: showingAccountIDs})
+        const sub = listAccounts({filter: {includes: showingAccountIDs}})
             .subscribe((v) => setShowingAccounts(v),
                 () => setShowingAccounts([]));
         return () => sub.unsubscribe();
     }, [showingAccountIDs]);
 
+    const authProps = useAuthProps();
+    const errorReporter = useAuthErrorReporter();
+
     const handleSave = () => {
         setSaving(true);
 
         createTransaction({
-            id: id as NonEmptyString,
-            fromAccount: fromAccount as NonEmptyString,
-            toAccount: toAccount as NonEmptyString,
-            transDate: LocalDate.parse(date),
-            amount: currency(amount),
-            description: desc as NonEmptyString,
-            updatedDate: ZonedDateTime.now(),
+            tx: {
+                id: id as NonEmptyString,
+                fromAccount: fromAccount as NonEmptyString,
+                toAccount: toAccount as NonEmptyString,
+                transDate: LocalDate.parse(date),
+                amount: currency(amount),
+                description: desc as NonEmptyString,
+                updatedDate: ZonedDateTime.now(),
+            },
+            ...authProps
         }).subscribe(
             () => {
                 setSaving(false);
@@ -117,6 +125,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
             (e: Error) => {
                 setSaveError(e?.message ?? 'Unknown error');
                 setSaving(false);
+                errorReporter(e);
             },
         )
     };

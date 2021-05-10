@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import {TransactionArrayType} from "../models/Transaction";
-import {request} from "./common";
+import {ExtraRequestProps, request} from "./common";
 import config from "../config";
 
 
@@ -20,11 +20,12 @@ const ListResultType = t.type({
     data: TransactionArrayType,
 });
 
-export function listTransaction(filter: Filter) {
+export function listTransaction({filter, ...extraProps}: { filter: Filter } & ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/transactions/list`,
         method: 'post',
         ioType: ListResultType,
         body: filter,
+        ...extraProps,
     })
 }

@@ -11,6 +11,8 @@ import {PlusIcon} from "@primer/octicons-react";
 import {EditState} from "../utils/EditState";
 import AsyncConfirm from "./AsyncConfirm";
 import AccountGroupEntry from "./AccountGroupEntry";
+import useAuthProps from "../hooks/useAuthProps";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
 
 type Props = {
     onChange: (a: AccountGroup | undefined) => unknown,
@@ -26,11 +28,14 @@ export default function AccountGroupSelect({onChange, persistKey, style}: Props)
 
     const [editState, setEditState] = useState<EditState<AccountGroup>>();
 
-    const groups = useObservable(() => listAccountGroups()
+    const authProps = useAuthProps();
+    const groups = useObservable(() => listAccountGroups(authProps)
         .pipe(
             map((groups) =>
                 _.sortBy(groups, 'groupName'))
-        ), [reloadSeq]);
+        ), [reloadSeq, authProps]);
+
+    useObservableErrorReport(groups);
 
     const selectedGroup = useMemo(() => {
         if (groups.type !== 'loaded') {
@@ -98,7 +103,7 @@ export default function AccountGroupSelect({onChange, persistKey, style}: Props)
         {editState?.state === 'delete' &&
         <AsyncConfirm
             body={`Are you sure to delete "${editState.deleting.groupName}"?`}
-            doConfirm={() => replaceAccountGroups([{...editState.deleting, accounts: []}])}
+            doConfirm={() => replaceAccountGroups({data: [{...editState.deleting, accounts: []}]})}
             onCancel={() => setEditState(undefined)}
             onConfirmed={() => {
                 setEditState(undefined);

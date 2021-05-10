@@ -13,7 +13,7 @@ type Props<T> = Omit<Omit<FormControlProps, 'value'>, 'onChange'> & {
     value: string | undefined,
     placeholder?: string,
     ref?: Ref<HTMLInputElement>,
-    autofocus?: boolean,
+    autoFocus?: boolean,
 };
 
 export default function AutoCompleteField<T extends object>(

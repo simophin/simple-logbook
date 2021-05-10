@@ -1,14 +1,26 @@
 import {Observable} from "rxjs";
 import {isLeft} from "fp-ts/Either";
 import {PathReporter} from "io-ts/PathReporter";
-import {Type, Any, default as t} from "io-ts";
+import {Any, default as t} from "io-ts";
+
+export type ExtraRequestProps = {
+    headers?: object,
+}
+
+type RequestProps<IOType extends Any> = {
+    url: string,
+    method: "get" | "post" | "delete" | "put",
+    ioType: IOType,
+    body?: object,
+} & ExtraRequestProps;
 
 export function request<IOType extends Any>({
-                               url,
-                               method,
-                               ioType,
-                               body
-                           }: { url: string, method: "get" | "post" | "delete" | "put", ioType: IOType, body?: object }): Observable<t.TypeOf<IOType>> {
+                                                url,
+                                                method,
+                                                ioType,
+                                                body,
+                                                headers = {},
+                                            }: RequestProps<IOType>): Observable<t.TypeOf<IOType>> {
     return new Observable((sub) => {
             const controller = new AbortController();
             (async () => {
@@ -17,6 +29,7 @@ export function request<IOType extends Any>({
                         method,
                         headers: {
                             "Content-Type": "application/json",
+                            ...headers,
                         },
                         signal: controller.signal,
                         redirect: 'follow',
@@ -35,7 +48,9 @@ export function request<IOType extends Any>({
                         sub.error({name: 'http_error', code: res.status, message: res.statusText} as Error);
                     }
                 } catch (e) {
-                    sub.error({name: 'unknown_error', ...e} as Error);
+                    if (!controller.signal.aborted) {
+                        sub.error({name: 'unknown_error', message: 'unknown', cause: e} as Error);
+                    }
                 }
             })();
 

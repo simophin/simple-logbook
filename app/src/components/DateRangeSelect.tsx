@@ -1,7 +1,6 @@
-import {Button, ButtonGroup, Dropdown, DropdownButton, Form, FormControl, SplitButton} from "react-bootstrap";
+import {Button, ButtonGroup} from "react-bootstrap";
 import {LocalDate} from "@js-joda/core";
 import {useEffect, useMemo, useState} from "react";
-import _ from "lodash";
 
 export type DateRange = {
     start?: LocalDate;
@@ -102,6 +101,7 @@ export default function DateRangeSelect({onChange, persistKey}: Props) {
     const predefinedButtons = useMemo(() => {
         return predefinedRanges.map((r) =>
             <Button variant={selected === r ? 'primary' : 'outline-primary'}
+                    key={`predefined-${r.label}`}
                     onClick={() => setSelected(r)}>
                 {r.label}
             </Button>)
