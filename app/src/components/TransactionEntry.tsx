@@ -85,13 +85,11 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [showingAccounts, setShowingAccounts] = useState<Account[]>([]);
 
     useEffect(() => {
-        const sub = listAccounts({filter: {includes: showingAccountIDs}})
+        const sub = listAccounts({filter: {includes: showingAccountIDs}, ...authProps})
             .subscribe((v) => setShowingAccounts(v),
                 () => setShowingAccounts([]));
         return () => sub.unsubscribe();
-    }, [showingAccountIDs]);
-
-
+    }, [authProps, showingAccountIDs]);
 
     const handleSave = () => {
         setSaving(true);
