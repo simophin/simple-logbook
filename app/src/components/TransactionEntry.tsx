@@ -42,15 +42,18 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
         amount.length > 0 &&
         date.trim().length > 0;
 
+    const authProps = useAuthProps();
+    const errorReporter = useAuthErrorReporter();
+
     const handleDescSearch = useCallback((q: string) => {
-        return listTransaction({filter: {q: q.trim(), limit: 30}})
+        return listTransaction({filter: {q: q.trim(), limit: 30}, ...authProps})
             .pipe(map(({data}) =>
                 _.uniqBy(data, 'description')));
-    }, []);
+    }, [authProps]);
 
     const handleAccountSearch = useCallback((q: string) => {
-        return listAccounts({filter: {q}});
-    }, []);
+        return listAccounts({filter: {q}, ...authProps});
+    }, [authProps]);
 
     const handleDescChange = useCallback((v: Either<string, Transaction>) => {
         if (isLeft(v)) {
@@ -88,8 +91,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
         return () => sub.unsubscribe();
     }, [showingAccountIDs]);
 
-    const authProps = useAuthProps();
-    const errorReporter = useAuthErrorReporter();
+
 
     const handleSave = () => {
         setSaving(true);
