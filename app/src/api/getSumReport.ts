@@ -1,8 +1,9 @@
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
 import {currency} from "./currencyCodec";
-import {request} from "./common";
+import {ExtraRequestProps, request} from "./common";
 import config from "../config";
+import {Frequency} from "../models/frequency";
 
 const DataPoint = t.type({
     total: currency,
@@ -10,8 +11,6 @@ const DataPoint = t.type({
 });
 
 const Response = t.array(DataPoint);
-
-export type Frequency = 'Monthly' | 'Weekly' | 'Daily' | 'Yearly';
 
 export type Filter = {
     from?: string,
@@ -22,7 +21,7 @@ export type Filter = {
 
 export type ResponseType = t.TypeOf<typeof Response>;
 
-export function getSumReport({accounts, freq, from, to}: Filter) {
+export function getSumReport({accounts, freq, from, to, ...extraProps}: Filter & ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/reports/sum`,
         method: 'post',
@@ -32,6 +31,7 @@ export function getSumReport({accounts, freq, from, to}: Filter) {
             to,
             freq,
             accounts,
-        }
+        },
+        ...extraProps
     })
 }

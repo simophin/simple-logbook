@@ -6,6 +6,8 @@ import listAccounts from "../api/listAccount";
 import _ from "lodash";
 import replaceAccountGroups from "../api/replaceAccountGroups";
 import AlertDialog from "./AlertDialog";
+import useAuthProps from "../hooks/useAuthProps";
+import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
 
 type Props = {
     onClose: () => unknown,
@@ -31,6 +33,8 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
 
     const isValid = name.trim().length > 0 && accounts.length > 0;
 
+    const authProps = useAuthProps();
+    const authErrorReporter = useAuthErrorReporter();
     const handleSave = useCallback(() => {
         const groups: AccountGroup[] = [];
         if (editing && editing.groupName.trim().toLowerCase() !== name.trim().toLowerCase()) {
@@ -46,16 +50,17 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
         });
 
         setSaving(true);
-        replaceAccountGroups(groups)
+        replaceAccountGroups({data: groups, ...authProps})
             .subscribe(() => {
                 setSaving(false);
                 onFinish();
             }, (e: Error) => {
                 setError(e?.message ?? 'Unknown error');
                 setSaving(false);
+                authErrorReporter(e);
             });
 
-    }, [accounts, editing, name, onFinish]);
+    }, [accounts, editing, name, onFinish, authProps, authErrorReporter]);
 
     return <>
         <Modal show onHide={onClose}>

@@ -1,15 +1,11 @@
-import {useContext, useEffect, useMemo, useState} from "react";
-import * as SumReport from "../api/getSumReport";
+import {useContext, useMemo, useState} from "react";
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
 import {getSeriesColor, SeriesConfig} from "../components/SeriesEdit";
 import MultipleSeriesEdit from "../components/MultipleSeriesEdit";
 import {FrequencySelect} from "../components/FrequencySelect";
-import {zip} from "rxjs";
-import {TransactionStateContext} from "../state/TransactionState";
-import {map, switchMap} from "rxjs/operators";
+import {Observable} from "rxjs";
 import {
     Area,
-    ResponsiveContainer,
     AreaChart,
     Bar,
     BarChart,
@@ -17,45 +13,44 @@ import {
     Legend,
     Line,
     LineChart,
+    ResponsiveContainer,
     Tooltip,
     XAxis,
     YAxis
 } from "recharts";
 import currency from 'currency.js';
-import SortedArray from "../utils/SortedArray";
-import {
-    compareTimePoint,
-    formatTimePoint,
-    TimePoint,
-    timePointFromString,
-    timePointFromValue,
-    timePointToValue
-} from "../utils/TimePoint";
+import {formatTimePoint, TimePoint, timePointFromValue, timePointToValue} from "../utils/TimePoint";
 import {Button, ButtonGroup} from "react-bootstrap";
 import {CategoricalChartProps} from "recharts/types/chart/generateCategoricalChart";
-import {DateTimeFormatter, LocalDate} from "@js-joda/core";
+import {DateTimeFormatter} from "@js-joda/core";
 import DateRangeSelect from "../components/DateRangeSelect";
 import useWindowDimensions from "../hooks/useWindowDimensions";
+import {AppState} from "../state/AppState";
+import useAuthProps from "../hooks/useAuthProps";
+import {getLoadedValue, useObservable} from "../hooks/useObservable";
+import {ExtraRequestProps} from "../api/common";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
+import {Frequency as Frequency1} from "../models/frequency";
 
 const allChartTypes = ['Area', 'Line', 'Bar'] as const;
 type ChartType = typeof allChartTypes[number];
 
-type SeriesDataRequest = Pick<SeriesConfig, 'id'> & Pick<SeriesConfig, 'accounts'> & Pick<SeriesConfig, 'type'> & {
+export type SeriesDataRequest = Pick<SeriesConfig, 'id'> & Pick<SeriesConfig, 'accounts'> & Pick<SeriesConfig, 'type'> & {
     from?: string,
     to?: string,
 };
 
-type SeriesDataPoint = {
+export type SeriesDataPoint = {
     timePoint: TimePoint,
     [id: string]: any,
 }
 
-type SeriesData = SeriesDataPoint[];
+export type SeriesData = SeriesDataPoint[];
 
 type ChartProps = {
     data: SeriesData,
     configs: SeriesConfig[],
-    freq: SumReport.Frequency,
+    freq: Frequency1,
     type: ChartType,
 };
 
@@ -63,6 +58,7 @@ type ChartProps = {
 function LinePart(c: SeriesConfig) {
     return <Line name={c.name}
                  dataKey={(v: SeriesDataPoint) => v[c.id] ?? 0}
+                 key={c.id}
                  stroke={getSeriesColor(c)}
                  type='monotone'
                  dot={false}/>
@@ -71,6 +67,7 @@ function LinePart(c: SeriesConfig) {
 function AreaPart(c: SeriesConfig) {
     const seriesColor = getSeriesColor(c);
     return <Area name={c.name}
+                 key={c.id}
                  type='monotone'
                  fill={seriesColor}
                  stroke={seriesColor}
@@ -81,6 +78,7 @@ function AreaPart(c: SeriesConfig) {
 function BarPart(c: SeriesConfig) {
     const seriesColor = getSeriesColor(c);
     return <Bar name={c.name}
+                key={c.id}
                 fill={seriesColor}
                 color={seriesColor}
                 stroke={seriesColor}
@@ -95,100 +93,72 @@ function Chart({data, configs, freq, type}: ChartProps) {
     };
 
     const children = [
-        <CartesianGrid/>,
-        <XAxis dataKey={(p: SeriesDataPoint) => timePointToValue(p.timePoint)}
+        <CartesianGrid key='chart-grid'/>,
+        <XAxis key='chart-axis-x' dataKey={(p: SeriesDataPoint) => timePointToValue(p.timePoint)}
                tickFormatter={(value: string | number) =>
                    typeof value === 'string' ? value : formatTimePoint(timePointFromValue(value, freq))}
                style={{fontSize: 11}}/>,
-        <YAxis tickFormatter={(v) => currency(v, {precision: 0}).format()} style={{fontSize: 11}}/>,
-        <Tooltip formatter={(v: any) => currency(v).format()}
+        <YAxis key='chart-axis-y' tickFormatter={(v) => currency(v, {precision: 0}).format()} style={{fontSize: 11}}/>,
+        <Tooltip key='chart-tooltip' formatter={(v: any) => currency(v).format()}
                  labelFormatter={(value: string | number) =>
                      typeof value === 'string' ? value : formatTimePoint(timePointFromValue(value, freq))}
         />,
-        <Legend/>,
+        <Legend key='chart-legend'/>,
     ];
 
     switch (type) {
         case "Area":
             children.push(...configs.map(AreaPart));
-            return <ResponsiveContainer><AreaChart {...chartProps}>
-                {children}
-            </AreaChart></ResponsiveContainer>;
+            return <ResponsiveContainer>
+                <AreaChart {...chartProps}>
+                    {children}
+                </AreaChart>
+            </ResponsiveContainer>;
         case "Line":
             children.push(...configs.map(LinePart));
-            return <ResponsiveContainer><LineChart {...chartProps}>
-                {children}
-            </LineChart></ResponsiveContainer>;
+            return <ResponsiveContainer>
+                <LineChart {...chartProps}>
+                    {children}
+                </LineChart>
+            </ResponsiveContainer>;
         case "Bar":
             children.push(...configs.map(BarPart));
-            return <ResponsiveContainer><BarChart {...chartProps}>
-                {children}
-            </BarChart></ResponsiveContainer>;
+            return <ResponsiveContainer>
+                <BarChart {...chartProps}>
+                    {children}
+                </BarChart>
+            </ResponsiveContainer>;
     }
 }
 
 
-function transformSum(resp: SumReport.ResponseType[],
-                      reqs: SeriesDataRequest[],
-                      freq: SumReport.Frequency): SeriesData {
-    if (resp.length === 0) {
-        return [];
-    }
 
-    let rs = new SortedArray<SeriesDataPoint>([], (lhs, rhs) =>
-        compareTimePoint(lhs.timePoint, rhs.timePoint));
 
-    for (let i = 0; i < resp.length; i++) {
-        const report = resp[i];
-        const req = reqs[i];
-        const isIncome = req.type === 'Income';
-        for (const item of report) {
-            const timePoint = timePointFromString(item.timePoint, freq)!!;
-            const value = isIncome ? -item.total.value : item.total.value;
-            const index = rs.find(timePoint, (lhs, rhs) =>
-                compareTimePoint(lhs, rhs.timePoint));
-            if (index < 0) {
-                const dp: SeriesDataPoint = {timePoint};
-                dp[req.id] = value;
-                rs = rs.insertAt(-index, dp);
-            } else {
-                rs.get(index)[req.id] = value;
-            }
-        }
-    }
+type Props = {
+    fetchData: (request: SeriesDataRequest[], freq: Frequency1, extraProps?: ExtraRequestProps) => Observable<SeriesData>,
+    showFrequency?: boolean,
+    persistKey: string,
+};
 
-    return rs.backingArray();
-}
-
-export default function ChartPage() {
+export default function ChartPage({fetchData, showFrequency = true, persistKey}: Props) {
     const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>([]);
-    const [freq, setFreq] = useState<SumReport.Frequency>('Monthly');
-    const [seriesData, setSeriesData] = useState<SeriesData>([]);
+    const [freq, setFreq] = useState<Frequency1>('Monthly');
     const [chartType, setChartType] = useState<ChartType>('Line');
     const [from, setFrom] = useState<string>();
     const [to, setTo] = useState<string>();
 
-    const txState = useContext(TransactionStateContext);
+    const {transactionUpdatedTime} = useContext(AppState);
 
     const requests: SeriesDataRequest[] = useMemo(() => seriesConfigs.map(({id, type, accounts}) => {
         return {id, accounts, type, from, to};
     }), [from, seriesConfigs, to]);
 
-    useEffect(() => {
-        const sub = txState.pipe(
-            switchMap(() => zip(
-                ...requests.map((r) => SumReport.getSumReport({
-                    ...r,
-                    freq
-                }))
-            )),
-            map((reports) => transformSum(reports, requests, freq)),
-        ).subscribe(
-            setSeriesData,
-            (e) => {
-            });
-        return () => sub.unsubscribe();
-    }, [txState, requests, freq]);
+    const authProps = useAuthProps();
+
+    const seriesData = useObservable(() => fetchData(requests, freq, authProps),
+        [requests, transactionUpdatedTime, authProps, freq]);
+
+    useObservableErrorReport(seriesData);
 
     const {width: windowWidth} = useWindowDimensions();
 
@@ -196,7 +166,7 @@ export default function ChartPage() {
         <div style={flexItem}>
             <ButtonGroup size='sm'>
                 {allChartTypes.map(t =>
-                    <Button variant={t === chartType ? 'primary' : 'outline-primary'}
+                    <Button key={`chart-type-${t}`} variant={t === chartType ? 'primary' : 'outline-primary'}
                             onClick={() => setChartType(t)}>
                         {t}
                     </Button>)
@@ -206,25 +176,25 @@ export default function ChartPage() {
 
         <div style={flexFullLineItem}>
             <DateRangeSelect
-                persistKey='spending-date-range'
+                persistKey={`${persistKey}-date-range`}
                 onChange={({start, end}) => {
-                setFrom(start?.format(DateTimeFormatter.ISO_LOCAL_DATE));
-                setTo(end?.format(DateTimeFormatter.ISO_LOCAL_DATE));
-            }} />
+                    setFrom(start?.format(DateTimeFormatter.ISO_LOCAL_DATE));
+                    setTo(end?.format(DateTimeFormatter.ISO_LOCAL_DATE));
+                }}/>
         </div>
 
-        <div style={flexItem}>
+        {showFrequency && <div style={flexItem}>
             <FrequencySelect value={freq} onChange={setFreq}/>
-        </div>
+        </div>}
 
         <MultipleSeriesEdit
-            persistKey='spending-page-series-config'
+            persistKey={`${persistKey}-page-series-config`}
             containerProps={{style: flexFullLineItem}}
             onChange={setSeriesConfigs}/>
 
-        {seriesData.length > 0 &&
+        {getLoadedValue(seriesData)?.length !== 0 &&
         <div style={{...flexFullLineItem, height: windowWidth * 9 / 16, minHeight: 300}}>
-            <Chart data={seriesData} configs={seriesConfigs} freq={freq} type={chartType}/>
+            <Chart data={getLoadedValue(seriesData)!!} configs={seriesConfigs} freq={freq} type={chartType}/>
         </div>
         }
     </div>;

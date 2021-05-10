@@ -1,7 +1,7 @@
 import {Button, FormControl, InputGroup, Table} from "react-bootstrap";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
-import {useCallback, useContext, useMemo, useState} from "react";
+import {Fragment, useCallback, useContext, useMemo, useState} from "react";
 import {useMediaPredicate} from "react-media-hook";
 import Pagination from 'react-js-pagination';
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
@@ -15,8 +15,10 @@ import TransactionEntry from "../components/TransactionEntry";
 import {convert, ZoneId} from '@js-joda/core';
 import AccountSelect from "../components/AccountSelect";
 import {useDebounce} from "../hooks/useDebounce";
-import {TransactionStateContext} from "../state/TransactionState";
-import {debounceTime, switchMap} from "rxjs/operators";
+import useAuthProps from "../hooks/useAuthProps";
+import {AppState} from "../state/AppState";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
+import {Helmet} from "react-helmet";
 
 type TransactionId = Transaction['id'];
 
@@ -27,24 +29,26 @@ type Props = {
 
 export default function TransactionListPage({showNewButton, accounts: showAccounts = []}: Props) {
     const [page, setPage] = useState(0);
-    const [pageSize, setPageSize] = useState(20);
+    const [pageSize] = useState(20);
     const [accounts, setAccounts] = useState<string[]>(showAccounts);
     const [searchTerm, setSearchTerm] = useState('');
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
-    const reloadObservable = useContext(TransactionStateContext);
+    const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppState);
+    const authProps = useAuthProps();
 
     const rows = useObservable(() =>
-            reloadObservable.pipe(
-                debounceTime(50),
-                switchMap(() => listTransaction({
+            listTransaction({
+                filter: {
                     offset: pageSize * page,
                     limit: pageSize,
                     accounts: accounts.length > 0 ? accounts : undefined,
                     q: debouncedSearchTerm.trim()
-                }))
-            ),
-        [page, pageSize, accounts, debouncedSearchTerm]);
+                },
+                ...authProps,
+            }),
+        [page, pageSize, accounts, debouncedSearchTerm, authProps, transactionUpdatedTime]);
+    useObservableErrorReport(rows);
 
     const totalItemsCount = rows.type === 'loaded' ? rows.data.total : 0;
     const numPages = Math.trunc(totalItemsCount / pageSize);
@@ -71,7 +75,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                     const isSelected = selected.has(r.id);
                     const transDate = convert(r.transDate, ZoneId.systemDefault()).toDate().toLocaleDateString();
                     return (
-                        <>
+                        <Fragment key={`row-${r.id}`}>
                             <tr key={r.id}
                                 onClick={() => toggleExpanded(r.id)}>
                                 <td>{r.description}</td>
@@ -114,7 +118,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                                 </td>
                             </tr>
                             }
-                        </>
+                        </Fragment>
                     );
                 });
         },
@@ -125,11 +129,13 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
     const [editState, setEditState] = useState<EditState<Transaction>>();
 
     return <div style={flexContainer}>
+        <Helmet><title>Transactions</title></Helmet>
+
         {showNewButton &&
         <Button size='sm'
                 onClick={() => setEditState({state: 'new'})}
                 style={flexFullLineItem}>
-            <PlusCircleIcon size={14} />&nbsp;New transaction
+            <PlusCircleIcon size={14}/>&nbsp;New transaction
         </Button>
         }
 
@@ -195,11 +201,11 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
             body={`Are you sure to delete "${editState.deleting.description}"?`}
             okText='Delete'
             okVariant='danger'
-            doConfirm={() => deleteTransaction(editState.deleting.id)}
+            doConfirm={() => deleteTransaction({id: editState.deleting.id})}
             onCancel={() => setEditState(undefined)}
             onConfirmed={() => {
                 setEditState(undefined);
-                reloadObservable.next(undefined);
+                reportTransactionUpdated();
             }}
             confirmInProgressText='Deleting'/>
         }
@@ -209,7 +215,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
             editing={editState?.state === 'edit' ? editState.editing : undefined}
             onFinish={() => {
                 setEditState(undefined);
-                reloadObservable.next(undefined);
+                reportTransactionUpdated();
             }}
             onClose={() => setEditState(undefined)}/>
         }

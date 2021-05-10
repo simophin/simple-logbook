@@ -39,10 +39,12 @@ export function useObservable<T>(factory: () => Observable<T>, deps: any[]): Sta
                 type: 'loaded',
                 data,
             }),
-            error: (error) => setResult({
-                type: 'error',
-                error
-            })
+            error: (error) => {
+                setResult({
+                    type: 'error',
+                    error
+                })
+            }
         });
 
         return () => {

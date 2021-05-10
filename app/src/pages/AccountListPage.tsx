@@ -6,18 +6,26 @@ import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import listAccounts from "../api/listAccount";
 import {Table} from "react-bootstrap";
 import {Link} from 'react-router-dom';
+import useAuthProps from "../hooks/useAuthProps";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
+import {Helmet} from "react-helmet";
 
 
 export default function AccountListPage() {
     const [accountGroup, setAccountGroup] = useState<AccountGroup | undefined>();
+    const authProps = useAuthProps();
     const allAccounts = useObservable(() => listAccounts({
-        includes: accountGroup?.accounts,
-    }), [accountGroup]);
+        filter: {
+            includes: accountGroup?.accounts,
+        },
+        ...authProps
+    }), [accountGroup, authProps]);
+    useObservableErrorReport(allAccounts);
 
     const children = useMemo(() => {
         return (getLoadedValue(allAccounts) ?? [])
             .map(({name, balance}) =>
-                <tr>
+                <tr key={`account-${name}`}>
                     <td><Link to={`/transactions?account=${encodeURIComponent(name)}`}>{name}</Link></td>
                     <td>{balance.format()}</td>
                 </tr>
@@ -25,6 +33,7 @@ export default function AccountListPage() {
     }, [allAccounts]);
 
     return <div style={flexContainer}>
+        <Helmet><title>Accounts</title></Helmet>
         <AccountGroupSelect
             persistKey='account-list-group'
             style={{padding: 0}}

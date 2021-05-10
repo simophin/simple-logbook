@@ -1,7 +1,7 @@
 import {convert, DayOfWeek, LocalDate} from "@js-joda/core";
-import * as SumReport from "../api/getSumReport";
+import {Frequency} from "../models/frequency";
 
-const freqPatterns: Record<SumReport.Frequency, RegExp> = {
+const freqPatterns: Record<Frequency, RegExp> = {
     "Daily": /^(\d{4})-(\d{1,3})$/,
     "Weekly": /^(\d{4})-(\d{1,2})$/,
     "Monthly": /^(\d{4})-(\d{1,2})$/,
@@ -41,7 +41,7 @@ export function timePointToValue(tp: TimePoint) {
     return timePointToLocalDate(tp).toEpochDay();
 }
 
-function timePointFromLocalDate(d: LocalDate, freq: SumReport.Frequency) {
+function timePointFromLocalDate(d: LocalDate, freq: Frequency) {
     switch (freq) {
         case "Monthly":
             return {year: d.year(), month: d.month().value()};
@@ -53,11 +53,11 @@ function timePointFromLocalDate(d: LocalDate, freq: SumReport.Frequency) {
     }
 }
 
-export function timePointFromValue(v: number, freq: SumReport.Frequency) {
+export function timePointFromValue(v: number, freq: Frequency) {
     return timePointFromLocalDate(LocalDate.ofEpochDay(v), freq);
 }
 
-export function timePointFromString(v: string, freq: SumReport.Frequency): TimePoint | undefined {
+export function timePointFromString(v: string, freq: Frequency): TimePoint | undefined {
     const matches = freqPatterns[freq].exec(v);
     if (!matches) {
         return undefined;

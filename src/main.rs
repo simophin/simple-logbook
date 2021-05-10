@@ -7,7 +7,13 @@ use tide::{Body, Error, Response, StatusCode};
 
 use crate::state::AppState;
 use sqlx::migrate::MigrateDatabase;
+use std::convert::TryFrom;
+use tide::http::headers::HeaderValue;
+use tide::security::CorsMiddleware;
+use tide::utils::After;
 
+mod config;
+mod middleware;
 mod service;
 mod state;
 
@@ -44,6 +50,7 @@ async fn serve_static_assert(_: tide::Request<AppState>) -> tide::Result {
 #[async_std::main]
 async fn main() {
     let _ = dotenv::dotenv().ok();
+    sodiumoxide::init().expect("Sodium to start up");
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
 
@@ -64,6 +71,27 @@ async fn main() {
     tide::log::with_level(LevelFilter::Info);
 
     let mut app = tide::with_state(AppState { conn });
+
+    app.with(
+        CorsMiddleware::new()
+            .allow_methods(HeaderValue::try_from("GET, DELETE, POST, OPTIONS").unwrap()),
+    );
+    app.with(middleware::token_verify::execute);
+    app.with(After(|mut res: Response| async {
+        match res.downcast_error::<service::ErrorWithStatusCode>() {
+            Some(service::ErrorWithStatusCode { code, err }) => {
+                let code = code.to_owned();
+                let err = err.as_ref().map(|e| e.to_string());
+                if let Some(err) = err {
+                    res.set_body(Body::from(err));
+                }
+                res.set_status(StatusCode::try_from(code as u16).unwrap());
+            }
+            _ => {}
+        }
+        Ok(res)
+    }));
+
     app.at("/api/transactions")
         .post(move |mut req: tide::Request<AppState>| async move {
             use service::transaction::upsert::*;
@@ -120,6 +148,34 @@ async fn main() {
     app.at("/api/accountGroups")
         .post(move |mut req: tide::Request<AppState>| async move {
             use service::account_group::replace::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &execute(&req.state(), input).await?,
+            )?))
+        });
+
+    // Login related
+    app.at("/api/changePassword")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::login::update::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &execute(&req.state(), input).await?,
+            )?))
+        });
+
+    app.at("/api/sign")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::login::sign::*;
+            let input = req.body_json().await?;
+            Ok(Response::from(Body::from_json(
+                &execute(&req.state(), input).await?,
+            )?))
+        });
+
+    app.at("/api/refreshToken")
+        .post(move |mut req: tide::Request<AppState>| async move {
+            use service::login::refresh::*;
             let input = req.body_json().await?;
             Ok(Response::from(Body::from_json(
                 &execute(&req.state(), input).await?,

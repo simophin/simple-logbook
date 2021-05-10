@@ -3,6 +3,8 @@ import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import listAccounts from "../api/listAccount";
 import {map} from "rxjs/operators";
 import _ from "lodash";
+import useAuthProps from "../hooks/useAuthProps";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
 
 type Props = {
     onChange: (selected: string[]) => unknown,
@@ -12,12 +14,15 @@ type Props = {
 };
 
 export default function AccountSelect({onChange, selected, ...props}: Props) {
+    const authProps = useAuthProps();
     const accounts = useObservable(() =>
-        listAccounts({})
+        listAccounts({filter: {}, ...authProps})
             .pipe(map(v => _.map(v, 'name') as string[]))
-        , []);
+        , [authProps]);
+    useObservableErrorReport(accounts);
 
     return <Typeahead
+        id="account-select"
         options={getLoadedValue(accounts) ?? []}
         multiple
         size='sm'

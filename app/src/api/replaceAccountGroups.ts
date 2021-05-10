@@ -1,6 +1,6 @@
 import {AccountGroup} from "../models/AccountGroup";
 import * as t from "io-ts";
-import {request} from "./common";
+import {ExtraRequestProps, request} from "./common";
 import config from "../config";
 import {map} from "rxjs/operators";
 
@@ -8,11 +8,15 @@ const responseType = t.type({
     success: t.number,
 });
 
-export default function replaceAccountGroups(data: AccountGroup[]) {
+export default function replaceAccountGroups({
+                                                 data,
+                                                 ...extraProps
+                                             }: { data: AccountGroup[] } & ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/accountGroups`,
         method: 'post',
         body: data,
-        ioType: responseType
+        ioType: responseType,
+        ...extraProps,
     }).pipe(map(({success}) => success));
 }
