@@ -54,7 +54,7 @@ export function request<IOType extends Any>({
                 }
             })();
 
-            sub.add(() => controller.abort())
+            return () => controller.abort();
         }
     )
 }

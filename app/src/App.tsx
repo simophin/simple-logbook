@@ -14,6 +14,7 @@ import {AppState, UserState} from "./state/AppState";
 import Authenticator from "./components/Authenticator";
 import HomeActionButton from "./components/HomeActionButton";
 import ChangePasswordNavItem from "./pages/ChangePasswordNavItem";
+import BalanceChart from "./pages/BalanceChart";
 
 function App() {
     let [userState, setUserState] = useState<UserState>(() => {
@@ -69,6 +70,12 @@ function App() {
                                 Income vs Expense
                             </NavDropdown.Item>
                         </LinkContainer>
+                        <LinkContainer to='/charts/balance'>
+                            <NavDropdown.Item
+                                active={location.pathname === '/charts/balance'}>
+                                Balance
+                            </NavDropdown.Item>
+                        </LinkContainer>
                     </NavDropdown>
                     <NavDropdown id='nav-settings' title='Settings'>
                         <ChangePasswordNavItem />
@@ -85,6 +92,7 @@ function App() {
 
         <Switch>
             <Route path="/charts/income_expense" exact><IncomeExpenseChart/></Route>
+            <Route path="/charts/balance" exact><BalanceChart/></Route>
             <Route path="/accounts"><AccountListPage/></Route>
             <Route path="/transactions">
                 {(props) => {

@@ -30,7 +30,7 @@ import useAuthProps from "../hooks/useAuthProps";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {ExtraRequestProps} from "../api/common";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
-import {Frequency as Frequency1} from "../models/frequency";
+import {Frequency} from "../models/frequency";
 
 const allChartTypes = ['Area', 'Line', 'Bar'] as const;
 type ChartType = typeof allChartTypes[number];
@@ -50,7 +50,7 @@ export type SeriesData = SeriesDataPoint[];
 type ChartProps = {
     data: SeriesData,
     configs: SeriesConfig[],
-    freq: Frequency1,
+    freq: Frequency,
     type: ChartType,
 };
 
@@ -135,14 +135,14 @@ function Chart({data, configs, freq, type}: ChartProps) {
 
 
 type Props = {
-    fetchData: (request: SeriesDataRequest[], freq: Frequency1, extraProps?: ExtraRequestProps) => Observable<SeriesData>,
+    fetchData: (request: SeriesDataRequest[], freq: Frequency, extraProps?: ExtraRequestProps) => Observable<SeriesData>,
     showFrequency?: boolean,
     persistKey: string,
 };
 
 export default function ChartPage({fetchData, showFrequency = true, persistKey}: Props) {
     const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>([]);
-    const [freq, setFreq] = useState<Frequency1>('Monthly');
+    const [freq, setFreq] = useState<Frequency>('Monthly');
     const [chartType, setChartType] = useState<ChartType>('Line');
     const [from, setFrom] = useState<string>();
     const [to, setTo] = useState<string>();
@@ -193,7 +193,7 @@ export default function ChartPage({fetchData, showFrequency = true, persistKey}:
             onChange={setSeriesConfigs}/>
 
         {getLoadedValue(seriesData)?.length !== 0 &&
-        <div style={{...flexFullLineItem, height: windowWidth * 9 / 16, minHeight: 300}}>
+        <div style={{...flexFullLineItem, maxWidth: Math.min(900, windowWidth), height: Math.min(900, windowWidth) * 9 / 16, minHeight: 300}}>
             <Chart data={getLoadedValue(seriesData)!!} configs={seriesConfigs} freq={freq} type={chartType}/>
         </div>
         }
