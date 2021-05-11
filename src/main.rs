@@ -17,6 +17,7 @@ mod middleware;
 mod service;
 mod state;
 
+#[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
 #[folder = "app/build"]
 #[prefix = "public/"]
