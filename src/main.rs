@@ -26,7 +26,7 @@ struct Asset;
 #[cfg(not(debug_assertions))]
 async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
     let path = match req.url().path() {
-        p if p.eq_ignore_ascii_case("/") => "public/index.html",
+        p if p.eq_ignore_ascii_case("/") || !p.starts_with("/public") => "public/index.html",
         p if p.starts_with("/") => &p[1..],
         p => p,
     };
@@ -45,6 +45,32 @@ async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
 #[cfg(debug_assertions)]
 async fn serve_static_assert(_: tide::Request<AppState>) -> tide::Result {
     Err(Error::from_str(StatusCode::NotFound, "Not found"))
+}
+
+macro_rules! endpoint {
+    ($app: expr, $method:ident, $path:expr, $pkg:path) => {
+        $app.at($path)
+            .$method(move |mut req: tide::Request<AppState>| async move {
+                use $pkg::*;
+                let input = req.body_json().await?;
+                Ok(Response::from(Body::from_json(
+                    &execute(&req.state(), input).await?,
+                )?))
+            });
+    };
+}
+
+macro_rules! endpoint_get {
+    ($app: expr, $path:expr, $pkg:path) => {
+        $app.at($path)
+            .get(move |req: tide::Request<AppState>| async move {
+                use $pkg::*;
+                let input = req.query()?;
+                Ok(Response::from(Body::from_json(
+                    &execute(&req.state(), input).await?,
+                )?))
+            });
+    };
 }
 
 #[async_std::main]
@@ -92,117 +118,29 @@ async fn main() {
         Ok(res)
     }));
 
-    app.at("/api/transactions")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::transaction::upsert::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &query(&req.state(), input).await?,
-            )?))
-        });
+    use service::*;
 
-    app.at("/api/transactions/list")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::transaction::list::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &query(&req.state(), input).await?,
-            )?))
-        });
-    app.at("/api/transactions")
-        .delete(move |mut req: tide::Request<AppState>| async move {
-            use service::transaction::delete::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &execute(&req.state(), input).await?,
-            )?))
-        });
+    // authentication
+    endpoint!(app, post, "/api/changePassword", login::update);
+    endpoint!(app, post, "/api/sign", login::sign);
+    endpoint!(app, post, "/api/refreshToken", login::refresh);
 
-    app.at("/api/accounts/list")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::account::list::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &query(&req.state(), input).await?,
-            )?))
-        });
+    // transactions
+    endpoint!(app, post, "/api/transactions", transaction::upsert);
+    endpoint!(app, post, "/api/transactions/list", transaction::list);
+    endpoint!(app, delete, "/api/transactions", transaction::delete);
+    endpoint!(app, post, "/api/accounts/list", account::list);
 
     // account group
-    app.at("/api/accountGroups")
-        .get(move |req: tide::Request<AppState>| async move {
-            use service::account_group::list::query;
-            Ok(Response::from(Body::from_json(
-                &query(&req.state()).await?,
-            )?))
-        });
-
-    app.at("/api/accountGroups")
-        .delete(move |mut req: tide::Request<AppState>| async move {
-            use service::account_group::delete::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &execute(&req.state(), input).await?,
-            )?))
-        });
-
-    app.at("/api/accountGroups")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::account_group::replace::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &execute(&req.state(), input).await?,
-            )?))
-        });
-
-    // Login related
-    app.at("/api/changePassword")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::login::update::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &execute(&req.state(), input).await?,
-            )?))
-        });
-
-    app.at("/api/sign")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::login::sign::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &execute(&req.state(), input).await?,
-            )?))
-        });
-
-    app.at("/api/refreshToken")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::login::refresh::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &execute(&req.state(), input).await?,
-            )?))
-        });
+    endpoint_get!(app, "/api/accountGroups", account_group::list);
+    endpoint!(app, delete, "/api/accountGroups", account_group::delete);
+    endpoint!(app, post, "/api/accountGroups", account_group::replace);
 
     // reports
-    app.at("/api/reports/sum")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::report::sum::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &query(&req.state(), input).await?,
-            )?))
-        });
+    endpoint!(app, post, "/api/reports/sum", report::sum);
+    endpoint!(app, post, "/api/reports/balance", report::balance);
 
-    app.at("/api/reports/balance")
-        .post(move |mut req: tide::Request<AppState>| async move {
-            use service::report::balance::*;
-            let input = req.body_json().await?;
-            Ok(Response::from(Body::from_json(
-                &query(&req.state(), input).await?,
-            )?))
-        });
-
-    app.at("/public/*").get(serve_static_assert);
-    app.at("/").get(serve_static_assert);
+    app.at("*").get(serve_static_assert);
 
     app.listen("0.0.0.0:4000").await.expect("To run server");
 }

@@ -4,7 +4,7 @@ use crate::state::AppState;
 pub type QueryInput = Vec<Transaction>;
 pub type QueryOutput = Vec<Transaction>;
 
-pub async fn query(state: &AppState, input: QueryInput) -> anyhow::Result<QueryOutput> {
+pub async fn execute(state: &AppState, input: QueryInput) -> anyhow::Result<QueryOutput> {
     let mut t = state.conn.begin().await?;
     for transaction in &input {
         sqlx::query("INSERT OR REPLACE INTO transactions (id, description, fromAccount, toAccount, amount, transDate, updatedDate) VALUES (?, ?, ?, ?, ?, ?, ?)")

@@ -19,7 +19,7 @@ pub struct DataRow {
 
 pub type Output = Vec<DataRow>;
 
-pub async fn query(
+pub async fn execute(
     state: &AppState,
     Input { from, to, accounts }: Input,
 ) -> anyhow::Result<Output> {

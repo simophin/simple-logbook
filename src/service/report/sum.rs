@@ -20,7 +20,7 @@ pub struct DataPoint {
 
 pub type Output = Vec<DataPoint>;
 
-pub async fn query(state: &AppState, input: Input) -> anyhow::Result<Output> {
+pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
     let Input {
         from,
         to,

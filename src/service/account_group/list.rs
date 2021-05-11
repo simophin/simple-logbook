@@ -9,9 +9,10 @@ pub struct Group {
     accounts: Vec<String>,
 }
 
+pub type Input = ();
 pub type Output = Vec<Group>;
 
-pub async fn query(state: &AppState) -> anyhow::Result<Output> {
+pub async fn execute(state: &AppState, _: Input) -> anyhow::Result<Output> {
     let items: Vec<AccountGroup> = sqlx::query_as(include_str!("list.sql"))
         .fetch_all(&state.conn)
         .await?;

@@ -1,7 +1,7 @@
-use serde_derive::*;
 use super::models::Account;
 use crate::state::AppState;
 use itertools::Itertools;
+use serde_derive::*;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -11,7 +11,7 @@ pub struct Input {
 
 pub type Output = Vec<Account>;
 
-pub async fn query(state: &AppState, input: Input) -> anyhow::Result<Output> {
+pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
     let mut sql = "SELECT * FROM accounts WHERE 1".to_string();
     let mut binds = Vec::new();
 
@@ -24,14 +24,13 @@ pub async fn query(state: &AppState, input: Input) -> anyhow::Result<Output> {
 
     if let Some(names) = includes {
         sql += " AND name IN (";
-        sql += &(0..names.len())
-            .map(|_| "?")
-            .join(",");
+        sql += &(0..names.len()).map(|_| "?").join(",");
         sql += ")";
         binds.extend_from_slice(&names);
     }
 
-    let accounts: Output = binds.into_iter()
+    let accounts: Output = binds
+        .into_iter()
         .fold(sqlx::query_as(&sql), |q, a| q.bind(a))
         .fetch_all(&state.conn)
         .await?;

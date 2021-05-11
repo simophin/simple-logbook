@@ -26,7 +26,7 @@ pub struct QueryOutput {
     total: usize,
 }
 
-pub async fn query(state: &AppState, params: QueryInput) -> anyhow::Result<QueryOutput> {
+pub async fn execute(state: &AppState, params: QueryInput) -> anyhow::Result<QueryOutput> {
     let mut binds = Vec::with_capacity(6);
     let QueryInput {
         q,
