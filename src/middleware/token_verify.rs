@@ -17,14 +17,17 @@ pub fn execute<'a>(
             return Ok(next.run(req).await);
         }
 
-        let token = req.header("Authorization").and_then(|v| {
-            v.last()
-                .to_string()
-                .split("Bearer ")
-                .skip(1)
-                .next()
-                .map(|s| s.to_owned())
-        });
+        let token = req
+            .header("Authorization")
+            .and_then(|v| {
+                v.last()
+                    .to_string()
+                    .split("Bearer ")
+                    .skip(1)
+                    .next()
+                    .map(|s| s.to_owned())
+            })
+            .unwrap_or_default();
 
         let verified = verify::query(req.state(), verify::Input { token }).await?;
 

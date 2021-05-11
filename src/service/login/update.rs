@@ -6,13 +6,13 @@ use crate::state::AppState;
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Input {
-    old_password: Option<String>,
-    new_password: Option<String>,
+    old_password: String,
+    new_password: String,
 }
 
 #[derive(Serialize)]
 pub struct Output {
-    token: Option<String>,
+    token: String,
 }
 
 pub async fn execute(
@@ -27,23 +27,17 @@ pub async fn execute(
     let credentials = config::update::<CredentialsConfig, _, _>(
         CREDENTIALS_CONFIG_KEY,
         |c| match c {
-            Some(config)
-                if config
-                    .verify_password(&old_password.unwrap_or_default())
-                    .is_none() =>
-            {
+            Some(config) if config.verify_password(&old_password).is_none() => {
                 Err(ErrorWithStatusCode::new(401))
             }
-            _ if new_password.is_none() => Ok(None),
-            _ => Ok(Some(super::creds::CredentialsConfig::new(
-                &new_password.unwrap(),
-            ))),
+            _ if new_password.is_empty() => Ok(None),
+            _ => Ok(Some(super::creds::CredentialsConfig::new(&new_password))),
         },
         &state.conn,
     )
     .await??;
 
     Ok(Output {
-        token: credentials.map(|c| c.sign()),
+        token: credentials.map(|c| c.sign()).unwrap_or_default(),
     })
 }

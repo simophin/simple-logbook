@@ -25,16 +25,20 @@ export default function ChangePasswordNavItem() {
 
         setUpdating(true);
         updatePassword({
-            oldPassword: oldPassword.length > 0 ? oldPassword : undefined,
-            newPassword: newPassword.length > 0 ? newPassword : undefined,
+            oldPassword,
+            newPassword,
             ...authProps
         })
             .subscribe(
-                () => {
+                ({token}) => {
+                    setOldPassword('');
+                    setNewPassword('');
                     setShowing(false);
                     setUpdating(false);
-                    if (newPassword.length === 0) {
+                    if (token.length === 0) {
                         setUserState(undefined);
+                    } else {
+                        setUserState({state: 'with_token', token});
                     }
                 },
                 (e) => {
