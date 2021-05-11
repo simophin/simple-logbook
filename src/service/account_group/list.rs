@@ -9,7 +9,8 @@ pub struct Group {
     accounts: Vec<String>,
 }
 
-pub type Input = ();
+#[derive(Deserialize)]
+pub struct Input {}
 pub type Output = Vec<Group>;
 
 pub async fn execute(state: &AppState, _: Input) -> anyhow::Result<Output> {
