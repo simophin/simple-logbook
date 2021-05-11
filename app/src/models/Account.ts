@@ -1,10 +1,10 @@
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
-import {currency} from "../api/currencyCodec";
+import {currencyType} from "../api/codecs";
 
 export const AccountType = t.type({
     name: codec.NonEmptyString,
-    balance: currency,
+    balance: currencyType,
     lastTransDate: codec.DateFromISOString,
 });
 

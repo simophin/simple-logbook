@@ -8,10 +8,7 @@ const responseType = t.type({
     success: t.number,
 });
 
-export default function replaceAccountGroups({
-                                                 data,
-                                                 ...extraProps
-                                             }: { data: AccountGroup[] } & ExtraRequestProps) {
+export default function replaceAccountGroups(data: AccountGroup[], extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/accountGroups`,
         method: 'post',

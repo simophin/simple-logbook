@@ -46,13 +46,13 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const errorReporter = useAuthErrorReporter();
 
     const handleDescSearch = useCallback((q: string) => {
-        return listTransaction({filter: {q: q.trim(), limit: 30}, ...authProps})
+        return listTransaction({q: q.trim(), limit: 30}, authProps)
             .pipe(map(({data}) =>
                 _.uniqBy(data, 'description')));
     }, [authProps]);
 
     const handleAccountSearch = useCallback((q: string) => {
-        return listAccounts({filter: {q}, ...authProps});
+        return listAccounts({q}, authProps);
     }, [authProps]);
 
     const handleDescChange = useCallback((v: Either<string, Transaction>) => {
@@ -85,11 +85,14 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [showingAccounts, setShowingAccounts] = useState<Account[]>([]);
 
     useEffect(() => {
-        const sub = listAccounts({filter: {includes: showingAccountIDs}, ...authProps})
+        const sub = listAccounts({includes: showingAccountIDs}, authProps)
             .subscribe((v) => setShowingAccounts(v),
-                () => setShowingAccounts([]));
+                (e) => {
+                    setShowingAccounts([]);
+                    errorReporter(e);
+                });
         return () => sub.unsubscribe();
-    }, [authProps, showingAccountIDs]);
+    }, [authProps, errorReporter, showingAccountIDs]);
 
     const handleSave = () => {
         setSaving(true);
@@ -103,9 +106,8 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                 amount: currency(amount),
                 description: desc as NonEmptyString,
                 updatedDate: ZonedDateTime.now(),
-            },
-            ...authProps
-        }).subscribe(
+            }
+        }, authProps).subscribe(
             () => {
                 setSaving(false);
                 onFinish();

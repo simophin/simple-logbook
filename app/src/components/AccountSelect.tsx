@@ -16,7 +16,7 @@ type Props = {
 export default function AccountSelect({onChange, selected, ...props}: Props) {
     const authProps = useAuthProps();
     const accounts = useObservable(() =>
-        listAccounts({filter: {}, ...authProps})
+        listAccounts({}, authProps)
             .pipe(map(v => _.map(v, 'name') as string[]))
         , [authProps]);
     useObservableErrorReport(accounts);

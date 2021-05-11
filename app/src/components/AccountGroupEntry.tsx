@@ -8,6 +8,7 @@ import replaceAccountGroups from "../api/replaceAccountGroups";
 import AlertDialog from "./AlertDialog";
 import useAuthProps from "../hooks/useAuthProps";
 import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
 
 type Props = {
     onClose: () => unknown,
@@ -21,7 +22,11 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
     const [accounts, setAccounts] = useState<string[]>(editing?.accounts ?? []);
     const [error, setError] = useState<string | undefined>();
 
-    const allAccounts = useObservable(() => listAccounts({}), []);
+    const authProps = useAuthProps();
+
+    const allAccounts = useObservable(() => listAccounts({}, authProps), [authProps]);
+    useObservableErrorReport(allAccounts);
+
     const accountOptions = useMemo(() => {
         if (allAccounts.type !== 'loaded') {
             return [];
@@ -33,7 +38,6 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
 
     const isValid = name.trim().length > 0 && accounts.length > 0;
 
-    const authProps = useAuthProps();
     const authErrorReporter = useAuthErrorReporter();
     const handleSave = useCallback(() => {
         const groups: AccountGroup[] = [];
@@ -50,7 +54,7 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
         });
 
         setSaving(true);
-        replaceAccountGroups({data: groups, ...authProps})
+        replaceAccountGroups(groups, authProps)
             .subscribe(() => {
                 setSaving(false);
                 onFinish();
