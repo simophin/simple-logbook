@@ -1,11 +1,12 @@
+use crate::service::ErrorWithStatusCode;
 use crate::state::AppState;
-use itertools::Itertools;
+use chrono::NaiveDate;
 use serde_derive::*;
 
 #[derive(Deserialize)]
 pub struct Input {
-    from: Option<String>,
-    to: Option<String>,
+    from: Option<NaiveDate>,
+    to: Option<NaiveDate>,
     freq: super::Frequency,
     accounts: Vec<String>,
 }
@@ -31,23 +32,19 @@ pub async fn query(state: &AppState, input: Input) -> anyhow::Result<Output> {
         return Ok(vec![]);
     }
 
-    let mut condition = String::from("1");
-    let mut binding = Vec::new();
-
-    if let Some(from) = from {
-        condition += " and (b.transDate >= ?)";
-        binding.push(from);
+    match (from, to) {
+        (Some(f), Some(t)) if f > t => {
+            return Err(ErrorWithStatusCode::new(400).into());
+        }
+        _ => {}
     }
 
-    if let Some(to) = to {
-        condition += " and (b.transDate <= ?)";
-        binding.push(to);
-    }
-
-    condition += " and b.account in (";
-    condition += &(0..accounts.len()).into_iter().map(|_| "?").join(",");
-    condition += ")";
-    binding.extend_from_slice(&accounts);
+    let from = from
+        .map(|t| t.to_string())
+        .unwrap_or_else(|| "1970-01-01".into());
+    let to = to
+        .map(|t| t.to_string())
+        .unwrap_or_else(|| "2999-12-31".into());
 
     let time_format = match freq {
         super::Frequency::Daily => "%Y-%j",
@@ -56,24 +53,10 @@ pub async fn query(state: &AppState, input: Input) -> anyhow::Result<Output> {
         super::Frequency::Yearly => "%Y",
     };
 
-    let sql = format!(
-        "
-        select
-           sum(b.total) as total,
-           strftime(?, b.transDate) as time_point
-        from daily_sum b
-        where {}
-        group by strftime(?, b.transDate)
-        order by time_point asc
-    ",
-        condition
-    );
-
-    Ok(binding
-        .into_iter()
-        .fold(sqlx::query_as(sql.as_str()).bind(&time_format), |q, b| {
-            q.bind(b)
-        })
+    Ok(sqlx::query_as(include_str!("sum.sql"))
+        .bind(from)
+        .bind(to)
+        .bind(serde_json::to_string(&accounts)?)
         .bind(time_format)
         .fetch_all(&state.conn)
         .await?)
