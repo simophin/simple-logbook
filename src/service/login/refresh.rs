@@ -3,7 +3,8 @@ use crate::state::AppState;
 
 use serde_derive::*;
 
-pub type Input = ();
+#[derive(Deserialize)]
+pub struct Input {}
 
 #[derive(Serialize)]
 pub struct Output {

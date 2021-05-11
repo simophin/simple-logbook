@@ -22,6 +22,7 @@ export function refreshToken(props?: ExtraRequestProps) {
         url: `${config.baseUrl}/refreshToken`,
         ioType: ResponseType,
         method: 'post',
+        body: {},
         ...props,
     });
 }

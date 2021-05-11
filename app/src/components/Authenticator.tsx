@@ -1,7 +1,11 @@
-import {useCallback, useContext, useState} from "react";
+import {useCallback, useContext, useEffect, useState} from "react";
 import {Button, Form, Modal} from "react-bootstrap";
 import {AppState} from "../state/AppState";
-import {signIn} from "../api/tokens";
+import {refreshToken, signIn} from "../api/tokens";
+import {timer} from "rxjs";
+import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
+import {switchMap} from "rxjs/operators";
+import {buildAuthProps} from "../hooks/useAuthProps";
 
 type LoginState = {
     state: 'in_progress'
@@ -27,6 +31,25 @@ export default function Authenticator() {
                 }
             )
     }, [inputPassword, setUserState]);
+
+
+    const currentToken = userState?.state === 'with_token' ? userState?.token : undefined;
+
+    const reporter = useAuthErrorReporter();
+
+    // Refresh token some time after we have the first one
+    useEffect(() => {
+        if (currentToken) {
+            const sub = timer(60000)
+                .pipe(switchMap(() => refreshToken(buildAuthProps(currentToken))))
+                .subscribe(
+                    ({token}) => {
+                        setUserState({state: 'with_token', token});
+                    },
+                    reporter);
+            return () => sub.unsubscribe();
+        }
+    }, [currentToken, reporter, setUserState]);
 
     return <>
         {userState?.state === 'auth_error' && <Modal show onHide={() => {

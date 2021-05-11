@@ -4,7 +4,7 @@ import {Frequency} from "../models/frequency";
 import {ExtraRequestProps} from "../api/common";
 import * as BalanceReport from '../api/getBalanceReport';
 import {zip} from "rxjs";
-import {map, tap} from "rxjs/operators";
+import {map} from "rxjs/operators";
 import SortedArray from "../utils/SortedArray";
 import {compareTimePoint, TimePoint} from "../utils/TimePoint";
 import {LocalDate} from "@js-joda/core";
