@@ -17,7 +17,6 @@ mod middleware;
 mod service;
 mod state;
 
-#[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
 #[folder = "app/build"]
 #[prefix = "public/"]
@@ -140,7 +139,9 @@ async fn main() {
     endpoint!(app, post, "/api/reports/sum", report::sum);
     endpoint!(app, post, "/api/reports/balance", report::balance);
 
-    app.at("*").get(serve_static_assert);
+    app.at("/public/*").get(serve_static_assert);
+    app.at("/*").get(serve_static_assert);
+    app.at("/").get(serve_static_assert);
 
     app.listen("0.0.0.0:4000").await.expect("To run server");
 }
