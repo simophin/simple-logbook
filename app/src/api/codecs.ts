@@ -1,7 +1,19 @@
 import * as t from 'io-ts';
+import cjs from 'currency.js';
 import {LocalDate, ZonedDateTime, ZoneOffset} from "@js-joda/core";
 
-export const localDate = new t.Type<LocalDate, string, unknown>(
+type CurrencyJS = ReturnType<cjs.Constructor>;
+
+export const currencyType = new t.Type<CurrencyJS, number, unknown>(
+    'currencyjs',
+    (u: unknown): u is CurrencyJS => typeof u === 'number',
+    (input, context) => typeof input === 'number'
+        ? t.success(cjs(input).divide(100))
+        : t.failure(input, context),
+    (a) => Math.trunc(a.multiply(100).value),
+);
+
+export const localDateType = new t.Type<LocalDate, string, unknown>(
     'joda-local-date',
     (u: unknown): u is LocalDate => u instanceof LocalDate,
     (input, context) => {
@@ -16,7 +28,7 @@ export const localDate = new t.Type<LocalDate, string, unknown>(
     (v) => v.toJSON(),
 );
 
-export const zonedDateTime = new t.Type<ZonedDateTime, string, unknown>(
+export const zonedDateTimeType = new t.Type<ZonedDateTime, string, unknown>(
     'joda-zoned-datetime',
     (u: unknown): u is ZonedDateTime => u instanceof ZonedDateTime,
     (input, context) => {

@@ -8,7 +8,7 @@ export type Filter = {
     includes?: string[];
 }
 
-export default function listAccounts({filter = {}, ...extraProps}: { filter?: Filter } & ExtraRequestProps) {
+export default function listAccounts(filter: Filter = {}, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/accounts/list`,
         method: 'post',

@@ -15,11 +15,8 @@ export default function AccountListPage() {
     const [accountGroup, setAccountGroup] = useState<AccountGroup | undefined>();
     const authProps = useAuthProps();
     const allAccounts = useObservable(() => listAccounts({
-        filter: {
-            includes: accountGroup?.accounts,
-        },
-        ...authProps
-    }), [accountGroup, authProps]);
+        includes: accountGroup?.accounts,
+    }, authProps), [accountGroup, authProps]);
     useObservableErrorReport(allAccounts);
 
     const children = useMemo(() => {

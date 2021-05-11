@@ -7,7 +7,7 @@ const responseType = t.type({
     numDeleted: t.number,
 });
 
-export default function deleteTransaction({id, ...extraProps}: { id: string } & ExtraRequestProps) {
+export default function deleteTransaction({id}: { id: string }, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/transactions`,
         method: 'delete',

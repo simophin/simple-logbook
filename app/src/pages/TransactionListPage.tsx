@@ -39,14 +39,11 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
 
     const rows = useObservable(() =>
             listTransaction({
-                filter: {
-                    offset: pageSize * page,
-                    limit: pageSize,
-                    accounts: accounts.length > 0 ? accounts : undefined,
-                    q: debouncedSearchTerm.trim()
-                },
-                ...authProps,
-            }),
+                offset: pageSize * page,
+                limit: pageSize,
+                accounts: accounts.length > 0 ? accounts : undefined,
+                q: debouncedSearchTerm.trim()
+            }, authProps),
         [page, pageSize, accounts, debouncedSearchTerm, authProps, transactionUpdatedTime]);
     useObservableErrorReport(rows);
 
@@ -201,7 +198,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
             body={`Are you sure to delete "${editState.deleting.description}"?`}
             okText='Delete'
             okVariant='danger'
-            doConfirm={() => deleteTransaction({id: editState.deleting.id})}
+            doConfirm={() => deleteTransaction({id: editState.deleting.id}, authProps)}
             onCancel={() => setEditState(undefined)}
             onConfirmed={() => {
                 setEditState(undefined);

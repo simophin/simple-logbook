@@ -1,12 +1,12 @@
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
-import {currency} from "./currencyCodec";
+import {currencyType} from "./codecs";
 import {ExtraRequestProps, request} from "./common";
 import config from "../config";
 import {Frequency} from "../models/frequency";
 
 const DataPoint = t.type({
-    total: currency,
+    total: currencyType,
     timePoint: codec.NonEmptyString,
 });
 

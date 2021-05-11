@@ -103,7 +103,7 @@ export default function AccountGroupSelect({onChange, persistKey, style}: Props)
         {editState?.state === 'delete' &&
         <AsyncConfirm
             body={`Are you sure to delete "${editState.deleting.groupName}"?`}
-            doConfirm={() => replaceAccountGroups({data: [{...editState.deleting, accounts: []}]})}
+            doConfirm={() => replaceAccountGroups([{...editState.deleting, accounts: []}], authProps)}
             onCancel={() => setEditState(undefined)}
             onConfirmed={() => {
                 setEditState(undefined);

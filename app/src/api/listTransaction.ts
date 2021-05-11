@@ -20,7 +20,7 @@ const ListResultType = t.type({
     data: TransactionArrayType,
 });
 
-export function listTransaction({filter, ...extraProps}: { filter: Filter } & ExtraRequestProps) {
+export function listTransaction(filter: Filter = {}, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/transactions/list`,
         method: 'post',
