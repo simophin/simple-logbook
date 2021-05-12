@@ -1,6 +1,6 @@
 import {flexContainer, flexFullLineItem} from "../styles/common";
 import AccountGroupSelect from "../components/AccountGroupSelect";
-import {useMemo, useState} from "react";
+import {useContext, useMemo, useState} from "react";
 import {AccountGroup} from "../models/AccountGroup";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import listAccounts from "../api/listAccount";
@@ -9,14 +9,16 @@ import {Link} from 'react-router-dom';
 import useAuthProps from "../hooks/useAuthProps";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
+import {AppState} from "../state/AppState";
 
 
 export default function AccountListPage() {
     const [accountGroup, setAccountGroup] = useState<AccountGroup | undefined>();
     const authProps = useAuthProps();
+    const {transactionUpdatedTime} = useContext(AppState);
     const allAccounts = useObservable(() => listAccounts({
         includes: accountGroup?.accounts,
-    }, authProps), [accountGroup, authProps]);
+    }, authProps), [accountGroup, authProps, transactionUpdatedTime]);
     useObservableErrorReport(allAccounts);
 
     const children = useMemo(() => {
