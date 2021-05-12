@@ -19,6 +19,7 @@ import useAuthProps from "../hooks/useAuthProps";
 import {AppState} from "../state/AppState";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
+import _ from "lodash";
 
 type TransactionId = Transaction['id'];
 
@@ -161,7 +162,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
             </InputGroup>
         </span>
 
-        <div style={flexFullLineItem}>
+        {children.length > 0 && <div style={flexFullLineItem}>
             <Table bordered hover size='sm'>
                 <thead>
                 <tr>
@@ -178,10 +179,14 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                 {children}
                 </tbody>
             </Table>
-        </div>
+        </div>}
+
+        {getLoadedValue(rows)?.total === 0 && <div style={flexFullLineItem}>
+            No transactions found
+        </div>}
 
 
-        <div style={flexContainer}>
+        {children.length > 0 && <div style={flexContainer}>
             <Pagination
                 itemClass="page-item"
                 linkClass="page-link"
@@ -191,7 +196,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                 pageRangeDisplayed={5}
                 onChange={(v) => setPage(v - 1)}
             />
-        </div>
+        </div>}
 
         {editState?.state === 'delete' &&
         <AsyncConfirm

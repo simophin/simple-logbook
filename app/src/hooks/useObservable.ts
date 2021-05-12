@@ -27,6 +27,7 @@ export function getLoadedValue<T>(s: State<T>) {
     return undefined;
 }
 
+
 export function useObservable<T>(factory: () => Observable<T>, deps: any[]): State<T> {
     const [result, setResult] = useState<State<T>>({type: 'loading'});
     useEffect(() => {

@@ -10,6 +10,7 @@ import useAuthProps from "../hooks/useAuthProps";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
 import {AppState} from "../state/AppState";
+import _ from "lodash";
 
 
 export default function AccountListPage() {
@@ -31,25 +32,31 @@ export default function AccountListPage() {
             );
     }, [allAccounts]);
 
+
     return <div style={flexContainer}>
         <Helmet><title>Accounts</title></Helmet>
-        <AccountGroupSelect
-            persistKey='account-list-group'
-            style={{padding: 0}}
-            onChange={setAccountGroup}/>
+        {_.isEqual(getLoadedValue(allAccounts), []) && <div style={flexFullLineItem}>No accounts found. Start by adding a new transaction.</div>}
 
-        <div style={flexFullLineItem}>
-            <Table hover striped bordered size='sm'>
-                <thead>
-                <tr>
-                    <th>Account</th>
-                    <th>Balance</th>
-                </tr>
-                </thead>
-                <tbody>
-                {children}
-                </tbody>
-            </Table>
-        </div>
+        {children.length > 0 && <>
+            <AccountGroupSelect
+                persistKey='account-list-group'
+                style={{padding: 0}}
+                onChange={setAccountGroup}/>
+
+            <div style={flexFullLineItem}>
+                <Table hover striped bordered size='sm'>
+                    <thead>
+                    <tr>
+                        <th>Account</th>
+                        <th>Balance</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {children}
+                    </tbody>
+                </Table>
+            </div>
+        </>
+        }
     </div>;
 }
