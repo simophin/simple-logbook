@@ -2,6 +2,7 @@ import {Observable} from "rxjs";
 import {isLeft} from "fp-ts/Either";
 import {PathReporter} from "io-ts/PathReporter";
 import {Any, default as t} from "io-ts";
+import axios from "axios";
 
 export type ExtraRequestProps = {
     headers?: object,
@@ -22,39 +23,31 @@ export function request<IOType extends Any>({
                                                 headers = {},
                                             }: RequestProps<IOType>): Observable<t.TypeOf<IOType>> {
     return new Observable((sub) => {
-            const controller = new AbortController();
-            (async () => {
-                try {
-                    const res = await fetch(url, {
-                        method,
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...headers,
-                        },
-                        signal: controller.signal,
-                        redirect: 'follow',
-                        body: body ? JSON.stringify(body) : undefined,
-                    });
-
-                    if (res.ok) {
-                        const data = ioType.decode(await res.json());
-                        if (isLeft(data)) {
-                            sub.error({name: 'invalid_data', message: JSON.stringify(PathReporter.report(data))} as Error);
-                        } else {
-                            sub.next(data.right);
-                            sub.complete();
-                        }
-                    } else {
-                        sub.error({name: 'http_error', code: res.status, message: res.statusText} as Error);
-                    }
-                } catch (e) {
-                    if (!controller.signal.aborted) {
-                        sub.error({name: 'unknown_error', message: 'unknown', cause: e} as Error);
-                    }
+            const source = axios.CancelToken.source();
+            axios.request({
+                url,
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                    ...headers,
+                },
+                data: body ? JSON.stringify(body) : undefined,
+                cancelToken: source.token,
+            }).then((res) => {
+                const data = ioType.decode(res.data);
+                if (isLeft(data)) {
+                    sub.error({name: 'invalid_data', message: JSON.stringify(PathReporter.report(data))} as Error);
+                } else {
+                    sub.next(data.right);
+                    sub.complete();
                 }
-            })();
+            }).catch((err) => {
+                if (!axios.isCancel(err)) {
+                    sub.error({name: 'unknown_error', message: 'unknown_error', ...err});
+                }
+            });
 
-            return () => controller.abort();
+            return () => source.cancel();
         }
-    )
+    );
 }
