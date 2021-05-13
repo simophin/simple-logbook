@@ -9,13 +9,17 @@ export type DateRange = {
 
 interface PredefinedRange {
     type: 'predefined',
-    label: string,
+    name: string,
+    label: ((today: LocalDate) => string) | string,
     computeRange: (today: LocalDate) => DateRange;
 }
 
 const lastYear: PredefinedRange = {
     type: 'predefined',
-    label: 'Last year',
+    name: 'lastYear',
+    label: (today: LocalDate) => {
+        return today.minusYears(1).year().toString();
+    },
     computeRange: (today) => {
         const start = today.minusYears(1).withDayOfYear(1);
         const end = start.plusYears(1).minusDays(1);
@@ -25,7 +29,8 @@ const lastYear: PredefinedRange = {
 
 const currentYear: PredefinedRange = {
     type: 'predefined',
-    label: 'Current year',
+    name: 'currentYear',
+    label: (today) => today.year().toString(),
     computeRange: (today) => {
         return {start: today.withDayOfYear(1)};
     }
@@ -33,6 +38,7 @@ const currentYear: PredefinedRange = {
 
 const pastYear: PredefinedRange = {
     type: 'predefined',
+    name: 'pastYear',
     label: 'Past 12 months',
     computeRange: (today) => {
         return {start: today.minusYears(1).withDayOfMonth(1)};
@@ -41,8 +47,9 @@ const pastYear: PredefinedRange = {
 
 const allTime: PredefinedRange = {
     type: 'predefined',
-    label: 'All time',
-    computeRange: (today) => {
+    label: 'All',
+    name: 'all',
+    computeRange: () => {
         return {};
     }
 }
@@ -54,6 +61,7 @@ type DateRangeType = PredefinedRange | {
 
 type Props = {
     onChange: (v: DateRange) => unknown,
+    now?: LocalDate,
     persistKey?: string,
 }
 
@@ -61,7 +69,7 @@ const predefinedRanges = [currentYear, lastYear, pastYear, allTime];
 
 function persistRange(v: DateRangeType, key: string) {
     if (v.type === 'predefined') {
-        localStorage.setItem(key, JSON.stringify({type: v.type, label: v.label}));
+        localStorage.setItem(key, JSON.stringify({type: v.type, name: v.name}));
     } else {
         localStorage.setItem(key, JSON.stringify(v));
     }
@@ -75,13 +83,14 @@ function loadRange(key: string) {
 
     const value = JSON.parse(v);
     if (value.type === 'predefined') {
-        return predefinedRanges.find((r) => r.label === value.label);
+        return predefinedRanges.find((r) => r.name === value.name);
     } else {
         return value;
     }
 }
 
-export default function DateRangeSelect({onChange, persistKey}: Props) {
+export default function DateRangeSelect({onChange, persistKey, now}: Props) {
+    const today = useMemo(() => now ?? LocalDate.now(), [now]);
     const [selected, setSelected] = useState<DateRangeType>(() => {
         return persistKey ? (loadRange(persistKey) ?? predefinedRanges[0]) : predefinedRanges[0];
 
@@ -94,30 +103,23 @@ export default function DateRangeSelect({onChange, persistKey}: Props) {
     }, [persistKey, selected]);
 
     useEffect(() => {
-        onChange(selected.type === 'predefined' ? selected.computeRange(LocalDate.now()) : selected.value);
+        onChange(selected.type === 'predefined' ? selected.computeRange(today) : selected.value);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selected]);
+    }, [today, selected]);
 
     const predefinedButtons = useMemo(() => {
-        return predefinedRanges.map((r) =>
-            <Button variant={selected === r ? 'primary' : 'outline-primary'}
-                    key={`predefined-${r.label}`}
-                    onClick={() => setSelected(r)}>
-                {r.label}
-            </Button>)
-    }, [selected]);
+        return predefinedRanges.map((r) => {
+            const label = typeof r.label === 'string' ? r.label : r.label(today);
+            return <Button variant={selected === r ? 'primary' : 'outline-primary'}
+                           key={`predefined-${label}`}
+                           onClick={() => setSelected(r)}>
+                {label}
+            </Button>;
+        })
+    }, [today, selected]);
 
 
     return <ButtonGroup size='sm'>
         {predefinedButtons}
-
-        <Button variant={selected.type === 'custom' ? 'primary' : 'outline-primary'}
-                onClick={() => {
-                    if (selected.type !== 'custom') {
-                        setSelected({type: 'custom', value: {}})
-                    }
-                }}>
-           Custom
-        </Button>
     </ButtonGroup>
 }
