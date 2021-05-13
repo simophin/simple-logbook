@@ -1,23 +1,41 @@
-image: docker:stable
-services:
-  - docker:dind
-
 stages:
-  - build
+  - test
   - deploy
 
-before_script:
-  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+test_frontend:
+  image: node:14
+  stage: test
+  cache:
+    key: yarn-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .yarn
+  script:
+    - cd app
+    - yarn install --cache .yarn
+    - yarn run test
+  only:
+    - merge_requests
 
-#build:
-#  stage: build
-#  script:
-#    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+test_backend:
+  image: rust
+  stage: test
+  cache:
+    key: rust-${CI_COMMIT_REF_SLUG}
+    paths:
+      - target
+  script:
+    - cargo test
+  only:
+    - merge_requests
 
 push:
+  image: docker:stable
+  services:
+    - docker:dind
   stage: deploy
   only:
     - master
   script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t $CI_REGISTRY_IMAGE:latest .
     - docker push $CI_REGISTRY_IMAGE:latest

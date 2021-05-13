@@ -14,9 +14,15 @@ type Props = {
     onClose: () => unknown,
     onFinish: () => unknown,
     editing?: AccountGroup,
+    getAccounts?: typeof listAccounts,
+    updateAccounts?: typeof replaceAccountGroups,
 };
 
-export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
+export default function AccountGroupEntry({
+                                              editing, onClose, onFinish,
+                                              getAccounts = listAccounts,
+                                              updateAccounts = replaceAccountGroups
+                                          }: Props) {
     const [saving, setSaving] = useState(false);
     const [name, setName] = useState(editing?.groupName ?? '');
     const [accounts, setAccounts] = useState<string[]>(editing?.accounts ?? []);
@@ -24,7 +30,8 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
 
     const authProps = useAuthProps();
 
-    const allAccounts = useObservable(() => listAccounts({}, authProps), [authProps]);
+    const allAccounts = useObservable(() => getAccounts({}, authProps),
+        [authProps, getAccounts]);
     useObservableErrorReport(allAccounts);
 
     const accountOptions = useMemo(() => {
@@ -33,7 +40,7 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
         }
 
         return allAccounts.data.map(({name}) =>
-            <option value={name}>{name}</option>);
+            <option key={name} value={name}>{name}</option>);
     }, [allAccounts]);
 
     const isValid = name.trim().length > 0 && accounts.length > 0;
@@ -54,7 +61,7 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
         });
 
         setSaving(true);
-        replaceAccountGroups(groups, authProps)
+        updateAccounts(groups, authProps)
             .subscribe(() => {
                 setSaving(false);
                 onFinish();
@@ -64,7 +71,7 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
                 authErrorReporter(e);
             });
 
-    }, [accounts, editing, name, onFinish, authProps, authErrorReporter]);
+    }, [editing, name, accounts, updateAccounts, authProps, onFinish, authErrorReporter]);
 
     return <>
         <Modal show onHide={onClose}>
@@ -83,7 +90,7 @@ export default function AccountGroupEntry({editing, onClose, onFinish}: Props) {
                     </Form.Group>
 
                     <Form.Group>
-                        <Form.Label>Accounts ({accounts.length} selected)</Form.Label>
+                        <Form.Label>{`Accounts (${accounts.length} selected)`}</Form.Label>
                         <Form.Control
                             style={{minHeight: 300}}
                             as='select'
