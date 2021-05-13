@@ -174,7 +174,7 @@ export default function ChartPage({fetchData, showFrequency = true, persistKey}:
             </ButtonGroup>
         </div>
 
-        <div style={flexFullLineItem}>
+        <div style={flexItem}>
             <DateRangeSelect
                 persistKey={`${persistKey}-date-range`}
                 onChange={({start, end}) => {

@@ -12,7 +12,7 @@ pub struct Output {
 }
 
 pub async fn execute(state: &AppState, _: Input) -> anyhow::Result<Output> {
-    let c: CredentialsConfig = crate::config::get(CREDENTIALS_CONFIG_KEY, &state.conn)
+    let c: CredentialsConfig = crate::config::get(CREDENTIALS_CONFIG_KEY, None, &state.conn)
         .await?
         .ok_or_else(|| anyhow::anyhow!("No credentials set"))?;
 

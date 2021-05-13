@@ -26,6 +26,7 @@ pub async fn execute(
     use crate::config;
     let credentials = config::update::<CredentialsConfig, _, _>(
         CREDENTIALS_CONFIG_KEY,
+        None,
         |c| match c {
             Some(config) if config.verify_password(&old_password).is_none() => {
                 Err(ErrorWithStatusCode::new(401))

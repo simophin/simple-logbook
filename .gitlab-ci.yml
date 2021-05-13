@@ -6,33 +6,38 @@ test_frontend:
   image: node:14
   stage: test
   cache:
-    key: yarn-${CI_COMMIT_REF_SLUG}
+    key: yarn-${CI_RUNNER_EXECUTABLE_ARCH}
     paths:
       - .yarn
   script:
     - cd app
-    - yarn install --cache .yarn
+    - yarn install --cache-folder .yarn
     - yarn run test
   only:
     - merge_requests
+    - master
 
 test_backend:
   image: rust
   stage: test
   cache:
-    key: rust-${CI_COMMIT_REF_SLUG}
+    key: rust-${CI_RUNNER_EXECUTABLE_ARCH}
     paths:
-      - target
+      - .rust
   script:
-    - cargo test
+    - cargo test --target-dir=.rust --verbose
   only:
     - merge_requests
+    - master
 
 push:
   image: docker:stable
   services:
     - docker:dind
   stage: deploy
+  dependencies:
+    - test_frontend
+    - test_backend
   only:
     - master
   script:

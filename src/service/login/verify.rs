@@ -12,7 +12,8 @@ pub type Output = bool;
 
 pub async fn query(state: &AppState, input: Input) -> anyhow::Result<Output> {
     use crate::config;
-    let c: Option<CredentialsConfig> = config::get(CREDENTIALS_CONFIG_KEY, &state.conn).await?;
+    let c: Option<CredentialsConfig> =
+        config::get(CREDENTIALS_CONFIG_KEY, None, &state.conn).await?;
     match c {
         Some(config) if config.verify_token(&input.token).is_none() => Ok(false),
         _ => Ok(true),
