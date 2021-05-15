@@ -1,7 +1,8 @@
-use crate::service::ErrorWithStatusCode;
+use super::super::{error::map_to_std, Error, Result};
 use crate::state::AppState;
 use chrono::NaiveDate;
 use serde_derive::*;
+use std::borrow::Cow;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -20,7 +21,7 @@ pub struct DataPoint {
 
 pub type Output = Vec<DataPoint>;
 
-pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
+pub async fn execute(state: &AppState, input: Input) -> Result<Output> {
     let Input {
         from,
         to,
@@ -34,7 +35,7 @@ pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
 
     match (from, to) {
         (Some(f), Some(t)) if f > t => {
-            return Err(ErrorWithStatusCode::new(400).into());
+            return Err(Error::InvalidArgument(Cow::from("Invalid date range")));
         }
         _ => {}
     }
@@ -56,8 +57,9 @@ pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
     Ok(sqlx::query_as(include_str!("sum.sql"))
         .bind(from)
         .bind(to)
-        .bind(serde_json::to_string(&accounts)?)
+        .bind(serde_json::to_string(&accounts).map_err(map_to_std)?)
         .bind(time_format)
         .fetch_all(&state.conn)
-        .await?)
+        .await
+        .map_err(map_to_std)?)
 }

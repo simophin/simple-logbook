@@ -73,14 +73,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::AppState;
 
     #[async_std::test]
     async fn config_rw_works() {
-        let conn = sqlx::AnyPool::connect("sqlite::memory:")
-            .await
-            .expect("mem conn");
-
-        sqlx::migrate!().run(&conn).await.expect("Migration to run");
+        let AppState { conn } = AppState::new_test().await;
 
         #[derive(Clone)]
         struct TestData {

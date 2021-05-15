@@ -104,16 +104,29 @@ async fn main() {
     );
     app.with(middleware::token_verify::execute);
     app.with(After(|mut res: Response| async {
-        match res.downcast_error::<service::ErrorWithStatusCode>() {
-            Some(service::ErrorWithStatusCode { code, err }) => {
-                let code = code.to_owned();
-                let err = err.as_ref().map(|e| e.to_string());
-                if let Some(err) = err {
-                    res.set_body(Body::from(err));
-                }
-                res.set_status(StatusCode::try_from(code as u16).unwrap());
-            }
-            _ => {}
+        use service::Error;
+        let (status, body) = match res.downcast_error::<Error>() {
+            Some(Error::InvalidCredentials) => (StatusCode::Forbidden, None),
+            Some(Error::InvalidArgument(msg)) => (
+                StatusCode::BadRequest,
+                Some(serde_json::json!({
+                    "name": "invalid_argument",
+                    "message": msg.as_ref(),
+                })),
+            ),
+            Some(Error::Other(err)) => (
+                StatusCode::InternalServerError,
+                Some(serde_json::json!({
+                    "name": "unknown",
+                    "message": err.to_string(),
+                })),
+            ),
+            None => return Ok(res),
+        };
+
+        res.set_status(status);
+        if let Some(body) = body {
+            res.set_body(body);
         }
         Ok(res)
     }));
@@ -139,6 +152,10 @@ async fn main() {
     // reports
     endpoint!(app, post, "/api/reports/sum", report::sum);
     endpoint!(app, post, "/api/reports/balance", report::balance);
+
+    // chart config
+    endpoint_get!(app, "/api/chartConfig", chart_config::get);
+    endpoint!(app, post, "/api/chartConfig", chart_config::save);
 
     app.at("/public/*").get(serve_static_assert);
     app.at("/*").get(serve_static_assert);

@@ -1,6 +1,6 @@
 use serde_derive::*;
 
-use crate::service::ErrorWithStatusCode;
+use super::super::{Error, Result};
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -21,7 +21,7 @@ pub async fn execute(
         old_password,
         new_password,
     }: Input,
-) -> anyhow::Result<Output> {
+) -> Result<Output> {
     use super::creds::*;
     use crate::config;
     let credentials = config::update::<CredentialsConfig, _, _>(
@@ -29,7 +29,7 @@ pub async fn execute(
         None,
         |c| match c {
             Some(config) if config.verify_password(&old_password).is_none() => {
-                Err(ErrorWithStatusCode::new(401))
+                Err(Error::InvalidCredentials)
             }
             _ if new_password.is_empty() => Ok(None),
             _ => Ok(Some(super::creds::CredentialsConfig::new(&new_password))),
