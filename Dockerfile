@@ -12,7 +12,7 @@ COPY --from=0 /app/build app/build
 
 RUN cargo build --release
 
-FROM ubuntu
+FROM rust
 WORKDIR /app
 COPY --from=1 /rust_app/target/release/simple-log-book ./
 
