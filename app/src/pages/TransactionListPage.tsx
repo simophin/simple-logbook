@@ -20,6 +20,7 @@ import {AppState} from "../state/AppState";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
 import _ from "lodash";
+import AttachmentItem from "../components/AttachmentItem";
 
 type TransactionId = Transaction['id'];
 
@@ -95,6 +96,9 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                                             date: </strong>{transDate}</div>
                                         <div style={flexFullLineItem}><strong>Last
                                             updated: </strong>{convert(r.updatedDate).toDate().toLocaleString()}</div>
+                                        <div style={{...flexFullLineItem, ...flexContainer}}>
+                                            {r.attachments.map(r => <AttachmentItem id={r} style={flexItem} />)}
+                                        </div>
                                         <div style={flexContainer}>
                                             <Button style={flexItem}
                                                     onClick={() => setEditState({state: 'edit', editing: r})}

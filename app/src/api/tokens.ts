@@ -11,7 +11,7 @@ export function signIn({password, ...extraProps}: { password: string } & ExtraRe
     return request({
         url: `${config.baseUrl}/sign`,
         ioType: ResponseType,
-        body: {password},
+        jsonBody: {password},
         method: 'post',
         ...extraProps,
     });
@@ -22,7 +22,7 @@ export function refreshToken(props?: ExtraRequestProps) {
         url: `${config.baseUrl}/refreshToken`,
         ioType: ResponseType,
         method: 'post',
-        body: {},
+        jsonBody: {},
         ...props,
     });
 }

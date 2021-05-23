@@ -26,7 +26,7 @@ export function getSumReport({accounts, freq, from, to, ...extraProps}: Filter &
         url: `${config.baseUrl}/reports/sum`,
         method: 'post',
         ioType: Response,
-        body: {
+        jsonBody: {
             from,
             to,
             freq,

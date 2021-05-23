@@ -11,8 +11,12 @@ export function buildAuthProps(token?: string): ExtraRequestProps {
     } : {};
 }
 
-export default function useAuthProps(): ExtraRequestProps {
+export function useAuthToken() {
     const {userState} = useContext(AppState);
-    const token = userState?.state === 'with_token' ? userState.token : undefined;
+    return userState?.state === 'with_token' ? userState.token : undefined;
+}
+
+export default function useAuthProps(): ExtraRequestProps {
+    const token = useAuthToken();
     return useMemo(() => buildAuthProps(token), [token]);
 }

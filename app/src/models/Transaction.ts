@@ -10,6 +10,7 @@ export const TransactionType = t.type({
     amount: currencyType,
     transDate: localDateType,
     updatedDate: zonedDateTimeType,
+    attachments: t.array(codec.NonEmptyString),
 });
 
 export const TransactionArrayType = t.array(TransactionType);

@@ -14,7 +14,7 @@ export default function updatePassword({
     return request({
         url: `${config.baseUrl}/changePassword`,
         method: 'post',
-        body: {oldPassword, newPassword},
+        jsonBody: {oldPassword, newPassword},
         ioType: ResponseType,
         ...extraProps,
     })

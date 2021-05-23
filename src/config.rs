@@ -1,8 +1,8 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use sqlx::AnyPool;
+use sqlx::SqlitePool;
 
-pub async fn get<T>(key: &str, id: Option<&str>, conn: &AnyPool) -> anyhow::Result<Option<T>>
+pub async fn get<T>(key: &str, id: Option<&str>, conn: &SqlitePool) -> anyhow::Result<Option<T>>
 where
     T: DeserializeOwned,
 {
@@ -24,7 +24,7 @@ pub async fn update<T, E, F>(
     key: &str,
     id: Option<&str>,
     updater: F,
-    conn: &AnyPool,
+    conn: &SqlitePool,
 ) -> anyhow::Result<Result<Option<T>, E>>
 where
     T: DeserializeOwned + Serialize,

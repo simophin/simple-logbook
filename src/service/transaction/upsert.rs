@@ -1,13 +1,13 @@
-use super::models::Transaction;
+use super::model::Transaction;
 use crate::state::AppState;
 
-pub type QueryInput = Vec<Transaction>;
-pub type QueryOutput = Vec<Transaction>;
+pub type Input = Vec<Transaction>;
+pub type Output = Vec<Transaction>;
 
-pub async fn execute(state: &AppState, input: QueryInput) -> anyhow::Result<QueryOutput> {
+pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
     let mut t = state.conn.begin().await?;
     for transaction in &input {
-        sqlx::query("INSERT OR REPLACE INTO transactions (id, description, fromAccount, toAccount, amount, transDate, updatedDate) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        sqlx::query(include_str!("upsert_transaction.sql"))
             .bind(&transaction.id)
             .bind(&transaction.description)
             .bind(&transaction.from_account)
@@ -17,8 +17,21 @@ pub async fn execute(state: &AppState, input: QueryInput) -> anyhow::Result<Quer
             .bind(&transaction.updated_date)
             .execute(&mut t)
             .await?;
+
+        sqlx::query(include_str!("upsert_tx_attachment_delete.sql"))
+            .bind(&transaction.id)
+            .bind(transaction.attachments.to_string())
+            .execute(&mut t)
+            .await?;
+
+        for attachment_id in transaction.attachments.iter() {
+            sqlx::query(include_str!("upsert_tx_attachment_upsert.sql"))
+                .bind(&transaction.id)
+                .bind(attachment_id)
+                .execute(&mut t)
+                .await?;
+        }
     }
     t.commit().await?;
-
     Ok(input)
 }

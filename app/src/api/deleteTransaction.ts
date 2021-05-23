@@ -11,7 +11,7 @@ export default function deleteTransaction({id}: { id: string }, extraProps?: Ext
     return request({
         url: `${config.baseUrl}/transactions`,
         method: 'delete',
-        body: [id],
+        jsonBody: [id],
         ioType: responseType,
         ...extraProps,
     }).pipe(map(({numDeleted}) => numDeleted > 0));
