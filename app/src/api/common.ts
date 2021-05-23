@@ -12,14 +12,16 @@ type RequestProps<IOType extends Any> = {
     url: string,
     method: "get" | "post" | "delete" | "put",
     ioType: IOType,
-    body?: object,
+    jsonBody?: object,
+    rawBody?: any,
 } & ExtraRequestProps;
 
 export function request<IOType extends Any>({
                                                 url,
                                                 method,
                                                 ioType,
-                                                body,
+                                                jsonBody,
+                                                rawBody,
                                                 headers = {},
                                             }: RequestProps<IOType>): Observable<t.TypeOf<IOType>> {
     return new Observable((sub) => {
@@ -28,10 +30,10 @@ export function request<IOType extends Any>({
                 url,
                 method,
                 headers: {
-                    "Content-Type": "application/json",
+                    "Content-Type": jsonBody ? "application/json" : undefined,
                     ...headers,
                 },
-                data: body ? JSON.stringify(body) : undefined,
+                data: jsonBody ? JSON.stringify(jsonBody) : rawBody,
                 cancelToken: source.token,
             }).then((res) => {
                 const data = ioType.decode(res.data);

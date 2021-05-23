@@ -1,20 +1,24 @@
+use std::convert::TryFrom;
+
 #[cfg(not(debug_assertions))]
 use rust_embed::*;
-
-use sqlx::AnyPool;
+use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::SqlitePool;
+use tide::http::headers::HeaderValue;
 use tide::log::LevelFilter;
+use tide::security::CorsMiddleware;
+use tide::utils::After;
 use tide::{Body, Error, Response, StatusCode};
 
 use crate::state::AppState;
-use sqlx::migrate::MigrateDatabase;
-use std::convert::TryFrom;
-use tide::http::headers::HeaderValue;
-use tide::security::CorsMiddleware;
-use tide::utils::After;
+use std::str::FromStr;
 
 mod config;
 mod middleware;
 mod service;
+#[macro_use]
+mod service_adapter;
+mod sqlx_ext;
 mod state;
 
 #[cfg(not(debug_assertions))]
@@ -47,32 +51,6 @@ async fn serve_static_assert(_: tide::Request<AppState>) -> tide::Result {
     Err(Error::from_str(StatusCode::NotFound, "Not found"))
 }
 
-macro_rules! endpoint {
-    ($app: expr, $method:ident, $path:expr, $pkg:path) => {
-        $app.at($path)
-            .$method(move |mut req: tide::Request<AppState>| async move {
-                use $pkg::*;
-                let input = req.body_json().await?;
-                Ok(Response::from(Body::from_json(
-                    &execute(&req.state(), input).await?,
-                )?))
-            });
-    };
-}
-
-macro_rules! endpoint_get {
-    ($app: expr, $path:expr, $pkg:path) => {
-        $app.at($path)
-            .get(move |req: tide::Request<AppState>| async move {
-                use $pkg::*;
-                let input = req.query()?;
-                Ok(Response::from(Body::from_json(
-                    &execute(&req.state(), input).await?,
-                )?))
-            });
-    };
-}
-
 #[async_std::main]
 async fn main() {
     let _ = dotenv::dotenv().ok();
@@ -80,13 +58,11 @@ async fn main() {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
 
-    if !sqlx::Sqlite::database_exists(&database_url).await.unwrap() {
-        sqlx::Sqlite::create_database(&database_url)
-            .await
-            .expect("To be able to create a db");
-    }
-
-    let conn = AnyPool::connect(&database_url).await.expect(&format!(
+    let conn = SqlitePool::connect_with(
+        SqliteConnectOptions::from_str(&database_url).expect("to parse database url"),
+    )
+    .await
+    .expect(&format!(
         "Unable to open database connection to {}",
         &database_url
     ));
@@ -102,34 +78,8 @@ async fn main() {
         CorsMiddleware::new()
             .allow_methods(HeaderValue::try_from("GET, DELETE, POST, OPTIONS").unwrap()),
     );
-    app.with(middleware::token_verify::execute);
-    app.with(After(|mut res: Response| async {
-        use service::Error;
-        let (status, body) = match res.downcast_error::<Error>() {
-            Some(Error::InvalidCredentials) => (StatusCode::Forbidden, None),
-            Some(Error::InvalidArgument(msg)) => (
-                StatusCode::BadRequest,
-                Some(serde_json::json!({
-                    "name": "invalid_argument",
-                    "message": msg.as_ref(),
-                })),
-            ),
-            Some(Error::Other(err)) => (
-                StatusCode::InternalServerError,
-                Some(serde_json::json!({
-                    "name": "unknown",
-                    "message": err.to_string(),
-                })),
-            ),
-            None => return Ok(res),
-        };
-
-        res.set_status(status);
-        if let Some(body) = body {
-            res.set_body(body);
-        }
-        Ok(res)
-    }));
+    app.with(middleware::token_verify::Verifier {});
+    app.with(After(middleware::error::execute));
 
     use service::*;
 
@@ -156,6 +106,15 @@ async fn main() {
     // chart config
     endpoint_get!(app, "/api/chartConfig", chart_config::get);
     endpoint!(app, post, "/api/chartConfig", chart_config::save);
+
+    // attachments
+    app.at("/api/attachments")
+        .get(service_adapter::attachment::get);
+
+    app.at("/api/attachments")
+        .post(service_adapter::attachment::post);
+
+    endpoint!(app, post, "/api/attachments/list", attachment::list);
 
     app.at("/public/*").get(serve_static_assert);
     app.at("/*").get(serve_static_assert);

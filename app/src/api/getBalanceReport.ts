@@ -23,7 +23,7 @@ export function getBalanceReport({accounts, from, to}: Filter, extraProps?: Extr
         url: `${config.baseUrl}/reports/balance`,
         method: 'post',
         ioType: Response,
-        body: {
+        jsonBody: {
             from,
             to,
             accounts,

@@ -25,7 +25,7 @@ export function listTransaction(filter: Filter = {}, extraProps?: ExtraRequestPr
         url: `${config.baseUrl}/transactions/list`,
         method: 'post',
         ioType: ListResultType,
-        body: filter,
+        jsonBody: filter,
         ...extraProps,
     })
 }

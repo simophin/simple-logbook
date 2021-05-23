@@ -12,7 +12,7 @@ export default function replaceAccountGroups(data: AccountGroup[], extraProps?: 
     return request({
         url: `${config.baseUrl}/accountGroups`,
         method: 'post',
-        body: data,
+        jsonBody: data,
         ioType: responseType,
         ...extraProps,
     }).pipe(map(({success}) => success));

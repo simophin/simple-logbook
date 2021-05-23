@@ -1,15 +1,21 @@
 use crate::state::AppState;
-use std::future::Future;
-use std::pin::Pin;
+use async_trait::async_trait;
+use serde_derive::*;
+use std::borrow::Cow;
 use tide::http::Method;
-use tide::{Next, Request, Response, StatusCode};
+use tide::{Middleware, Next, Request, Response, StatusCode};
 
-pub fn execute<'a>(
-    req: Request<AppState>,
-    next: Next<'a, AppState>,
-) -> Pin<Box<dyn Future<Output = tide::Result> + Send + 'a>> {
-    use crate::service::login::verify;
-    Box::pin(async {
+#[derive(Deserialize)]
+struct TokenParams<'a> {
+    token: Cow<'a, str>,
+}
+
+pub struct Verifier;
+
+#[async_trait]
+impl Middleware<AppState> for Verifier {
+    async fn handle(&self, req: Request<AppState>, next: Next<'_, AppState>) -> tide::Result {
+        use crate::service::login::verify;
         if !req.url().path().starts_with("/api")
             || req.url().path().starts_with("/api/sign")
             || req.method() == Method::Options
@@ -19,13 +25,12 @@ pub fn execute<'a>(
 
         let token = req
             .header("Authorization")
-            .and_then(|v| {
-                v.last()
-                    .to_string()
-                    .split("Bearer ")
-                    .skip(1)
-                    .next()
-                    .map(|s| s.to_owned())
+            .and_then(|v| v.last().as_str().split("Bearer ").skip(1).next())
+            .map(Cow::from)
+            .or_else(|| {
+                req.query::<TokenParams<'_>>()
+                    .ok()
+                    .map(|TokenParams { token }| token)
             })
             .unwrap_or_default();
 
@@ -36,5 +41,5 @@ pub fn execute<'a>(
         } else {
             Ok(Response::from(StatusCode::Unauthorized))
         }
-    })
+    }
 }

@@ -1,5 +1,6 @@
 pub mod account;
 pub mod account_group;
+pub mod attachment;
 pub mod chart_config;
 mod error;
 pub mod login;

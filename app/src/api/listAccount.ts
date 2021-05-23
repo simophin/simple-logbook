@@ -13,7 +13,7 @@ export default function listAccounts(filter: Filter = {}, extraProps?: ExtraRequ
         url: `${config.baseUrl}/accounts/list`,
         method: 'post',
         ioType: AccountArrayType,
-        body: filter,
+        jsonBody: filter,
         ...extraProps,
     })
 }

@@ -16,6 +16,7 @@ import {DateTimeFormatter, LocalDate, ZonedDateTime} from "@js-joda/core";
 import {NonEmptyString} from "io-ts-types";
 import useAuthProps from "../hooks/useAuthProps";
 import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
+import AttachmentSelect from "./AttachmentSelect";
 
 type Props = {
     editing?: Transaction,
@@ -32,6 +33,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [toAccount, setToAccount] = useState(editing?.toAccount ?? '');
     const [amount, setAmount] = useState(editing?.amount.toString() ?? '');
     const [date, setDate] = useState((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE));
+    const [attachments, setAttachments] = useState<string[]>(editing?.attachments ?? []);
 
     const descRef = useRef<HTMLDivElement>(null);
     const amountRef = useRef<HTMLInputElement>(null);
@@ -98,15 +100,14 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
         setSaving(true);
 
         createTransaction({
-            tx: {
-                id: id as NonEmptyString,
-                fromAccount: fromAccount as NonEmptyString,
-                toAccount: toAccount as NonEmptyString,
-                transDate: LocalDate.parse(date),
-                amount: currency(amount),
-                description: desc as NonEmptyString,
-                updatedDate: ZonedDateTime.now(),
-            }
+            id: id as NonEmptyString,
+            fromAccount: fromAccount as NonEmptyString,
+            toAccount: toAccount as NonEmptyString,
+            transDate: LocalDate.parse(date),
+            amount: currency(amount),
+            description: desc as NonEmptyString,
+            updatedDate: ZonedDateTime.now(),
+            attachments: attachments as NonEmptyString[],
         }, authProps).subscribe(
             () => {
                 setSaving(false);
@@ -204,6 +205,13 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                                     type='date'/>
                             </Form.Group>
                         </Col>
+                    </Form.Row>
+
+                    <Form.Row>
+                        <Form.Group>
+                            <Form.Label>Attachments</Form.Label>
+                            <AttachmentSelect value={attachments} onChange={setAttachments} />
+                        </Form.Group>
                     </Form.Row>
 
                     {showingAccounts.length > 0 &&

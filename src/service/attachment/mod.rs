@@ -1,6 +1,6 @@
-pub mod delete;
+pub mod get;
 pub mod list;
-mod model;
+pub mod model;
 pub mod upsert;
 
 #[cfg(test)]

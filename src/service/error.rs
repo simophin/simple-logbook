@@ -5,6 +5,7 @@ use std::fmt;
 pub enum Error {
     InvalidArgument(Cow<'static, str>),
     InvalidCredentials,
+    ResourceNotFound,
     Other(anyhow::Error),
 }
 

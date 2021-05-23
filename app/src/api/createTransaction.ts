@@ -3,12 +3,12 @@ import {ExtraRequestProps, request} from "./common";
 import config from "../config";
 import * as t from 'io-ts';
 
-export function createTransaction({tx}: { tx: Transaction }, extraProps?: ExtraRequestProps) {
+export function createTransaction(tx: Transaction, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/transactions`,
         method: 'post',
         ioType: t.array(TransactionType),
-        body: [
+        jsonBody: [
             TransactionType.encode(tx)
         ],
         ...extraProps,
