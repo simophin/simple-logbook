@@ -14,7 +14,7 @@ export default function uploadAttachment(file: File, extraProps?: ExtraRequestPr
         url: `${config.baseUrl}/attachments`,
         method: 'post',
         rawBody: body,
-        ioType: uploadResultType,
+        outputType: uploadResultType,
         ...extraProps,
     });
 }

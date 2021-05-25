@@ -1,9 +1,9 @@
 import {useCallback, useContext} from "react";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 
 
 export default function useAuthErrorReporter(): (e: Error) => unknown {
-    const {setUserState} = useContext(AppState);
+    const {setUserState} = useContext(AppStateContext);
     return useCallback((e: any) => {
         if (e.response && e.response.status === 401) {
             setUserState({state: 'auth_error'});

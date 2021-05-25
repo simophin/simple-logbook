@@ -16,7 +16,7 @@ import {convert, ZoneId} from '@js-joda/core';
 import AccountSelect from "../components/AccountSelect";
 import {useDebounce} from "../hooks/useDebounce";
 import useAuthProps from "../hooks/useAuthProps";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
 import _ from "lodash";
@@ -36,7 +36,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
     const [searchTerm, setSearchTerm] = useState('');
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
-    const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppState);
+    const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppStateContext);
     const authProps = useAuthProps();
 
     const rows = useObservable(() =>

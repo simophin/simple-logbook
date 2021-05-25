@@ -1,5 +1,5 @@
 import {ReactElement} from "react";
-import {AppState, UserState} from "../state/AppState";
+import {AppStateContext, UserState} from "../state/AppStateContext";
 import {render, waitFor} from "@testing-library/react";
 import MockAdapter from 'axios-mock-adapter';
 import axios from "axios";
@@ -53,14 +53,14 @@ export function testAuthHandling(factory: () => ReactElement) {
         requestSpy.mockImplementation(() => new Promise(() => {
         }));
 
-        render(<AppState.Provider
+        render(<AppStateContext.Provider
             value={{
                 userState,
                 setUserState,
                 reportTransactionUpdated,
             }}>
             {factory()}
-        </AppState.Provider>);
+        </AppStateContext.Provider>);
 
         expect(requestSpy).toHaveBeenCalledWith(expected);
         expect(setUserState).toHaveBeenCalledTimes(0);
@@ -70,14 +70,14 @@ export function testAuthHandling(factory: () => ReactElement) {
         requestSpy.mockRestore();
         mock.onAny().reply(401);
 
-        render(<AppState.Provider
+        render(<AppStateContext.Provider
             value={{
                 userState,
                 setUserState,
                 reportTransactionUpdated,
             }}>
             {factory()}
-        </AppState.Provider>);
+        </AppStateContext.Provider>);
 
         return waitFor(() => {
             expect(setUserState).toHaveBeenCalledWith({state: 'auth_error'} as UserState);
@@ -97,13 +97,13 @@ describe('<Authenticator />', function () {
     it('should render', function () {
         const userState: UserState = {state: 'auth_error'};
 
-        render(<AppState.Provider
+        render(<AppStateContext.Provider
             value={{
                 userState,
                 setUserState,
                 reportTransactionUpdated,
             }}>
             <Authenticator />
-        </AppState.Provider>);
+        </AppStateContext.Provider>);
     });
 });

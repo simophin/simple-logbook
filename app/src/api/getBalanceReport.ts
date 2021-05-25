@@ -8,26 +8,25 @@ const DataPoint = t.type({
     date: localDateType,
 });
 
-const Response = t.array(DataPoint);
+const responseType = t.array(DataPoint);
 
-export type Filter = {
-    from?: string,
-    to?: string,
-    accounts: string[],
-};
+const filterType = t.partial({
+    from: t.string,
+    to: t.string,
+    accounts: t.array(t.string),
+});
 
-export type ResponseType = t.TypeOf<typeof Response>;
 
-export function getBalanceReport({accounts, from, to}: Filter, extraProps?: ExtraRequestProps) {
+export type Filter = t.TypeOf<typeof filterType>;
+export type Response = t.TypeOf<typeof responseType>;
+
+export function getBalanceReport(req: Filter, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/reports/balance`,
         method: 'post',
-        ioType: Response,
-        jsonBody: {
-            from,
-            to,
-            accounts,
-        },
+        inputType: filterType,
+        body: req,
+        outputType: responseType,
         ...extraProps
     })
 }

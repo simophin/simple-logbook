@@ -6,6 +6,7 @@ mod error;
 pub mod login;
 pub mod report;
 pub mod transaction;
+pub mod work_log;
 
 pub use error::Error;
 pub type Result<T> = std::result::Result<T, Error>;

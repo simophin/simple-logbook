@@ -3,35 +3,42 @@ import * as codec from 'io-ts-types';
 import {currencyType} from "./codecs";
 import {ExtraRequestProps, request} from "./common";
 import config from "../config";
-import {Frequency} from "../models/frequency";
+import {frequencyType} from "../models/frequency";
 
-const DataPoint = t.type({
+const dataPointType = t.type({
     total: currencyType,
     timePoint: codec.NonEmptyString,
 });
 
-const Response = t.array(DataPoint);
+const responseType = t.array(dataPointType);
 
-export type Filter = {
-    from?: string,
-    to?: string,
-    freq: Frequency,
-    accounts: string[],
-};
+const optionalFilterType = t.partial({
+    from: t.string,
+    to: t.string,
+    accounts: t.array(t.string),
+});
 
-export type ResponseType = t.TypeOf<typeof Response>;
+const mandatoryFilterType = t.type({
+    freq: frequencyType,
+})
+
+const filterType = t.intersection([optionalFilterType, mandatoryFilterType]);
+
+export type Filter = t.TypeOf<typeof filterType>;
+export type Response = t.TypeOf<typeof responseType>;
 
 export function getSumReport({accounts, freq, from, to, ...extraProps}: Filter & ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/reports/sum`,
         method: 'post',
-        ioType: Response,
-        jsonBody: {
+        inputType: filterType,
+        body: {
             from,
             to,
             freq,
             accounts,
         },
+        outputType: responseType,
         ...extraProps
     })
 }

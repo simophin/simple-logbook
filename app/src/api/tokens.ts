@@ -2,16 +2,22 @@ import * as t from 'io-ts';
 import {ExtraRequestProps, request} from "./common";
 import config from "../config";
 
+const requestType = t.type({
+    password: t.string,
+})
 
-const ResponseType = t.type({
+type Request = t.TypeOf<typeof requestType>;
+
+const responseType = t.type({
     token: t.string,
 });
 
-export function signIn({password, ...extraProps}: { password: string } & ExtraRequestProps) {
+export function signIn(req: Request, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/sign`,
-        ioType: ResponseType,
-        jsonBody: {password},
+        outputType: responseType,
+        inputType: requestType,
+        body: req,
         method: 'post',
         ...extraProps,
     });
@@ -20,9 +26,8 @@ export function signIn({password, ...extraProps}: { password: string } & ExtraRe
 export function refreshToken(props?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/refreshToken`,
-        ioType: ResponseType,
+        outputType: responseType,
         method: 'post',
-        jsonBody: {},
         ...props,
     });
 }

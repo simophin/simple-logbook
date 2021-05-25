@@ -7,7 +7,7 @@ export type UserState = {
     state: 'auth_error',
 } | undefined;
 
-type AppStateType = {
+export type AppState = {
     userState: UserState,
     transactionUpdatedTime?: number,
 
@@ -15,7 +15,7 @@ type AppStateType = {
     reportTransactionUpdated: () => unknown,
 };
 
-export const AppState = createContext<AppStateType>({
+export const AppStateContext = createContext<AppState>({
     userState: undefined,
     setUserState: () => {},
     reportTransactionUpdated: () => {},

@@ -1,0 +1,1 @@
+export const numericRegExp = new RegExp(/^\d*\.?\d{0,2}$/);

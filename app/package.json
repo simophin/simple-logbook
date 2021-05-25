@@ -81,6 +81,7 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/dom": "^7.31.0",
     "@types/jest-each": "^24.3.0",
     "jest-each": "^26.6.2"
   }

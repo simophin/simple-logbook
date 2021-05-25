@@ -1,4 +1,4 @@
-import {AccountGroup} from "../models/AccountGroup";
+import {AccountGroup, accountGroupArrayType} from "../models/AccountGroup";
 import * as t from "io-ts";
 import {ExtraRequestProps, request} from "./common";
 import config from "../config";
@@ -12,8 +12,9 @@ export default function replaceAccountGroups(data: AccountGroup[], extraProps?: 
     return request({
         url: `${config.baseUrl}/accountGroups`,
         method: 'post',
-        jsonBody: data,
-        ioType: responseType,
+        inputType: accountGroupArrayType,
+        body: data,
+        outputType: responseType,
         ...extraProps,
     }).pipe(map(({success}) => success));
 }

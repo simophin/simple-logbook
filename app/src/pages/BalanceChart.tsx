@@ -16,7 +16,7 @@ function localDateToTimePoint(d: LocalDate): TimePoint {
     }
 }
 
-function computeReport(responses: BalanceReport.ResponseType[], requests: SeriesDataRequest[]): SeriesData {
+function computeReport(responses: BalanceReport.Response[], requests: SeriesDataRequest[]): SeriesData {
     let rs = new SortedArray<SeriesDataPoint>([], (lhs, rhs) => compareTimePoint(lhs.timePoint, rhs.timePoint));
     const compareTimeToDataPoint = (tp: TimePoint, dp: SeriesDataPoint) => compareTimePoint(tp, dp.timePoint);
     for (let i = 0; i < responses.length; i++) {

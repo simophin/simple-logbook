@@ -1,6 +1,6 @@
 import {useCallback, useContext, useEffect, useState} from "react";
 import {Button, Form, Modal} from "react-bootstrap";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 import {refreshToken, signIn} from "../api/tokens";
 import {timer} from "rxjs";
 import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
@@ -16,7 +16,7 @@ type LoginState = {
 
 export default function Authenticator() {
     const [inputPassword, setInputPassword] = useState('');
-    const {userState, setUserState} = useContext(AppState);
+    const {userState, setUserState} = useContext(AppStateContext);
     const [loginState, setLoginState] = useState<LoginState>();
     const handleLogin = useCallback(() => {
         setLoginState({state: 'in_progress'});

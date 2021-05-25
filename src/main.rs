@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 #[cfg(not(debug_assertions))]
 use rust_embed::*;
-use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
 use tide::http::headers::HeaderValue;
 use tide::log::LevelFilter;
@@ -59,7 +59,9 @@ async fn main() {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
 
     let conn = SqlitePool::connect_with(
-        SqliteConnectOptions::from_str(&database_url).expect("to parse database url"),
+        SqliteConnectOptions::from_str(&database_url)
+            .expect("to parse database url")
+            .journal_mode(SqliteJournalMode::Delete),
     )
     .await
     .expect(&format!(
@@ -106,6 +108,12 @@ async fn main() {
     // chart config
     endpoint_get!(app, "/api/chartConfig", chart_config::get);
     endpoint!(app, post, "/api/chartConfig", chart_config::save);
+
+    // work log
+    endpoint!(app, post, "/api/workLogs", work_log::save);
+    endpoint!(app, post, "/api/workLogs/search", work_log::search);
+    endpoint_get!(app, "/api/workLogs/categories", work_log::list_cat);
+    endpoint_get!(app, "/api/workLogs/subCategories", work_log::list_subcat);
 
     // attachments
     app.at("/api/attachments")

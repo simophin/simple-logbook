@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
 import {currencyType, localDateType, zonedDateTimeType} from "../api/codecs";
 
-export const TransactionType = t.type({
+export const transactionType = t.type({
     id: codec.NonEmptyString,
     description: codec.NonEmptyString,
     fromAccount: codec.NonEmptyString,
@@ -13,6 +13,6 @@ export const TransactionType = t.type({
     attachments: t.array(codec.NonEmptyString),
 });
 
-export const TransactionArrayType = t.array(TransactionType);
+export const transactionArrayType = t.array(transactionType);
 
-export type Transaction = t.TypeOf<typeof TransactionType>;
+export type Transaction = t.TypeOf<typeof transactionType>;

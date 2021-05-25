@@ -1,12 +1,13 @@
-import {Button, Form, Modal, NavDropdown} from "react-bootstrap";
+import {Button, Form, Modal} from "react-bootstrap";
 import {useContext, useState} from "react";
 import AlertDialog from "../components/AlertDialog";
 import useAuthProps from "../hooks/useAuthProps";
 import updatePassword from "../api/updatePassword";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
+import DropdownItem from "react-bootstrap/DropdownItem";
 
 
-export default function ChangePasswordNavItem() {
+export default function ChangePasswordDropdownItem() {
     const [showing, setShowing] = useState(false);
 
     const [oldPassword, setOldPassword] = useState('');
@@ -16,7 +17,7 @@ export default function ChangePasswordNavItem() {
     const [error, setError] = useState();
 
     const authProps = useAuthProps();
-    const {setUserState} = useContext(AppState);
+    const {setUserState} = useContext(AppStateContext);
 
     const handleSave = () => {
         if (updating) {
@@ -24,11 +25,7 @@ export default function ChangePasswordNavItem() {
         }
 
         setUpdating(true);
-        updatePassword({
-            oldPassword,
-            newPassword,
-            ...authProps
-        })
+        updatePassword({oldPassword, newPassword}, authProps)
             .subscribe(
                 ({token}) => {
                     setOldPassword('');
@@ -49,9 +46,9 @@ export default function ChangePasswordNavItem() {
     };
 
     return <>
-        <NavDropdown.Item onSelect={() => setShowing(true)}>
+        {<DropdownItem onSelect={() => setShowing(true)}>
             Change password
-        </NavDropdown.Item>
+        </DropdownItem>}
 
         {error && showing && <AlertDialog body={`Error saving password: ${error}`}
                                           onOk={() => setError(undefined)}

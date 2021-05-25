@@ -10,11 +10,12 @@ import {useMediaPredicate} from "react-media-hook";
 import IncomeExpenseChart from "./pages/IncomeExpenseChart";
 import qs from 'qs';
 import _ from "lodash";
-import {AppState, UserState} from "./state/AppState";
+import {AppStateContext, UserState} from "./state/AppStateContext";
 import Authenticator from "./components/Authenticator";
-import HomeActionButton from "./components/HomeActionButton";
-import ChangePasswordNavItem from "./pages/ChangePasswordNavItem";
 import BalanceChart from "./pages/BalanceChart";
+import WorkNavDropDown from "./components/WorkNavDropDown";
+import TransactionNavDropdown from "./components/TransactionNavDropdown";
+import SettingDropdown from "./components/SettingDropdown";
 
 function App() {
     let [userState, setUserState] = useState<UserState>(() => {
@@ -49,21 +50,15 @@ function App() {
         userState, transactionUpdatedTime, setUserState: handleSetUserState, reportTransactionUpdated
     }), [handleSetUserState, reportTransactionUpdated, transactionUpdatedTime, userState]);
 
-    return <AppState.Provider value={appStateValue}>
+    return <AppStateContext.Provider value={appStateValue}>
         <Navbar expand={bigScreen} collapseOnSelect>
             <Navbar.Brand>Logbook</Navbar.Brand>
             <Navbar.Toggle/>
             <Navbar.Collapse>
                 <Nav>
-                    <LinkContainer to='/'>
-                        <Nav.Link active={location.pathname === '/' || location.pathname === '/transactions'}>
-                            Transactions
-                        </Nav.Link>
-                    </LinkContainer>
-                    <LinkContainer to='/accounts'>
-                        <Nav.Link active={location.pathname === '/accounts'}>Accounts</Nav.Link>
-                    </LinkContainer>
-                    <NavDropdown id="nav-dropdown" title='Charts'>
+                    <TransactionNavDropdown />
+
+                    <NavDropdown id="nav-chart" title='Chart'>
                         <LinkContainer to='/charts/income_expense'>
                             <NavDropdown.Item
                                 active={location.pathname === '/charts/income_expense'}>
@@ -77,16 +72,11 @@ function App() {
                             </NavDropdown.Item>
                         </LinkContainer>
                     </NavDropdown>
-                    <NavDropdown id='nav-settings' title='Settings'>
-                        <ChangePasswordNavItem />
-                    </NavDropdown>
-
-                    {!bigScreen && <HomeActionButton asNav/>}
+                    <WorkNavDropDown />
+                    <SettingDropdown />
                 </Nav>
 
             </Navbar.Collapse>
-
-            {bigScreen && <HomeActionButton/>}
         </Navbar>
 
 
@@ -113,7 +103,7 @@ function App() {
         </Switch>
 
         <Authenticator/>
-    </AppState.Provider>
+    </AppStateContext.Provider>
 }
 
 export default App;
