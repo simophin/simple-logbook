@@ -7,7 +7,7 @@ import {Frequency} from "../models/frequency";
 import {map} from "rxjs/operators";
 import {Helmet} from "react-helmet";
 
-function transformSum(resp: SumReport.ResponseType[],
+function transformSum(resp: SumReport.Response[],
                       reqs: SeriesDataRequest[],
                       freq: Frequency): SeriesData {
     if (resp.length === 0) {

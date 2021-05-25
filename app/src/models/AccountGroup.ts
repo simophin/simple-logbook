@@ -1,10 +1,10 @@
 import * as t from 'io-ts';
 
-export const AccountGroupType = t.type({
+export const accountGroupType = t.type({
     groupName: t.string,
     accounts: t.array(t.string),
 });
 
-export const AccountGroupArrayType = t.array(AccountGroupType);
+export const accountGroupArrayType = t.array(accountGroupType);
 
-export type AccountGroup = t.TypeOf<typeof AccountGroupType>;
+export type AccountGroup = t.TypeOf<typeof accountGroupType>;

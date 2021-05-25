@@ -25,7 +25,7 @@ import {CategoricalChartProps} from "recharts/types/chart/generateCategoricalCha
 import {DateTimeFormatter} from "@js-joda/core";
 import DateRangeSelect from "../components/DateRangeSelect";
 import useWindowDimensions from "../hooks/useWindowDimensions";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 import useAuthProps from "../hooks/useAuthProps";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {ExtraRequestProps} from "../api/common";
@@ -147,7 +147,7 @@ export default function ChartPage({fetchData, showFrequency = true, persistKey}:
     const [from, setFrom] = useState<string>();
     const [to, setTo] = useState<string>();
 
-    const {transactionUpdatedTime} = useContext(AppState);
+    const {transactionUpdatedTime} = useContext(AppStateContext);
 
     const requests: SeriesDataRequest[] = useMemo(() => seriesConfigs.map(({id, type, accounts}) => {
         return {id, accounts, type, from, to};

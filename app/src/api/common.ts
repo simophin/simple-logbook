@@ -8,35 +8,53 @@ export type ExtraRequestProps = {
     headers?: object,
 }
 
-type RequestProps<IOType extends Any> = {
+interface CommonProps {
     url: string,
     method: "get" | "post" | "delete" | "put",
-    ioType: IOType,
-    jsonBody?: object,
-    rawBody?: any,
-} & ExtraRequestProps;
+}
 
-export function request<IOType extends Any>({
-                                                url,
-                                                method,
-                                                ioType,
-                                                jsonBody,
-                                                rawBody,
-                                                headers = {},
-                                            }: RequestProps<IOType>): Observable<t.TypeOf<IOType>> {
+interface WithOutputType<OutputType extends Any> extends CommonProps {
+    outputType: OutputType,
+}
+
+interface WithInputType<InputType extends Any> extends CommonProps {
+    inputType: InputType,
+    body: t.TypeOf<InputType>,
+}
+
+interface RawInputType extends CommonProps {
+    rawBody?: any,
+}
+
+type RequestProps<OutputType extends Any, InputType extends Any> = WithOutputType<OutputType>
+    & (WithInputType<InputType> | RawInputType)
+    & ExtraRequestProps;
+
+export function request<OutputType extends Any = Any,
+    InputType extends Any = Any>(props: RequestProps<OutputType, InputType>): Observable<t.TypeOf<OutputType>> {
     return new Observable((sub) => {
             const source = axios.CancelToken.source();
+            let contentType: string | undefined;
+            let data;
+
+            if ("inputType" in props) {
+                contentType = 'application/json';
+                data = JSON.stringify(props.inputType.encode(props.body));
+            } else {
+                data = props.rawBody;
+            }
+
             axios.request({
-                url,
-                method,
+                url: props.url,
+                method: props.method,
                 headers: {
-                    "Content-Type": jsonBody ? "application/json" : undefined,
-                    ...headers,
+                    "Content-Type": contentType,
+                    ...props.headers,
                 },
-                data: jsonBody ? JSON.stringify(jsonBody) : rawBody,
+                data,
                 cancelToken: source.token,
             }).then((res) => {
-                const data = ioType.decode(res.data);
+                const data = props.outputType.decode(res.data);
                 if (isLeft(data)) {
                     sub.error({name: 'invalid_data', message: JSON.stringify(PathReporter.report(data))} as Error);
                 } else {

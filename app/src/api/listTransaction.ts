@@ -1,31 +1,35 @@
 import * as t from 'io-ts';
-import {TransactionArrayType} from "../models/Transaction";
+import {transactionArrayType} from "../models/Transaction";
 import {ExtraRequestProps, request} from "./common";
 import config from "../config";
+import {localDateType} from "./codecs";
 
 
-export type Filter = {
-    from?: Date,
-    to?: Date,
-    q?: string,
-    limit?: number,
-    offset?: number,
-    accounts?: string[],
-}
+const filterType = t.partial({
+    from: localDateType,
+    to: localDateType,
+    q: t.string,
+    limit: t.number,
+    offset: t.number,
+    accounts: t.array(t.string),
+})
 
-const ListResultType = t.type({
+export type Filter = t.TypeOf<typeof filterType>;
+
+const responseType = t.type({
     limit: t.number,
     total: t.number,
     offset: t.number,
-    data: TransactionArrayType,
+    data: transactionArrayType,
 });
 
 export function listTransaction(filter: Filter = {}, extraProps?: ExtraRequestProps) {
     return request({
         url: `${config.baseUrl}/transactions/list`,
         method: 'post',
-        ioType: ListResultType,
-        jsonBody: filter,
+        inputType: filterType,
+        body: filter,
+        outputType: responseType,
         ...extraProps,
     })
 }

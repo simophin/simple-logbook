@@ -1,6 +1,6 @@
 import AccountGroupEntry from "./AccountGroupEntry";
 import {render, screen} from "@testing-library/react";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 import {unknown} from "io-ts";
 import {testAuthHandling} from "./Authenticator.test";
 import {of} from "rxjs";
@@ -21,7 +21,7 @@ describe('<AccountGroupEntry />', function () {
         const getAccounts: typeof listAccounts = jest.fn(() =>
             of(accounts.map((name) => ({name} as Account)))) as any;
 
-        const {container} = render(<AppState.Provider
+        const {container} = render(<AppStateContext.Provider
             value={{
                 userState: {state: 'with_token', token: '1234'},
                 setUserState: () => unknown,
@@ -31,7 +31,7 @@ describe('<AccountGroupEntry />', function () {
                 getAccounts={getAccounts}
                 onClose={handleOnClose}
                 onFinish={handleOnFinish}/>
-        </AppState.Provider>);
+        </AppStateContext.Provider>);
 
         expect(screen.queryByText('New account group')).toBeTruthy();
         expect(screen.queryByText('Edit account group')).toBeFalsy();

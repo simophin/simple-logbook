@@ -9,14 +9,14 @@ import {Link} from 'react-router-dom';
 import useAuthProps from "../hooks/useAuthProps";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 import _ from "lodash";
 
 
 export default function AccountListPage() {
     const [accountGroup, setAccountGroup] = useState<AccountGroup | undefined>();
     const authProps = useAuthProps();
-    const {transactionUpdatedTime} = useContext(AppState);
+    const {transactionUpdatedTime} = useContext(AppStateContext);
     const allAccounts = useObservable(() => listAccounts({
         includes: accountGroup?.accounts,
     }, authProps), [accountGroup, authProps, transactionUpdatedTime]);

@@ -1,6 +1,6 @@
 import {useContext, useMemo} from "react";
 import {ExtraRequestProps} from "../api/common";
-import {AppState} from "../state/AppState";
+import {AppStateContext} from "../state/AppStateContext";
 
 
 export function buildAuthProps(token?: string): ExtraRequestProps {
@@ -12,7 +12,7 @@ export function buildAuthProps(token?: string): ExtraRequestProps {
 }
 
 export function useAuthToken() {
-    const {userState} = useContext(AppState);
+    const {userState} = useContext(AppStateContext);
     return userState?.state === 'with_token' ? userState.token : undefined;
 }
 

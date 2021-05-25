@@ -17,14 +17,13 @@ import {NonEmptyString} from "io-ts-types";
 import useAuthProps from "../hooks/useAuthProps";
 import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
 import AttachmentSelect from "./AttachmentSelect";
+import {numericRegExp} from "../utils/numeric";
 
 type Props = {
     editing?: Transaction,
     onFinish: () => unknown,
     onClose: () => unknown,
 };
-
-const numericRegExp = new RegExp(/^\d*\.?\d{0,2}$/);
 
 export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [id, setId] = useState(() => editing?.id ?? uuid());
