@@ -31,6 +31,7 @@
     "botstrap": "^0.20.1",
     "currency.js": "^2.0.3",
     "fp-ts": "^2.10.3",
+    "immutable": "^4.0.0-rc.12",
     "io-ts": "^2.2.16",
     "io-ts-types": "^0.5.16",
     "lodash": "^4.17.21",
@@ -82,6 +83,7 @@
   },
   "devDependencies": {
     "@testing-library/dom": "^7.31.0",
+    "@testing-library/react-hooks": "^7.0.0",
     "@types/jest-each": "^24.3.0",
     "jest-each": "^26.6.2"
   }

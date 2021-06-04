@@ -1,4 +1,4 @@
-function defaultCompare(lhs: any, rhs: any) {
+export function defaultCompare(lhs: any, rhs: any) {
     if (lhs < rhs) {
         return -1;
     } else if (lhs > rhs) {
@@ -31,10 +31,15 @@ export function binarySearch<T, R>(arr: T[], val: R, compareFn: (a: R, b: T) => 
 export default class SortedArray<T> {
     private readonly backing: T[];
 
-    constructor(input: T[], private readonly compare: (lhs: T, rhs: T) => number = defaultCompare) {
-        this.backing = [...input];
-        this.backing.sort(this.compare);
+    constructor(input: T[], private readonly compare: (lhs: T, rhs: T) => number = defaultCompare, isSorted: boolean = false) {
+        if (isSorted) {
+            this.backing = input;
+        } else {
+            this.backing = [...input];
+            this.backing.sort(this.compare);
+        }
     }
+
 
     get length() {
         return this.backing.length;
@@ -52,14 +57,18 @@ export default class SortedArray<T> {
         return this.insertAt(Math.abs(binarySearch(this.backing, v, this.compare)), v);
     }
 
+    removeAt(index: number): SortedArray<T> {
+        return new SortedArray([
+            ...this.backing.slice(0, index),
+            ...this.backing.slice(index + 1)
+        ], this.compare);
+    }
+
     remove(v: T): [SortedArray<T>, boolean] {
         const existingIndex = binarySearch(this.backing, v, this.compare);
         if (existingIndex >= 0) {
             return [
-                new SortedArray([
-                    ...this.backing.slice(0, existingIndex),
-                    ...this.backing.slice(existingIndex + 1)
-                ], this.compare),
+                this.removeAt(existingIndex),
                 true,
             ];
         }

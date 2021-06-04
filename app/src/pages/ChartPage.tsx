@@ -31,6 +31,7 @@ import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {ExtraRequestProps} from "../api/common";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Frequency} from "../models/frequency";
+import {formatAsCurrency} from "../utils/numeric";
 
 const allChartTypes = ['Area', 'Line', 'Bar'] as const;
 type ChartType = typeof allChartTypes[number];
@@ -98,8 +99,8 @@ function Chart({data, configs, freq, type}: ChartProps) {
                tickFormatter={(value: string | number) =>
                    typeof value === 'string' ? value : formatTimePoint(timePointFromValue(value, freq))}
                style={{fontSize: 11}}/>,
-        <YAxis key='chart-axis-y' tickFormatter={(v) => currency(v, {precision: 0}).format()} style={{fontSize: 11}}/>,
-        <Tooltip key='chart-tooltip' formatter={(v: any) => currency(v).format()}
+        <YAxis key='chart-axis-y' tickFormatter={(v) => formatAsCurrency(currency(v), {precision: 0})} style={{fontSize: 11}}/>,
+        <Tooltip key='chart-tooltip' formatter={(v: any) => formatAsCurrency(currency(v))}
                  labelFormatter={(value: string | number) =>
                      typeof value === 'string' ? value : formatTimePoint(timePointFromValue(value, freq))}
         />,

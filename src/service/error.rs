@@ -15,14 +15,8 @@ impl fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
-
-impl From<anyhow::Error> for Error {
-    fn from(err: anyhow::Error) -> Self {
-        Self::Other(err)
+impl<E: Into<anyhow::Error>> From<E> for Error {
+    fn from(e: E) -> Self {
+        Error::Other(e.into())
     }
-}
-
-pub fn map_to_std<E: std::error::Error + Send + Sync + 'static>(e: E) -> Error {
-    Error::Other(e.into())
 }

@@ -1,49 +1,45 @@
-use super::super::{error::map_to_std, Error, Result};
-use crate::state::AppState;
-use chrono::prelude::*;
-use serde_derive::*;
-use std::borrow::Cow;
+use crate::sqlx_ext::Json;
+use chrono::NaiveDate;
 
-#[derive(Deserialize)]
+#[derive(serde::Deserialize)]
 pub struct Input {
-    from: Option<NaiveDate>,
-    to: Option<NaiveDate>,
-    accounts: Vec<String>,
+    pub from: Option<NaiveDate>,
+    pub to: Option<NaiveDate>,
+    pub accounts: Json<Vec<String>>,
 }
 
-#[derive(sqlx::FromRow, Serialize)]
+#[derive(sqlx::FromRow, serde::Serialize)]
 #[sqlx(rename_all = "camelCase")]
 pub struct DataRow {
-    balance: i64,
-    date: String,
+    pub balance: i64,
+    pub date: NaiveDate,
 }
 
-pub type Output = Vec<DataRow>;
+//language=sql
+const SQL: &str = r#"
+with recursive input_accounts(name) as (select value from json_each(?3)),
+               daily(date, total, i) as (select transDate, sum(ds.total), row_number() over (order by transDate)
+                                               from daily_sum ds
+                                                        inner join input_accounts ia on ia.name = ds.account
+                                               where ?1 is null or transDate >= ?1
+                                                 and ?2 is null or transDate <= ?2
+                                               group by transDate
+                                               order by transDate),
+               balance(balanceDate, i, balance) as (
+                   select daily.date, 1, coalesce(sum(at.amount), 0)
+                   from account_transactions at
+                            inner join daily on daily.i = 1
+                            inner join input_accounts ia on ia.name = at.account
+                   where transDate <= daily.date
 
-pub async fn execute(state: &AppState, Input { from, to, accounts }: Input) -> Result<Output> {
-    if accounts.is_empty() {
-        return Ok(vec![]);
-    }
+                   union all
 
-    match (&from, &to) {
-        (Some(a), Some(b)) if a > b => {
-            return Err(Error::InvalidArgument(Cow::from("Invalid date range")));
-        }
-        _ => {}
-    }
+                   select daily.date, balance.i + 1, balance.balance + daily.total
+                   from balance
+                   inner join daily on daily.i = balance.i + 1
+               )
+select balanceDate date, balance
+from balance
+"#;
 
-    let from = from
-        .map(|t| t.to_string())
-        .unwrap_or_else(|| String::from("1970-01-01"));
-    let to = to
-        .map(|t| t.to_string())
-        .unwrap_or_else(|| String::from("2999-12-12"));
-
-    Ok(sqlx::query_as(include_str!("balance.sql"))
-        .bind(from)
-        .bind(to)
-        .bind(serde_json::to_string(&accounts).map_err(map_to_std)?)
-        .fetch_all(&state.conn)
-        .await
-        .map_err(map_to_std)?)
-}
+crate::list_sql_impl!(Input, DataRow, query_as, SQL, from, to, accounts);

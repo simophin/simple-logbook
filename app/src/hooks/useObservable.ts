@@ -44,7 +44,8 @@ export function useObservable<T>(factory: () => Observable<T>, deps: any[]): Sta
                 setResult({
                     type: 'error',
                     error
-                })
+                });
+                console.log('Error', error);
             }
         });
 

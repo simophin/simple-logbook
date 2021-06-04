@@ -1,9 +1,9 @@
-use serde_derive::*;
+use crate::sqlx_ext::Json;
 
-#[derive(sqlx::FromRow, Deserialize, Serialize)]
-#[sqlx(rename_all = "camelCase")]
+#[derive(serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
+#[sqlx(rename_all = "camelCase")]
 pub struct AccountGroup {
     pub group_name: String,
-    pub account_name: String,
+    pub accounts: Json<Vec<String>>,
 }

@@ -16,6 +16,10 @@ import BalanceChart from "./pages/BalanceChart";
 import WorkNavDropDown from "./components/WorkNavDropDown";
 import TransactionNavDropdown from "./components/TransactionNavDropdown";
 import SettingDropdown from "./components/SettingDropdown";
+import InvoiceEntryPage, {InvoiceEditPage} from "./pages/InvoiceEntryPage";
+import InvoiceViewPage from "./pages/InvoiceViewPage";
+import InvoiceListView from "./components/InvoiceListView";
+
 
 function App() {
     let [userState, setUserState] = useState<UserState>(() => {
@@ -28,6 +32,7 @@ function App() {
 
     const bigScreen = useMediaPredicate('(min-width: 420px)');
     const location = useLocation();
+    const fullScreen = /fullScreen=true/.test(location.search);
 
     const reportTransactionUpdated = useCallback(() => {
         setTransactionUpdatedTime(Date.now())
@@ -51,12 +56,12 @@ function App() {
     }), [handleSetUserState, reportTransactionUpdated, transactionUpdatedTime, userState]);
 
     return <AppStateContext.Provider value={appStateValue}>
-        <Navbar expand={bigScreen} collapseOnSelect>
+        {!fullScreen && <Navbar expand={bigScreen} collapseOnSelect>
             <Navbar.Brand>Logbook</Navbar.Brand>
             <Navbar.Toggle/>
             <Navbar.Collapse>
                 <Nav>
-                    <TransactionNavDropdown />
+                    <TransactionNavDropdown/>
 
                     <NavDropdown id="nav-chart" title='Chart'>
                         <LinkContainer to='/charts/income_expense'>
@@ -72,18 +77,22 @@ function App() {
                             </NavDropdown.Item>
                         </LinkContainer>
                     </NavDropdown>
-                    <WorkNavDropDown />
-                    <SettingDropdown />
+                    <WorkNavDropDown/>
+                    <SettingDropdown/>
                 </Nav>
 
             </Navbar.Collapse>
-        </Navbar>
+        </Navbar>}
 
 
         <Switch>
             <Route path="/charts/income_expense" exact><IncomeExpenseChart/></Route>
             <Route path="/charts/balance" exact><BalanceChart/></Route>
             <Route path="/accounts"><AccountListPage/></Route>
+            <Route path="/invoices"><InvoiceListView /></Route>
+            <Route path="/invoice/add"><InvoiceEntryPage /></Route>
+            <Route path="/invoice/edit/:id"><InvoiceEditPage /></Route>
+            <Route path="/invoice/view/:id"><InvoiceViewPage /></Route>
             <Route path="/transactions">
                 {(props) => {
                     const query = qs.parse(props.location.search.substr(1), {parseArrays: true});

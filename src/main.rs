@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 #[cfg(not(debug_assertions))]
 use rust_embed::*;
@@ -7,19 +8,20 @@ use sqlx::SqlitePool;
 use tide::http::headers::HeaderValue;
 use tide::log::LevelFilter;
 use tide::security::CorsMiddleware;
-use tide::utils::After;
-use tide::{Body, Error, Response, StatusCode};
+use tide::{Error, StatusCode};
 
 use crate::state::AppState;
-use std::str::FromStr;
 
 mod config;
 mod middleware;
-mod service;
+#[macro_use]
+pub mod service;
 #[macro_use]
 mod service_adapter;
 mod sqlx_ext;
 mod state;
+#[macro_use]
+mod utils;
 
 #[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
@@ -78,10 +80,9 @@ async fn main() {
 
     app.with(
         CorsMiddleware::new()
-            .allow_methods(HeaderValue::try_from("GET, DELETE, POST, OPTIONS").unwrap()),
+            .allow_methods(HeaderValue::try_from("GET, DELETE, POST, PUT, OPTIONS").unwrap()),
     );
     app.with(middleware::token_verify::Verifier {});
-    app.with(After(middleware::error::execute));
 
     use service::*;
 
@@ -91,7 +92,7 @@ async fn main() {
     endpoint!(app, post, "/api/refreshToken", login::refresh);
 
     // transactions
-    endpoint!(app, post, "/api/transactions", transaction::upsert);
+    endpoint!(app, post, "/api/transactions", transaction::save);
     endpoint!(app, post, "/api/transactions/list", transaction::list);
     endpoint!(app, delete, "/api/transactions", transaction::delete);
     endpoint!(app, post, "/api/accounts/list", account::list);
@@ -99,7 +100,7 @@ async fn main() {
     // account group
     endpoint_get!(app, "/api/accountGroups", account_group::list);
     endpoint!(app, delete, "/api/accountGroups", account_group::delete);
-    endpoint!(app, post, "/api/accountGroups", account_group::replace);
+    endpoint!(app, post, "/api/accountGroups", account_group::save);
 
     // reports
     endpoint!(app, post, "/api/reports/sum", report::sum);
@@ -109,11 +110,18 @@ async fn main() {
     endpoint_get!(app, "/api/chartConfig", chart_config::get);
     endpoint!(app, post, "/api/chartConfig", chart_config::save);
 
-    // work log
-    endpoint!(app, post, "/api/workLogs", work_log::save);
-    endpoint!(app, post, "/api/workLogs/search", work_log::search);
-    endpoint_get!(app, "/api/workLogs/categories", work_log::list_cat);
-    endpoint_get!(app, "/api/workLogs/subCategories", work_log::list_subcat);
+    // invoice related
+    endpoint!(app, post, "/api/invoices", invoice::save);
+    endpoint!(app, delete, "/api/invoices", invoice::delete);
+    endpoint!(app, post, "/api/invoices/list", invoice::list);
+    endpoint!(app, post, "/api/invoices/items", invoice::save_item);
+    endpoint!(app, post, "/api/invoices/items/list", invoice::list_item);
+    endpoint!(
+        app,
+        post,
+        "/api/invoices/items/categories/search",
+        invoice::search_cat
+    );
 
     // attachments
     app.at("/api/attachments")
@@ -121,6 +129,7 @@ async fn main() {
 
     app.at("/api/attachments")
         .post(service_adapter::attachment::post);
+    endpoint!(app, delete, "/api/attachments", attachment::cleanup);
 
     endpoint!(app, post, "/api/attachments/list", attachment::list);
 

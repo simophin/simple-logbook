@@ -11,7 +11,7 @@ pub struct Input<'a> {
 
 pub type Output = bool;
 
-pub async fn query(state: &AppState, input: Input<'_>) -> anyhow::Result<Output> {
+pub async fn query(state: &AppState, input: Input<'_>) -> crate::service::Result<Output> {
     use crate::config;
     let c: Option<CredentialsConfig> =
         config::get(CREDENTIALS_CONFIG_KEY, None, &state.conn).await?;

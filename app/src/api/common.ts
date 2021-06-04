@@ -1,7 +1,7 @@
 import {Observable} from "rxjs";
 import {isLeft} from "fp-ts/Either";
 import {PathReporter} from "io-ts/PathReporter";
-import {Any, default as t} from "io-ts";
+import * as t from "io-ts";
 import axios from "axios";
 
 export type ExtraRequestProps = {
@@ -13,11 +13,11 @@ interface CommonProps {
     method: "get" | "post" | "delete" | "put",
 }
 
-interface WithOutputType<OutputType extends Any> extends CommonProps {
+interface WithOutputType<OutputType extends t.Any> extends CommonProps {
     outputType: OutputType,
 }
 
-interface WithInputType<InputType extends Any> extends CommonProps {
+interface WithInputType<InputType extends t.Any> extends CommonProps {
     inputType: InputType,
     body: t.TypeOf<InputType>,
 }
@@ -26,12 +26,12 @@ interface RawInputType extends CommonProps {
     rawBody?: any,
 }
 
-type RequestProps<OutputType extends Any, InputType extends Any> = WithOutputType<OutputType>
+type RequestProps<OutputType extends t.Any, InputType extends t.Any> = WithOutputType<OutputType>
     & (WithInputType<InputType> | RawInputType)
     & ExtraRequestProps;
 
-export function request<OutputType extends Any = Any,
-    InputType extends Any = Any>(props: RequestProps<OutputType, InputType>): Observable<t.TypeOf<OutputType>> {
+export function request<OutputType extends t.Any = t.Any,
+    InputType extends t.Any = t.Any>(props: RequestProps<OutputType, InputType>): Observable<t.TypeOf<OutputType>> {
     return new Observable((sub) => {
             const source = axios.CancelToken.source();
             let contentType: string | undefined;
@@ -71,3 +71,7 @@ export function request<OutputType extends Any = Any,
         }
     );
 }
+
+export const updateResponseType = t.type({
+    numAffected: t.number,
+});
