@@ -1,23 +1,28 @@
-use super::models::Account;
-use crate::service::error::map_to_std;
-use crate::state::AppState;
-use serde_derive::*;
+use chrono::NaiveDate;
 
-#[derive(Deserialize)]
+use crate::sqlx_ext::Json;
+
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+#[sqlx(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
+pub struct Account {
+    pub name: String,
+    pub balance: i64,
+    pub last_trans_date: NaiveDate,
+}
+
+#[derive(serde::Deserialize)]
 pub struct Input {
     q: Option<String>,
-    includes: Option<Vec<String>>,
+    includes: Option<Json<Vec<String>>>,
 }
 
-pub type Output = Vec<Account>;
+//language=sql
+const SQL: &str = r#"
+select *
+from accounts
+where (?1 is null or trim(?1) = '' or name like '%' || trim(?1) || '%' collate nocase)
+  and (?2 is null or name in (select value from json_each(?2)))
+"#;
 
-pub async fn execute(state: &AppState, Input { q, includes }: Input) -> anyhow::Result<Output> {
-    let includes = includes.map(|v| serde_json::to_string(&v).unwrap());
-    let output = sqlx::query_as(include_str!("list.sql"))
-        .bind(q)
-        .bind(includes)
-        .fetch_all(&state.conn)
-        .await
-        .map_err(map_to_std)?;
-    Ok(output)
-}
+crate::list_sql_impl!(Input, Account, query_as, SQL, q, includes);

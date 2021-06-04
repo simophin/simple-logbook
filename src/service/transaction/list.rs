@@ -1,72 +1,50 @@
-use serde::Serialize;
-use serde_derive::*;
-
-use crate::state::AppState;
-
 use super::model::Transaction;
-use crate::service::error::map_to_std;
+use crate::service::CommonListRequest;
+use crate::sqlx_ext::Json;
 
-type DateString = String;
+#[derive(serde::Deserialize, Default)]
+pub struct Input {
+    #[serde(flatten)]
+    pub req: CommonListRequest,
 
-#[derive(Deserialize)]
-pub struct QueryInput {
-    pub q: Option<String>,
-    pub from: Option<DateString>,
-    pub to: Option<DateString>,
-    pub accounts: Option<Vec<String>>,
-    pub limit: Option<usize>,
-    pub offset: Option<usize>,
+    pub accounts: Option<Json<Vec<String>>>,
 }
 
-#[derive(Serialize)]
-pub struct Output {
-    pub data: Vec<Transaction>,
-    pub offset: i64,
-    pub limit: i64,
-    pub total: i64,
-}
+crate::impl_deref!(Input, req, CommonListRequest);
 
-pub async fn execute(
-    state: &AppState,
-    QueryInput {
-        q,
-        from,
-        to,
-        accounts,
-        limit,
-        offset,
-    }: QueryInput,
-) -> crate::service::Result<Output> {
-    let limit = limit.unwrap_or(50) as i64;
-    let offset = offset.unwrap_or(0) as i64;
-    let accounts = serde_json::to_string(&accounts.unwrap_or_default()).unwrap();
+//language=sql
+const COUNT_SQL: &str = r#"
+select count(t.id)
+from transactions as t
+where (?4 is null or trim(t.fromAccount) in (select value from json_each(?4)) or
+       trim(t.toAccount) in (select value from json_each(?4)))
+  and (?1 is null or ?1 = '' or t.description like '%' || ?1 || '%')
+  and (?2 is null or ?2 = '' or t.transDate >= ?2)
+  and (?3 is null or ?3 = '' or t.transDate <= ?3)
+"#;
 
-    let mut tx = state.conn.begin().await.map_err(map_to_std)?;
+//language=sql
+const SQL: &str = r#"
+select t.*, (select json_group_array(attachmentId) from transaction_attachments where transactionId = t.id) as attachments
+from transactions as t
+where (?4 is null or trim(t.fromAccount) in (select value from json_each(?4)) or
+       trim(t.toAccount) in (select value from json_each(?4)))
+  and (?1 is null or ?1 = '' or t.description like '%' || ?1 || '%' collate nocase)
+  and (?2 is null or ?2 = '' or t.transDate >= ?2)
+  and (?3 is null or ?3 = '' or t.transDate <= ?3)
+order by t.transDate desc, t.updatedDate desc
+"#;
 
-    let total: i64 = sqlx::query_scalar(include_str!("list_count.sql"))
-        .bind(&q)
-        .bind(&from)
-        .bind(&to)
-        .bind(&accounts)
-        .fetch_one(&mut tx)
-        .await
-        .map_err(map_to_std)?;
-
-    let data = sqlx::query_as(include_str!("list.sql"))
-        .bind(&q)
-        .bind(&from)
-        .bind(&to)
-        .bind(&accounts)
-        .bind(offset)
-        .bind(limit)
-        .fetch_all(&mut tx)
-        .await
-        .map_err(map_to_std)?;
-
-    Ok(Output {
-        data,
-        offset,
-        limit,
-        total,
-    })
-}
+crate::list_sql_paginated_impl!(
+    Input,
+    Transaction,
+    query_as,
+    SQL,
+    COUNT_SQL,
+    offset,
+    limit,
+    q,
+    from,
+    to,
+    accounts
+);

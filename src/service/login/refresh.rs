@@ -2,6 +2,7 @@ use super::creds::*;
 use crate::state::AppState;
 
 use serde_derive::*;
+use std::borrow::Cow;
 
 #[derive(Deserialize)]
 pub struct Input {}
@@ -11,10 +12,10 @@ pub struct Output {
     token: String,
 }
 
-pub async fn execute(state: &AppState, _: Input) -> anyhow::Result<Output> {
+pub async fn execute(state: &AppState, _: Input) -> crate::service::Result<Output> {
     let c: CredentialsConfig = crate::config::get(CREDENTIALS_CONFIG_KEY, None, &state.conn)
         .await?
-        .ok_or_else(|| anyhow::anyhow!("No credentials set"))?;
+        .ok_or_else(|| crate::service::Error::InvalidArgument(Cow::from("No credentials found")))?;
 
     Ok(Output { token: c.sign() })
 }

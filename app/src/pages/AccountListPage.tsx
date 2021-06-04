@@ -11,6 +11,7 @@ import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
 import {AppStateContext} from "../state/AppStateContext";
 import _ from "lodash";
+import {formatAsCurrency} from "../utils/numeric";
 
 
 export default function AccountListPage() {
@@ -27,7 +28,7 @@ export default function AccountListPage() {
             .map(({name, balance}) =>
                 <tr key={`account-${name}`}>
                     <td><Link to={`/transactions?account=${encodeURIComponent(name)}`}>{name}</Link></td>
-                    <td>{balance.format()}</td>
+                    <td>{formatAsCurrency(balance)}</td>
                 </tr>
             );
     }, [allAccounts]);

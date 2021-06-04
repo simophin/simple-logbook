@@ -14,10 +14,13 @@ type Props<T> = Omit<Omit<FormControlProps, 'value'>, 'onChange'> & {
     placeholder?: string,
     ref?: Ref<HTMLInputElement>,
     autoFocus?: boolean,
+    required?: boolean,
+    inputId?: string,
+    isInvalid?: boolean,
 };
 
 export default function AutoCompleteField<T extends object>(
-    {search, onChange, getLabel, value, size, ref, ...formProps}: Props<T>) {
+    {search, onChange, getLabel, value, size, inputId, ...inputProps}: Props<T>) {
     const [term, setTerm] = useState('');
     const debouncedTerm = useDebounce(term, 500);
     const rows = useObservable(
@@ -48,16 +51,19 @@ export default function AutoCompleteField<T extends object>(
         getSuggestionValue={getLabel}
         renderInputComponent={(p) =>
             <Form.Control type='input' {...p}
-                          size={size} />}
+                          id={inputId}
+                          size={size}/>}
         theme={theme}
         inputProps={
             {
                 value: value ?? '',
                 onChange: (e) => {
-                    onChange(left((e.target as HTMLInputElement).value));
+                    const value: any = (e.target as HTMLInputElement).value;
+                    if (typeof value === 'string') {
+                        onChange(left(value));
+                    }
                 },
-                ref,
-                ...formProps
+                ...inputProps,
             }
         }
         renderSuggestion={(value) => <span>{getLabel(value)}</span>}

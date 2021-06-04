@@ -1,6 +1,7 @@
 import * as t from "io-ts";
 import {useEffect, useState} from "react";
 import {isRight} from "fp-ts/Either";
+import {useDebounce} from "./useDebounce";
 
 
 export function usePersistedState<T extends t.Any>(key: string, type: T, defaultValue?: t.TypeOf<T> | (t.TypeOf<T> | undefined)):
@@ -16,13 +17,15 @@ export function usePersistedState<T extends t.Any>(key: string, type: T, default
         return defaultValue;
     });
 
+    const debouncedValue = useDebounce(value, 500);
+
     useEffect(() => {
-        if (value) {
-            localStorage.setItem(key, JSON.stringify(type.encode(value)));
+        if (debouncedValue) {
+            localStorage.setItem(key, JSON.stringify(type.encode(debouncedValue)));
         } else {
             localStorage.removeItem(key);
         }
-    }, [key, type, value]);
+    }, [key, type, debouncedValue]);
 
     return [value, setValue];
 }

@@ -17,7 +17,9 @@ import {NonEmptyString} from "io-ts-types";
 import useAuthProps from "../hooks/useAuthProps";
 import useAuthErrorReporter from "../hooks/useAuthErrorReporter";
 import AttachmentSelect from "./AttachmentSelect";
-import {numericRegExp} from "../utils/numeric";
+import {formatAsCurrency, numericRegExp} from "../utils/numeric";
+import useFormField, {checkFormValidity} from "../hooks/useFormField";
+import ValueFormControl from "./ValueFormControl";
 
 type Props = {
     editing?: Transaction,
@@ -27,21 +29,15 @@ type Props = {
 
 export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [id, setId] = useState(() => editing?.id ?? uuid());
-    const [desc, setDesc] = useState(editing?.description ?? '');
-    const [fromAccount, setFromAccount] = useState(editing?.fromAccount ?? '');
-    const [toAccount, setToAccount] = useState(editing?.toAccount ?? '');
-    const [amount, setAmount] = useState(editing?.amount.toString() ?? '');
-    const [date, setDate] = useState((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE));
+    const [desc, setDesc, descError, validateDesc] = useFormField(editing?.description ?? '', {required: true});
+    const [fromAccount, setFromAccount, fromAccountError, validateFromAccount] = useFormField(editing?.fromAccount ?? '', {required: true});
+    const [toAccount, setToAccount, toAccountError, validateToAccount] = useFormField(editing?.toAccount ?? '', {required: true});
+    const [amount, setAmount, amountError, validateAmount] = useFormField(editing?.amount.toString() ?? '', {required: true, type: 'number'});
+    const [date, setDate, dateError, validateDate] = useFormField((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE), {required: true});
     const [attachments, setAttachments] = useState<string[]>(editing?.attachments ?? []);
 
-    const descRef = useRef<HTMLDivElement>(null);
-    const amountRef = useRef<HTMLInputElement>(null);
-
-    const isValid = desc.trim().length > 0 &&
-        fromAccount.trim().length > 0 &&
-        toAccount.trim().length > 0 &&
-        amount.length > 0 &&
-        date.trim().length > 0;
+    const descRef = useRef<any>(null);
+    const amountRef = useRef<any>(null);
 
     const authProps = useAuthProps();
     const errorReporter = useAuthErrorReporter();
@@ -56,9 +52,9 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
         return listAccounts({q}, authProps);
     }, [authProps]);
 
-    const handleDescChange = useCallback((v: Either<string, Transaction>) => {
+    const handleDescChange = useCallback((v: Either<string | undefined, Transaction>) => {
         if (isLeft(v)) {
-            setDesc(v.left);
+            setDesc(v.left ?? '');
         } else {
             setDesc(v.right.description);
             setFromAccount(v.right.fromAccount);
@@ -69,15 +65,15 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                 amountRef.current?.select();
             }, 100);
         }
-    }, []);
+    }, [setAmount, setDesc, setFromAccount, setToAccount]);
 
-    const handleFromAccountChange = useCallback((v: Either<string, Account>) => {
-        setFromAccount(isLeft(v) ? v.left : v.right.name);
-    }, []);
+    const handleFromAccountChange = useCallback((v: Either<string | undefined, Account>) => {
+        setFromAccount(isLeft(v) ? (v.left ?? '') : v.right.name);
+    }, [setFromAccount]);
 
-    const handleToAccountChange = useCallback((v: Either<string, Account>) => {
-        setToAccount(isLeft(v) ? v.left : v.right.name);
-    }, []);
+    const handleToAccountChange = useCallback((v: Either<string | undefined, Account>) => {
+        setToAccount(isLeft(v) ? (v.left ?? '') : v.right.name);
+    }, [setToAccount]);
 
     const [isSaving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | undefined>();
@@ -96,6 +92,11 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     }, [authProps, errorReporter, showingAccountIDs]);
 
     const handleSave = () => {
+        if (!checkFormValidity(validateDate, validateAmount, validateDesc,
+            validateFromAccount, validateToAccount)) {
+            return;
+        }
+
         setSaving(true);
 
         createTransaction({
@@ -115,10 +116,10 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
 
                 if (!editing) {
                     setId(uuid());
-                    setFromAccount('');
-                    setToAccount('');
-                    setAmount('');
-                    setDesc('');
+                    setFromAccount('', true);
+                    setToAccount('', true);
+                    setAmount('', true);
+                    setDesc('', true);
                     setTimeout(() =>
                             _.get(descRef.current?.getElementsByTagName('input'), 0)?.focus(),
                         100);
@@ -139,86 +140,91 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
             </Modal.Header>
             <Modal.Body>
                 <Form>
-                    <Form.Group>
-                        <Form.Label>Description</Form.Label>
-                        <div ref={descRef}>
-                            <AutoCompleteField
-                                size='sm'
-                                search={handleDescSearch}
-                                onChange={handleDescChange}
-                                getLabel={({description}) => description}
-                                value={desc}/>
-                        </div>
-                    </Form.Group>
-
-                    <Form.Group>
-                        <Form.Label>From</Form.Label>
-                        <AutoCompleteField
-                            size='sm'
-                            search={handleAccountSearch}
-                            onChange={handleFromAccountChange}
-                            getLabel={({name}) => name}
-                            value={fromAccount}/>
-                    </Form.Group>
-
-                    <Form.Group>
-                        <Form.Label>To</Form.Label>
-                        <AutoCompleteField
-                            size='sm'
-                            search={handleAccountSearch}
-                            onChange={handleToAccountChange}
-                            getLabel={({name}) => name}
-                            value={toAccount}/>
-                    </Form.Group>
-
                     <Form.Row>
-                        <Col>
-                            <Form.Group>
-                                <Form.Label>Amount</Form.Label>
-                                <InputGroup size='sm'>
-                                    <InputGroup.Prepend>
-                                        <InputGroup.Text>$</InputGroup.Text>
-                                    </InputGroup.Prepend>
-                                    <Form.Control
-                                        ref={amountRef}
-                                        value={amount}
-                                        onChange={(e) => {
-                                            if (numericRegExp.test(e.target.value)) {
-                                                setAmount(e.target.value);
-                                            }
-                                        }}
-                                        type='numeric'/>
-                                </InputGroup>
-                            </Form.Group>
-                        </Col>
-
-                        <Col>
-                            <Form.Group>
-                                <Form.Label>Date</Form.Label>
-                                <Form.Control
+                        <Form.Group as={Col}>
+                            <Form.Label>Description</Form.Label>
+                            <div ref={descRef}>
+                                <AutoCompleteField
                                     size='sm'
-                                    value={date}
-                                    onChange={(e) => {
-                                        setDate(e.target.value);
-                                    }}
-                                    type='date'/>
-                            </Form.Group>
-                        </Col>
+                                    isInvalid={!!descError}
+                                    search={handleDescSearch}
+                                    onChange={handleDescChange}
+                                    getLabel={({description}) => description}
+                                    value={desc}/>
+                            </div>
+                            <Form.Text>{descError}</Form.Text>
+                        </Form.Group>
                     </Form.Row>
 
                     <Form.Row>
-                        <Form.Group>
+                        <Form.Group as={Col}>
+                            <Form.Label>From</Form.Label>
+                            <AutoCompleteField
+                                size='sm'
+                                search={handleAccountSearch}
+                                isInvalid={!!fromAccountError}
+                                onChange={handleFromAccountChange}
+                                getLabel={({name}) => name}
+                                value={fromAccount}/>
+                            <Form.Text>{fromAccountError}</Form.Text>
+                        </Form.Group>
+
+                        <Form.Group as={Col}>
+                            <Form.Label>To</Form.Label>
+                            <AutoCompleteField
+                                size='sm'
+                                isInvalid={!!toAccountError}
+                                search={handleAccountSearch}
+                                onChange={handleToAccountChange}
+                                getLabel={({name}) => name}
+                                value={toAccount}/>
+                            <Form.Text>{toAccountError}</Form.Text>
+                        </Form.Group>
+                    </Form.Row>
+
+                    <Form.Row>
+                        <Form.Group as={Col}>
+                            <Form.Label>Amount</Form.Label>
+                            <InputGroup size='sm'>
+                                <InputGroup.Prepend>
+                                    <InputGroup.Text>$</InputGroup.Text>
+                                </InputGroup.Prepend>
+                                <ValueFormControl
+                                    ref={amountRef}
+                                    value={amount}
+                                    isInvalid={!!amountError}
+                                    onValueChange={setAmount}
+                                    pattern={numericRegExp}
+                                    type='numeric'/>
+                            </InputGroup>
+                            <Form.Text>{amountError}</Form.Text>
+                        </Form.Group>
+
+                        <Form.Group as={Col}>
+                            <Form.Label>Date</Form.Label>
+                            <ValueFormControl
+                                size='sm'
+                                value={date}
+                                onValueChange={setDate}
+                                isInvalid={!!dateError}
+                                type='date'/>
+                            <Form.Text>{dateError}</Form.Text>
+                        </Form.Group>
+                    </Form.Row>
+
+                    <Form.Row>
+                        <Form.Group as={Col}>
                             <Form.Label>Attachments</Form.Label>
-                            <AttachmentSelect value={attachments} onChange={setAttachments} />
+                            <AttachmentSelect value={attachments} onChange={setAttachments}/>
                         </Form.Group>
                     </Form.Row>
 
                     {showingAccounts.length > 0 &&
-                    <Form.Group>
+                    <Form.Group as={Col}>
                         <Form.Label>Account summary</Form.Label>
                         <Form.Text>
                             {showingAccounts.map((v) =>
-                                <div><strong>{v.name}: </strong>{v.balance.format()}</div>
+                                <div><strong>{v.name}: </strong>{formatAsCurrency(v.balance)}</div>
                             )}
                         </Form.Text>
                     </Form.Group>
@@ -231,8 +237,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                         disabled={isSaving}
                         onClick={onClose}>Close</Button>
 
-                <Button disabled={!isValid || isSaving}
-                        onClick={handleSave}>{isSaving ? 'Saving' : 'Save'}</Button>
+                <Button onClick={handleSave}>{isSaving ? 'Saving' : 'Save'}</Button>
             </Modal.Footer>
         </Modal>
 

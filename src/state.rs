@@ -9,7 +9,10 @@ pub struct AppState {
 impl AppState {
     pub async fn new_test() -> AppState {
         let conn = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-        sqlx::migrate!().run(&conn).await.expect("Migration to run");
+        sqlx::migrate!()
+            .run(&conn)
+            .await
+            .expect("Migration to run successfully");
         AppState { conn }
     }
 }

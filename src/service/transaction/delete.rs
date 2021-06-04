@@ -9,7 +9,7 @@ pub struct Output {
     num_deleted: usize,
 }
 
-pub async fn execute(state: &AppState, input: Input) -> anyhow::Result<Output> {
+pub async fn execute(state: &AppState, input: Input) -> crate::service::Result<Output> {
     let mut tx = state.conn.begin().await?;
     let mut success = 0;
     for id in input {

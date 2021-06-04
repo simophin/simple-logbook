@@ -9,6 +9,7 @@ use multer::{parse_boundary, Multipart};
 use crate::service::Error;
 use crate::state::AppState;
 use futures_io::AsyncBufRead;
+use sqlx::types::Json;
 use tide::StatusCode;
 
 struct TideBody(tide::Body);
@@ -33,7 +34,7 @@ impl Stream for TideBody {
 }
 
 pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
-    use crate::service::attachment::upsert::*;
+    use crate::service::attachment::save::*;
     let boundary = parse_boundary(
         req.content_type()
             .ok_or_else(|| Error::InvalidArgument(Cow::from("No content-type available")))?
@@ -75,18 +76,39 @@ pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
     Ok(tide::Response::from(tide::Body::from_json(&response)?))
 }
 
+#[derive(serde::Deserialize)]
+struct GetQuery {
+    id: String,
+}
+
 pub async fn get(req: tide::Request<AppState>) -> tide::Result {
-    use crate::service::attachment::get::*;
-    let Output {
+    use crate::service::attachment::list::*;
+
+    let Attachment {
         mime_type,
+        created,
+        last_updated,
         data,
         data_hash,
-        last_updated,
-        created,
-    } = execute(req.state(), req.query()?).await?;
+        ..
+    } = execute(
+        req.state(),
+        Input {
+            req: Default::default(),
+            includes: Some(Json(vec![req.query::<GetQuery>()?.id])),
+            with_data: true,
+        },
+    )
+    .await?
+    .data
+    .into_iter()
+    .next()
+    .ok_or_else(|| Error::ResourceNotFound)?;
 
-    let latest_etag =
-        sodiumoxide::base64::encode(data_hash, sodiumoxide::base64::Variant::UrlSafeNoPadding);
+    let latest_etag = sodiumoxide::base64::encode(
+        data_hash.expect("To have data"),
+        sodiumoxide::base64::Variant::UrlSafeNoPadding,
+    );
     match req.header("If-None-Match") {
         Some(v) if v.last().as_str() == latest_etag => {
             return Ok(tide::Response::new(StatusCode::NotModified));
@@ -94,7 +116,7 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
         _ => {}
     }
 
-    let mut res = tide::Response::from(tide::Body::from_bytes(data));
+    let mut res = tide::Response::from(tide::Body::from_bytes(data.expect("To have data")));
     res.insert_header(
         "Last-Modified",
         last_updated.format(super::HTTP_DATE_FORMAT).to_string(),

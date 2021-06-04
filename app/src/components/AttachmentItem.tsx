@@ -12,7 +12,7 @@ export default function AttachmentItem({id, ...reactProps}: Props) {
     const props = useAuthProps();
     const data = useObservable(() => listAttachments([id], props), [id, props]);
     useObservableErrorReport(data);
-    const summary = getLoadedValue(data)?.[0];
+    const summary = getLoadedValue(data)?.data?.[0];
     const token = useAuthToken();
     const mimeType = summary?.mimeType;
     const isImage = mimeType?.startsWith('image/') === true;

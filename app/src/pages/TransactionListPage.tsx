@@ -3,7 +3,6 @@ import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
 import {Fragment, useCallback, useContext, useMemo, useState} from "react";
 import {useMediaPredicate} from "react-media-hook";
-import Pagination from 'react-js-pagination';
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
 import {FoldUpIcon, PencilIcon, PlusCircleIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
 import SortedArray from "../utils/SortedArray";
@@ -19,8 +18,9 @@ import useAuthProps from "../hooks/useAuthProps";
 import {AppStateContext} from "../state/AppStateContext";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
-import _ from "lodash";
 import AttachmentItem from "../components/AttachmentItem";
+import {formatAsCurrency} from "../utils/numeric";
+import Paginator from "../components/Paginator";
 
 type TransactionId = Transaction['id'];
 
@@ -49,8 +49,8 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
         [page, pageSize, accounts, debouncedSearchTerm, authProps, transactionUpdatedTime]);
     useObservableErrorReport(rows);
 
-    const totalItemsCount = rows.type === 'loaded' ? rows.data.total : 0;
-    const numPages = Math.trunc(totalItemsCount / pageSize);
+    const totalItemsCount = getLoadedValue(rows)?.total ?? 0;
+    const numPages = Math.ceil(totalItemsCount / pageSize);
 
     if (numPages > 0 && page >= numPages) {
         setPage(numPages - 1);
@@ -82,7 +82,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                                     <td>{r.fromAccount}</td>
                                     <td>{r.toAccount}</td>
                                 </>}
-                                <td>{r.amount.format()}</td>
+                                <td>{formatAsCurrency(r.amount)}</td>
                                 <td>{transDate}</td>
                             </tr>
                             {isSelected &&
@@ -91,7 +91,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                                     <div style={flexContainer}>
                                         <div style={flexFullLineItem}><strong>From: </strong>{r.fromAccount}</div>
                                         <div style={flexFullLineItem}><strong>To: </strong>{r.toAccount}</div>
-                                        <div style={flexFullLineItem}><strong>Amount: </strong>{r.amount.format()}</div>
+                                        <div style={flexFullLineItem}><strong>Amount: </strong>{formatAsCurrency(r.amount)}</div>
                                         <div style={flexFullLineItem}><strong>Transaction
                                             date: </strong>{transDate}</div>
                                         <div style={flexFullLineItem}><strong>Last
@@ -190,17 +190,12 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
         </div>}
 
 
-        {children.length > 0 && <div style={flexContainer}>
-            <Pagination
-                itemClass="page-item"
-                linkClass="page-link"
-                activePage={page + 1}
-                itemsCountPerPage={pageSize}
-                totalItemsCount={totalItemsCount}
-                pageRangeDisplayed={5}
-                onChange={(v) => setPage(v - 1)}
-            />
-        </div>}
+        <div style={flexContainer}>
+            <Paginator onChange={setPage}
+                       currentPage={page}
+                       totalItemCount={totalItemsCount}
+                       pageSize={pageSize} />
+        </div>
 
         {editState?.state === 'delete' &&
         <AsyncConfirm

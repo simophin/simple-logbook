@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 dotenv = "0"
 async-std = { version = "1", features = ["attributes"] }
-sqlx = { version = "0", features = ["sqlite", "chrono", "runtime-async-std-native-tls", "migrate"]}
+sqlx = { version = "0", features = ["sqlite", "chrono", "runtime-async-std-native-tls", "migrate", "json"]}
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
@@ -18,7 +18,7 @@ anyhow = "1"
 itertools = "0"
 rust-embed = "5"
 mime_guess = "2"
-derive_more = "0"
+derive_more = { version = "0", features = ["default"] }
 sodiumoxide = "0"
 multer = "2"
 bytes = "1"

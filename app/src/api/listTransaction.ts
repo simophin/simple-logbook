@@ -17,9 +17,7 @@ const filterType = t.partial({
 export type Filter = t.TypeOf<typeof filterType>;
 
 const responseType = t.type({
-    limit: t.number,
     total: t.number,
-    offset: t.number,
     data: transactionArrayType,
 });
 

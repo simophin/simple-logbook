@@ -12,10 +12,13 @@ const attachmentSummaryType = t.type({
     lastUpdated: zonedDateTimeType,
 });
 
-const responseType = t.array(attachmentSummaryType);
+const responseType = t.type({
+    data: t.array(attachmentSummaryType),
+    total: t.number,
+});
 
 const requestType = t.type({
-    ids: t.array(t.string),
+    includes: t.array(t.string),
 })
 
 export default function listAttachments(ids: string[], extraProps?: ExtraRequestProps) {
@@ -23,7 +26,7 @@ export default function listAttachments(ids: string[], extraProps?: ExtraRequest
         url: `${config.baseUrl}/attachments/list`,
         method: 'post',
         inputType: requestType,
-        body: {ids},
+        body: {includes: ids},
         outputType: responseType,
         ...extraProps,
     })

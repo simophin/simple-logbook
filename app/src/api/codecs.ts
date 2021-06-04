@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import cjs from 'currency.js';
-import {LocalDate, ZonedDateTime, ZoneOffset} from "@js-joda/core";
+import {DateTimeFormatter, LocalDate, ZonedDateTime, ZoneOffset} from "@js-joda/core";
 
 type CurrencyJS = ReturnType<cjs.Constructor>;
 
@@ -40,5 +40,5 @@ export const zonedDateTimeType = new t.Type<ZonedDateTime, string, unknown>(
             return t.failure(input, context);
         }
     },
-    (v) => v.withZoneSameInstant(ZoneOffset.UTC).toJSON(),
+    (v) => v.withZoneSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
 );

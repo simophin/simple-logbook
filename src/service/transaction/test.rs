@@ -1,85 +1,79 @@
-use std::borrow::Cow;
 use std::time::SystemTime;
 
-use bytes::Bytes;
 use chrono::DateTime;
-use sodiumoxide::randombytes::randombytes;
 
-use crate::service::transaction::list::Output;
 use crate::sqlx_ext::Json;
 use crate::state::AppState;
 
-use super::super::attachment;
 use super::*;
+use crate::service::attachment::test::new_attachment;
+use crate::service::transaction::model::Transaction;
+use crate::utils::random_string;
+use itertools::Itertools;
+use uuid::Uuid;
 
-async fn save_and_check_tx(state: &AppState, mut tx: model::Transaction) {
-    upsert::execute(&state, vec![tx.clone()]).await.expect("t1");
-
-    // Check data
-    let Output {
-        mut data,
-        offset,
-        limit,
-        total,
-    } = list::execute(
-        &state,
-        list::QueryInput {
-            q: None,
-            from: None,
-            to: None,
-            accounts: None,
-            limit: None,
-            offset: None,
-        },
-    )
-    .await
-    .expect("transaction");
-
-    tx.attachments.sort();
-    data.first_mut().unwrap().attachments.sort();
-
-    assert_eq!(data, vec![tx]);
-    assert_eq!(offset, 0);
-    assert_eq!(limit, 50);
-    assert_eq!(total, 1);
-}
-
-#[async_std::test]
-async fn attachment_works() {
-    let state = AppState::new_test().await;
-
+pub async fn new_transaction(state: &AppState, id: Option<String>) -> model::Transaction {
     // Create attachments
     let mut attachment_ids = Vec::new();
-    for i in 1..10 {
-        let output = attachment::upsert::execute(
-            &state,
-            attachment::upsert::Input {
-                name: Cow::from(format!("Attachment {}", i)),
-                data: Bytes::from(randombytes(128)),
-                mime_type: Some(Cow::from("application/octave")),
-            },
-        )
-        .await
-        .expect("To upload attachment");
-        attachment_ids.push(output.id);
+    for _ in 1..10 {
+        attachment_ids.push(new_attachment(&state).await.0);
     }
 
     // Create transaction
-    let mut tx = model::Transaction {
-        id: "t1".to_string(),
-        description: "desc".to_string(),
-        from_account: "Acc1".to_string(),
-        to_account: "Acc2".to_string(),
+    let tx = model::Transaction {
+        id: id.unwrap_or(Uuid::new_v4().to_string()),
+        description: random_string(),
+        from_account: random_string(),
+        to_account: random_string(),
         amount: 100,
         trans_date: "2019-01-01".to_string(),
         updated_date: DateTime::from(SystemTime::now()),
-        attachments: Json(vec![attachment_ids[0].clone(), attachment_ids[2].clone()]),
+        attachments: Json(attachment_ids),
     };
+    save::execute(state, vec![tx.clone()])
+        .await
+        .expect("To save transaction");
+    tx
+}
 
-    save_and_check_tx(&state, tx.clone()).await;
-    tx.attachments.0 = vec![attachment_ids[1].clone(), attachment_ids[4].clone()];
-    save_and_check_tx(&state, tx.clone()).await;
+pub fn normalise_transaction(mut tx: Transaction) -> Transaction {
+    tx.attachments.sort();
+    tx
+}
 
-    tx.attachments.0 = vec![attachment_ids[5].clone(), attachment_ids[6].clone()];
-    save_and_check_tx(&state, tx.clone()).await;
+fn normalise_transaction_list(mut v: Vec<Transaction>) -> Vec<Transaction> {
+    v.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
+    v.into_iter().map(normalise_transaction).collect_vec()
+}
+
+#[async_std::test]
+async fn transaction_works() {
+    let state = AppState::new_test().await;
+
+    let tx1 = new_transaction(&state, None).await;
+    let tx2 = new_transaction(&state, Some(tx1.id.clone())).await;
+
+    let rs = list::execute(&state, Default::default())
+        .await
+        .expect("To list");
+    assert_eq!(rs.total, 1);
+    assert_eq!(
+        normalise_transaction(
+            rs.data
+                .into_iter()
+                .next()
+                .expect("To have at least 1 element")
+        ),
+        normalise_transaction(tx2.clone())
+    );
+
+    let tx3 = new_transaction(&state, None).await;
+    let rs = list::execute(&state, Default::default())
+        .await
+        .expect("To list");
+    assert_eq!(rs.total, 2);
+    assert_eq!(
+        normalise_transaction_list(vec![tx2, tx3]),
+        normalise_transaction_list(rs.data)
+    );
 }
