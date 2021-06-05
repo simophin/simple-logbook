@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use tide::http::headers::HeaderValue;
 use tide::log::LevelFilter;
 use tide::security::CorsMiddleware;
-use tide::{Error, StatusCode};
+use tide::StatusCode;
 
 use crate::state::AppState;
 
@@ -41,16 +41,16 @@ async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
         .ok_or_else(|| tide::Error::from_str(StatusCode::NotFound, "Unable to find given path"))?;
     let mime = mime_guess::from_path(path).first_or_octet_stream();
 
-    Ok(Response::builder(StatusCode::Ok)
+    Ok(tide::Response::builder(StatusCode::Ok)
         .content_type(mime.as_ref())
         .header("Cache-Control", "max-age=2678400")
-        .body(Body::from(asset.as_ref()))
+        .body(tide::Body::from(asset.as_ref()))
         .build())
 }
 
 #[cfg(debug_assertions)]
 async fn serve_static_assert(_: tide::Request<AppState>) -> tide::Result {
-    Err(Error::from_str(StatusCode::NotFound, "Not found"))
+    Err(tide::Error::from_str(StatusCode::NotFound, "Not found"))
 }
 
 #[async_std::main]

@@ -1,6 +1,7 @@
 use super::models::AccountGroup;
 
-pub type Input = ();
+#[derive(serde::Deserialize, Default)]
+pub struct Input {}
 
 //language=sql
 crate::list_sql_impl!(

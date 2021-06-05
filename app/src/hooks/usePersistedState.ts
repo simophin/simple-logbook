@@ -4,14 +4,16 @@ import {isRight} from "fp-ts/Either";
 import {useDebounce} from "./useDebounce";
 
 
-export function usePersistedState<T extends t.Any>(key: string, type: T, defaultValue?: t.TypeOf<T> | (t.TypeOf<T> | undefined)):
+export function usePersistedState<T extends t.Any>(key: string | undefined, type: T, defaultValue?: t.TypeOf<T> | (t.TypeOf<T> | undefined)):
     [typeof defaultValue extends undefined ? (t.TypeOf<T> | undefined) : t.TypeOf<T>, (v: typeof defaultValue) => void] {
     const [value, setValue] = useState(() => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            const decoded = type.decode(JSON.parse(stored));
-            if (isRight(decoded)) {
-                return decoded.right;
+        if (key) {
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                const decoded = type.decode(JSON.parse(stored));
+                if (isRight(decoded)) {
+                    return decoded.right;
+                }
             }
         }
         return defaultValue;
@@ -20,10 +22,12 @@ export function usePersistedState<T extends t.Any>(key: string, type: T, default
     const debouncedValue = useDebounce(value, 500);
 
     useEffect(() => {
-        if (debouncedValue) {
-            localStorage.setItem(key, JSON.stringify(type.encode(debouncedValue)));
-        } else {
-            localStorage.removeItem(key);
+        if (key) {
+            if (debouncedValue) {
+                localStorage.setItem(key, JSON.stringify(type.encode(debouncedValue)));
+            } else {
+                localStorage.removeItem(key);
+            }
         }
     }, [key, type, debouncedValue]);
 
