@@ -1,6 +1,7 @@
-use super::*;
 use crate::sqlx_ext::Json;
 use crate::state::AppState;
+
+use super::*;
 
 #[async_std::test]
 async fn account_group_rw_works() {
@@ -15,7 +16,9 @@ async fn account_group_rw_works() {
     .await
     .expect("To save");
 
-    let mut groups = list::execute(&state, ()).await.expect("To get");
+    let mut groups = list::execute(&state, Default::default())
+        .await
+        .expect("To get");
     assert_eq!(groups.len(), 1);
 
     let group = groups.get_mut(0).unwrap();
@@ -33,7 +36,7 @@ async fn account_group_rw_works() {
     .await
     .expect("To save different set of accounts");
 
-    let mut groups = list::execute(&state, ())
+    let mut groups = list::execute(&state, Default::default())
         .await
         .expect("To get a second time");
     assert_eq!(groups.len(), 1);
@@ -51,5 +54,11 @@ async fn account_group_rw_works() {
     )
     .await
     .expect("To delete");
-    assert_eq!(list::execute(&state, ()).await.expect("To query").len(), 0);
+    assert_eq!(
+        list::execute(&state, Default::default())
+            .await
+            .expect("To query")
+            .len(),
+        0
+    );
 }

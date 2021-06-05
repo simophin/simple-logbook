@@ -2,11 +2,7 @@ import {AccountGroup, accountGroupArrayType} from "../models/AccountGroup";
 import * as t from "io-ts";
 import {ExtraRequestProps, request} from "./common";
 import config from "../config";
-import {map} from "rxjs/operators";
 
-const responseType = t.type({
-    success: t.number,
-});
 
 export default function replaceAccountGroups(data: AccountGroup[], extraProps?: ExtraRequestProps) {
     return request({
@@ -14,7 +10,7 @@ export default function replaceAccountGroups(data: AccountGroup[], extraProps?: 
         method: 'post',
         inputType: accountGroupArrayType,
         body: data,
-        outputType: responseType,
+        outputType: t.unknown,
         ...extraProps,
-    }).pipe(map(({success}) => success));
+    });
 }

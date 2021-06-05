@@ -1,8 +1,7 @@
 import {useMemo} from "react";
 import {Button, ButtonGroup} from "react-bootstrap";
-import {Frequency} from "../models/frequency";
+import {allFrequencies, Frequency} from "../models/frequency";
 
-const allFrequencies: Frequency[] = ['Monthly', 'Weekly', 'Daily', 'Yearly'];
 
 export function FrequencySelect({value, onChange}: { value: Frequency, onChange: (f: Frequency) => unknown }) {
     const buttons = useMemo(() => allFrequencies.map((v) =>
