@@ -5,12 +5,12 @@ import {LinkContainer} from 'react-router-bootstrap';
 import TransactionListPage from "./pages/TransactionListPage";
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import AccountListPage from "./pages/AccountListPage";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import {useCallback, useMemo, useState} from "react";
 import {useMediaPredicate} from "react-media-hook";
 import IncomeExpenseChart from "./pages/IncomeExpenseChart";
 import qs from 'qs';
 import _ from "lodash";
-import {AppStateContext, UserState} from "./state/AppStateContext";
+import {AppStateContext, UserState, userStateType} from "./state/AppStateContext";
 import Authenticator from "./components/Authenticator";
 import BalanceChart from "./pages/BalanceChart";
 import WorkNavDropDown from "./components/WorkNavDropDown";
@@ -18,42 +18,37 @@ import TransactionNavDropdown from "./components/TransactionNavDropdown";
 import SettingDropdown from "./components/SettingDropdown";
 import InvoiceEntryPage, {InvoiceEditPage} from "./pages/InvoiceEntryPage";
 import InvoiceViewPage from "./pages/InvoiceViewPage";
-import InvoiceListView from "./components/InvoiceListView";
+import InvoiceListPage from "./pages/InvoiceListPage";
+import {usePersistedState} from "./hooks/usePersistedState";
 
 
 function App() {
-    let [userState, setUserState] = useState<UserState>(() => {
-        const v = localStorage.getItem('user_state');
-        if (v) {
-            return JSON.parse(v);
-        }
-    });
     let [transactionUpdatedTime, setTransactionUpdatedTime] = useState<number | undefined>(undefined);
-
+    let [userState, setUserState] = usePersistedState('user_state', userStateType, undefined);
     const bigScreen = useMediaPredicate('(min-width: 420px)');
     const location = useLocation();
-    const fullScreen = /fullScreen=true/.test(location.search);
+
+    const queryString = location.search;
+    const {fullScreen, token} = useMemo(() => {
+        const params = new URLSearchParams(queryString);
+        return {
+            fullScreen: params.get('fullScreen') === 'true',
+            token: params.get('token') ?? '',
+        }
+    }, [queryString]);
+
 
     const reportTransactionUpdated = useCallback(() => {
         setTransactionUpdatedTime(Date.now())
     }, []);
 
-    const handleSetUserState = useCallback((n: UserState) => {
-        setUserState(n);
-    }, []);
-
-    // Handle user state persistent
-    useEffect(() => {
-        if (userState) {
-            localStorage.setItem('user_state', JSON.stringify(userState));
-        } else {
-            localStorage.removeItem('user_state');
-        }
-    }, [userState]);
 
     const appStateValue = useMemo(() => ({
-        userState, transactionUpdatedTime, setUserState: handleSetUserState, reportTransactionUpdated
-    }), [handleSetUserState, reportTransactionUpdated, transactionUpdatedTime, userState]);
+        userState: (token ? {state: 'with_token', token} : userState) as UserState,
+        transactionUpdatedTime,
+        setUserState: token ? (v: UserState) => {} : setUserState,
+        reportTransactionUpdated
+    }), [token, userState, transactionUpdatedTime, setUserState, reportTransactionUpdated]);
 
     return <AppStateContext.Provider value={appStateValue}>
         {!fullScreen && <Navbar expand={bigScreen} collapseOnSelect>
@@ -89,7 +84,7 @@ function App() {
             <Route path="/charts/income_expense" exact><IncomeExpenseChart/></Route>
             <Route path="/charts/balance" exact><BalanceChart/></Route>
             <Route path="/accounts"><AccountListPage/></Route>
-            <Route path="/invoices"><InvoiceListView /></Route>
+            <Route path="/invoices"><InvoiceListPage /></Route>
             <Route path="/invoice/add"><InvoiceEntryPage /></Route>
             <Route path="/invoice/edit/:id"><InvoiceEditPage /></Route>
             <Route path="/invoice/view/:id"><InvoiceViewPage /></Route>

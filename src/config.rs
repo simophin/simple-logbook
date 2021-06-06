@@ -77,7 +77,7 @@ mod tests {
 
     #[async_std::test]
     async fn config_rw_works() {
-        let AppState { conn } = AppState::new_test().await;
+        let AppState { conn, .. } = AppState::new_test().await;
 
         #[derive(Clone)]
         struct TestData {

@@ -3,6 +3,7 @@ use sqlx::SqlitePool;
 #[derive(Clone)]
 pub struct AppState {
     pub conn: SqlitePool,
+    pub port: u16,
 }
 
 #[cfg(test)]
@@ -13,6 +14,6 @@ impl AppState {
             .run(&conn)
             .await
             .expect("Migration to run successfully");
-        AppState { conn }
+        AppState { conn, port: 4000 }
     }
 }

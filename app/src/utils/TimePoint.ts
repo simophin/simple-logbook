@@ -57,10 +57,10 @@ export function timePointFromValue(v: number, freq: Frequency) {
     return timePointFromLocalDate(LocalDate.ofEpochDay(v), freq);
 }
 
-export function timePointFromString(v: string, freq: Frequency): TimePoint | undefined {
+export function timePointFromString(v: string, freq: Frequency): TimePoint {
     const matches = freqPatterns[freq].exec(v);
     if (!matches) {
-        return undefined;
+        throw new Error(`TimePoint ${v} is invalid`);
     }
     switch (freq) {
         case "Monthly":

@@ -22,7 +22,7 @@ export default function LoadPage<LoadingProps, LoadedProps, InputProps = {}>({in
         return <Spinner animation={'border'} />
     } else if (rs.type === 'error') {
         return <Alert variant='danger'>
-            Error: ${rs.error?.message ?? 'Unknown error'}
+            Error: {rs.error?.message ?? 'Unknown error'}
             <div><Button onClick={() => setRetrySeq(retrySeq + 1)}>Retry</Button></div>
         </Alert>
     } else {

@@ -17,7 +17,7 @@ export default function InvoiceViewPage() {
     const load = useCallback(({id, ...props}: typeof params & typeof authProps) => {
         return combineLatest([
             listInvoice({includes: [id]}, props),
-            listInvoiceItems({invoiceIds: [id as NonEmptyString]})]
+            listInvoiceItems({invoiceIds: [id as NonEmptyString]}, props)]
         ).pipe(map(([invoices, items]) => {
                 if (invoices.data.length === 0) {
                     throw new Error(`Invoice with ID ${id} not found`);

@@ -1,11 +1,12 @@
-use crate::sqlx_ext::Json;
 use chrono::NaiveDate;
+
+use crate::sqlx_ext::Json;
 
 #[derive(serde::Deserialize)]
 pub struct Input {
     from: Option<NaiveDate>,
     to: Option<NaiveDate>,
-    freq: Json<super::Frequency>,
+    freq: super::Frequency,
     accounts: Json<Vec<String>>,
 }
 
@@ -19,7 +20,12 @@ pub struct DataPoint {
 //language=sql
 const SQL: &str = r#"
 select sum(ds.total) as total,
-       strftime(?4, ds.transDate) as time_point
+       (case ?4 
+           when 'Weekly' collate nocase then strftime('%Y-%W', ds.transDate) 
+           when 'Monthly' collate nocase then strftime('%Y-%m', ds.transDate) 
+           when 'Yearly' collate nocase then strftime('%Y', ds.transDate)
+           else strftime('%Y-%j', ds.transDate)
+        end) as time_point
 from daily_sum ds
 where 
       (?1 is null or ds.transDate >= ?1) and
