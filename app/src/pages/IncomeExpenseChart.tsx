@@ -22,7 +22,7 @@ function transformSum(resp: SumReport.Response[],
         const req = reqs[i];
         const isIncome = req.type === 'Income';
         for (const item of report) {
-            const timePoint = timePointFromString(item.timePoint, freq)!!;
+            const timePoint = timePointFromString(item.timePoint, freq);
             const value = isIncome ? -item.total.value : item.total.value;
             const index = rs.find(timePoint, (lhs, rhs) =>
                 compareTimePoint(lhs, rhs.timePoint));

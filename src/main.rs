@@ -8,7 +8,6 @@ use sqlx::SqlitePool;
 use tide::http::headers::HeaderValue;
 use tide::log::LevelFilter;
 use tide::security::CorsMiddleware;
-use tide::StatusCode;
 
 use crate::state::AppState;
 
@@ -31,6 +30,7 @@ struct Asset;
 
 #[cfg(not(debug_assertions))]
 async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
+    use tide::StatusCode;
     let path = match req.url().path() {
         p if p.eq_ignore_ascii_case("/") || !p.starts_with("/public") => "public/index.html",
         p if p.starts_with("/") => &p[1..],
@@ -49,13 +49,28 @@ async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
 }
 
 #[cfg(debug_assertions)]
-async fn serve_static_assert(_: tide::Request<AppState>) -> tide::Result {
-    Err(tide::Error::from_str(StatusCode::NotFound, "Not found"))
+async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
+    let mut url = req.url().clone();
+    url.set_host(Some("127.0.0.1"))?;
+    let _ = url.set_port(Some(3000));
+    let mut builder = surf::RequestBuilder::new(req.method(), url);
+    for (name, value) in req.iter() {
+        builder = builder.header(name, value);
+    }
+
+    let mut surf_res = builder.await?;
+    let mut res = tide::Response::new(surf_res.status());
+    for (name, value) in surf_res.iter() {
+        res.insert_header(name, value);
+    }
+    res.set_body(surf_res.take_body());
+    Ok(res)
 }
 
 #[async_std::main]
 async fn main() {
     let _ = dotenv::dotenv().ok();
+    let port = 4000;
     sodiumoxide::init().expect("Sodium to start up");
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
@@ -76,7 +91,7 @@ async fn main() {
 
     tide::log::with_level(LevelFilter::Info);
 
-    let mut app = tide::with_state(AppState { conn });
+    let mut app = tide::with_state(AppState { conn, port });
 
     app.with(
         CorsMiddleware::new()
@@ -122,6 +137,8 @@ async fn main() {
         "/api/invoices/items/categories/search",
         invoice::search_cat
     );
+    app.at("/api/invoice/print")
+        .get(service_adapter::invoice::print_pdf);
 
     // attachments
     app.at("/api/attachments")
@@ -137,5 +154,7 @@ async fn main() {
     app.at("/*").get(serve_static_assert);
     app.at("/").get(serve_static_assert);
 
-    app.listen("0.0.0.0:4000").await.expect("To run server");
+    app.listen(format!("0.0.0.0:{}", port))
+        .await
+        .expect("To run server");
 }
