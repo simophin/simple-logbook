@@ -2,7 +2,7 @@ import ChartPage, {SeriesData, SeriesDataPoint, SeriesDataRequest} from "./Chart
 import * as SumReport from "../api/getSumReport";
 import SortedArray from "../utils/SortedArray";
 import {compareTimePoint, timePointFromString} from "../utils/TimePoint";
-import {zip} from "rxjs";
+import {of, zip} from "rxjs";
 import {Frequency} from "../models/frequency";
 import {map} from "rxjs/operators";
 import {Helmet} from "react-helmet";
@@ -45,11 +45,14 @@ export default function IncomeExpenseChart() {
         <ChartPage
             showFrequency
             persistKey='spending-report'
-            fetchData={(requests, freq, extraProps) => zip(
-                ...requests.map((r) => SumReport.getSumReport({
-                    ...r,
-                    freq,
-                    ...extraProps,
-                }))
-            ).pipe(map((reports) => transformSum(reports, requests, freq)))}/></>;
+            fetchData={(requests, freq, extraProps) =>
+                requests.length > 0
+                    ? (zip(
+                    ...requests.map((r) => SumReport.getSumReport({
+                        ...r,
+                        freq,
+                        ...extraProps,
+                    }))
+                    ).pipe(map((reports) => transformSum(reports, requests, freq))))
+                    : of([])}/></>;
 }

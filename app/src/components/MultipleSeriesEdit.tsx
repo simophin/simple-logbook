@@ -1,7 +1,8 @@
-import {HTMLAttributes, useCallback, useEffect, useMemo, useState} from "react";
-import {SeriesConfig, SeriesEdit} from "./SeriesEdit";
+import {HTMLAttributes, useCallback, useEffect, useMemo} from "react";
+import {SeriesConfig, seriesConfigArrayType, SeriesEdit} from "./SeriesEdit";
 import {v4 as uuid} from "uuid";
 import _ from "lodash";
+import {usePersistedState} from "../hooks/usePersistedState";
 
 
 type Props = {
@@ -22,32 +23,24 @@ function findNextSeriesSequence(configs: SeriesConfig[]) {
 }
 
 export default function MultipleSeriesEdit({persistKey, onChange, containerProps}: Props) {
-    const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>(() => {
-        let v;
-        if (persistKey && (v = localStorage.getItem(persistKey))) {
-            return JSON.parse(v) as SeriesConfig[];
-        }
-
+    const [seriesConfigs, setSeriesConfigs] = usePersistedState(persistKey, seriesConfigArrayType, () => {
         return [{
             accounts: [],
             name: `Series 1`,
             type: 'Expense',
             id: uuid(),
-        }];
+            visible: true,
+        } as SeriesConfig];
     });
 
     useEffect(() => {
-        if (persistKey) {
-            localStorage.setItem(persistKey, JSON.stringify(seriesConfigs));
-        }
         onChange(seriesConfigs);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [persistKey, seriesConfigs]);
-
+    }, [seriesConfigs]);
 
     const handleRemoveSeries = useCallback((toRemove: SeriesConfig['id']) => {
         setSeriesConfigs(seriesConfigs.filter(({id}) => id !== toRemove));
-    }, [seriesConfigs]);
+    }, [seriesConfigs, setSeriesConfigs]);
 
     const handleAddSeries = useCallback(() => {
         setSeriesConfigs([...seriesConfigs, {
@@ -55,8 +48,9 @@ export default function MultipleSeriesEdit({persistKey, onChange, containerProps
             name: `Series ${findNextSeriesSequence(seriesConfigs)}`,
             type: 'Expense',
             id: uuid(),
+            visible: true,
         }]);
-    }, [seriesConfigs]);
+    }, [seriesConfigs, setSeriesConfigs]);
 
     const handleSeriesChange = useCallback(
         (c: SeriesConfig) => {
@@ -67,7 +61,7 @@ export default function MultipleSeriesEdit({persistKey, onChange, containerProps
 
             setSeriesConfigs([...seriesConfigs.slice(0, index), c, ...seriesConfigs.slice(index + 1)]);
         },
-        [seriesConfigs]);
+        [seriesConfigs, setSeriesConfigs]);
 
     const edits = useMemo(() => seriesConfigs.map(
         (c) =>

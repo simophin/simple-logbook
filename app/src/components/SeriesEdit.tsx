@@ -2,16 +2,28 @@ import {Dropdown, DropdownButton, FormControl, InputGroup} from "react-bootstrap
 import DropdownItem from "react-bootstrap/DropdownItem";
 import AccountSelect from "./AccountSelect";
 import {CirclePicker} from 'react-color';
+import {createEnumType} from "../utils/codecs";
+import * as t from 'io-ts';
+import {NonEmptyString} from "io-ts-types";
+import React from "react";
 
-type SeriesType = 'Income' | 'Expense';
+const allSeriesTypes = ['Income', 'Expense'] as const;
 
-export type SeriesConfig = {
-    id: string,
-    accounts: string[],
-    name: string,
-    type: SeriesType,
-    color?: string,
-};
+const seriesType = createEnumType(allSeriesTypes);
+
+export const seriesConfigType = t.intersection([t.type({
+    id: t.string,
+    accounts: t.array(NonEmptyString),
+    name: t.string,
+    type: seriesType,
+    visible: t.boolean,
+}), t.partial({
+    color: t.string,
+})]);
+
+export const seriesConfigArrayType = t.array(seriesConfigType);
+
+export type SeriesConfig = t.TypeOf<typeof seriesConfigType>;
 
 type SeriesEditProps = {
     value: SeriesConfig,
@@ -32,7 +44,7 @@ const allExpenseColors = [
     '#E91E63',
 ];
 
-function hashString(str: string){
+function hashString(str: string) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         hash += Math.pow(str.charCodeAt(i) * 31, str.length - i);
@@ -63,7 +75,7 @@ export function SeriesEdit({value, onChange, addSeries, removable, removeSeries}
                     placeholder='Rename this series'
                     value={value.name}
                     onChange={(e) =>
-                        onChange({...value, name: e.target.value})}/>
+                        onChange({...value, name: e.target.value as NonEmptyString})}/>
                 <Dropdown.Header>Show as</Dropdown.Header>
                 <DropdownItem active={value.type === 'Income'}
                               onSelect={() => onChange({...value, type: 'Income'})}>
@@ -85,13 +97,18 @@ export function SeriesEdit({value, onChange, addSeries, removable, removeSeries}
                 <DropdownItem>
                     <CirclePicker
                         color={value.color}
-                        onChange={(c) => onChange({...value, color: `${c.hex}`})} />
+                        onChange={(c) => onChange({...value, color: `${c.hex}`})}/>
                 </DropdownItem>
             </DropdownButton>
         </InputGroup.Prepend>
         <AccountSelect
             placeholder='Select account(s)'
-            onChange={(accounts) => onChange({...value, accounts})}
+            onChange={(accounts) => onChange({...value, accounts: accounts as NonEmptyString[]})}
             selected={value.accounts}/>
+        <InputGroup.Append>
+            <InputGroup.Checkbox checked={value.visible}
+                onChange={() => onChange({...value, visible: !value.visible})}
+            />
+        </InputGroup.Append>
     </InputGroup>;
 }

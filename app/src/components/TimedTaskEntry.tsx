@@ -36,7 +36,7 @@ export function computeDuration(state: TimedTaskState) {
     let hours = 0;
     if (minutes > 60) {
         hours = Math.trunc(minutes / 60);
-        return `${hours}h${minutes}m`
+        return `${hours}h${minutes % 60}m`
     } else {
         return `${minutes}m`;
     }

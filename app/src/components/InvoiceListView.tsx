@@ -20,8 +20,6 @@ import {DownloadIcon, FileIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer
 import Paginator from "./Paginator";
 import config from "../config";
 
-type Props = {};
-
 
 const OpButton = ({children, ...props}: { children: ReactElement, title?: string, onClick?: () => unknown, } ) =>
     <span {...props}
@@ -30,7 +28,7 @@ const OpButton = ({children, ...props}: { children: ReactElement, title?: string
     {children}
 </span>;
 
-export default function InvoiceListView({}: Props) {
+export default function InvoiceListView() {
     const [searchTerm, setSearchTerm] = useState('');
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
@@ -115,7 +113,7 @@ export default function InvoiceListView({}: Props) {
             </tr>}
             </tbody>
         </Table>
-    }, [rows]);
+    }, [authToken, rows]);
 
     return <div style={flexContainer}>
         <InputGroup style={{...flexItem}} size='sm'>

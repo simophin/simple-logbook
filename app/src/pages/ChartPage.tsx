@@ -36,7 +36,11 @@ import {formatAsCurrency} from "../utils/numeric";
 const allChartTypes = ['Area', 'Line', 'Bar'] as const;
 type ChartType = typeof allChartTypes[number];
 
-export type SeriesDataRequest = Pick<SeriesConfig, 'id'> & Pick<SeriesConfig, 'accounts'> & Pick<SeriesConfig, 'type'> & {
+export type SeriesDataRequest =
+    Pick<SeriesConfig, 'id'>
+    & Pick<SeriesConfig, 'accounts'>
+    & Pick<SeriesConfig, 'type'>
+    & {
     from?: string,
     to?: string,
 };
@@ -99,7 +103,8 @@ function Chart({data, configs, freq, type}: ChartProps) {
                tickFormatter={(value: string | number) =>
                    typeof value === 'string' ? value : formatTimePoint(timePointFromValue(value, freq))}
                style={{fontSize: 11}}/>,
-        <YAxis key='chart-axis-y' tickFormatter={(v) => formatAsCurrency(currency(v), {precision: 0})} style={{fontSize: 11}}/>,
+        <YAxis key='chart-axis-y' tickFormatter={(v) => formatAsCurrency(currency(v), {precision: 0})}
+               style={{fontSize: 11}}/>,
         <Tooltip key='chart-tooltip' formatter={(v: any) => formatAsCurrency(currency(v))}
                  labelFormatter={(value: string | number) =>
                      typeof value === 'string' ? value : formatTimePoint(timePointFromValue(value, freq))}
@@ -133,8 +138,6 @@ function Chart({data, configs, freq, type}: ChartProps) {
 }
 
 
-
-
 type Props = {
     fetchData: (request: SeriesDataRequest[], freq: Frequency, extraProps?: ExtraRequestProps) => Observable<SeriesData>,
     showFrequency?: boolean,
@@ -150,9 +153,14 @@ export default function ChartPage({fetchData, showFrequency = true, persistKey}:
 
     const {transactionUpdatedTime} = useContext(AppStateContext);
 
-    const requests: SeriesDataRequest[] = useMemo(() => seriesConfigs.map(({id, type, accounts}) => {
-        return {id, accounts, type, from, to};
-    }), [from, seriesConfigs, to]);
+    const visibleSeriesConfig = useMemo(() => seriesConfigs
+        .filter((v) => v.visible), [seriesConfigs]);
+
+    const requests: SeriesDataRequest[] = useMemo(() =>
+            visibleSeriesConfig.map(({id, type, accounts}) => {
+                return {id, accounts, type, from, to};
+            }),
+        [from, visibleSeriesConfig, to]);
 
     const authProps = useAuthProps();
 
@@ -194,8 +202,14 @@ export default function ChartPage({fetchData, showFrequency = true, persistKey}:
             onChange={setSeriesConfigs}/>
 
         {getLoadedValue(seriesData)?.length !== 0 &&
-        <div style={{...flexFullLineItem, maxWidth: Math.min(900, windowWidth), height: Math.min(900, windowWidth) * 9 / 16, minHeight: 300}}>
-            <Chart data={getLoadedValue(seriesData)!!} configs={seriesConfigs} freq={freq} type={chartType}/>
+        <div style={{
+            ...flexFullLineItem,
+            maxWidth: Math.min(900, windowWidth),
+            height: Math.min(900, windowWidth) * 9 / 16,
+            minHeight: 300,
+            margin: '16px auto'
+        }}>
+            <Chart data={getLoadedValue(seriesData)!!} configs={visibleSeriesConfig} freq={freq} type={chartType}/>
         </div>
         }
     </div>;

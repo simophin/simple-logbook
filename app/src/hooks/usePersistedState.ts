@@ -4,7 +4,7 @@ import {isRight} from "fp-ts/Either";
 import {useDebounce} from "./useDebounce";
 
 
-export function usePersistedState<T extends t.Any>(key: string | undefined, type: T, defaultValue?: t.TypeOf<T> | (t.TypeOf<T> | undefined)):
+export function usePersistedState<T extends t.Any>(key: string | undefined, type: T, defaultValue?: t.TypeOf<T> | (t.TypeOf<T> | undefined) | (() => t.TypeOf<T>)):
     [typeof defaultValue extends undefined ? (t.TypeOf<T> | undefined) : t.TypeOf<T>, (v: typeof defaultValue) => void] {
     const [value, setValue] = useState(() => {
         if (key) {
@@ -16,6 +16,11 @@ export function usePersistedState<T extends t.Any>(key: string | undefined, type
                 }
             }
         }
+
+        if (typeof defaultValue === 'function') {
+            return (defaultValue as () => t.TypeOf<T>)();
+        }
+
         return defaultValue;
     });
 

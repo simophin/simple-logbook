@@ -41,7 +41,9 @@ const CopyFromToggle = forwardRef<any, { onClick: (e: any) => unknown }>(({child
     </Badge>
 ));
 
-const CopyFromContainer = forwardRef(({children}) => (<div style={{display: 'inline'}}>{children}</div>));
+const CopyFromContainer = forwardRef<any>(({children, ...props}, ref) =>
+    <div {...props} ref={ref} style={{display: 'inline'}}>{children}</div>
+);
 
 
 
