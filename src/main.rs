@@ -11,7 +11,6 @@ use tide::security::CorsMiddleware;
 
 use crate::state::AppState;
 
-mod config;
 mod middleware;
 #[macro_use]
 pub mod service;
@@ -78,6 +77,7 @@ async fn main() {
     let conn = SqlitePool::connect_with(
         SqliteConnectOptions::from_str(&database_url)
             .expect("to parse database url")
+            .create_if_missing(true)
             .journal_mode(SqliteJournalMode::Delete),
     )
     .await
@@ -86,10 +86,10 @@ async fn main() {
         &database_url
     ));
 
+    tide::log::with_level(LevelFilter::Info);
+
     #[cfg(not(debug_assertions))]
     sqlx::migrate!().run(&conn).await.expect("Migration to run");
-
-    tide::log::with_level(LevelFilter::Info);
 
     let mut app = tide::with_state(AppState { conn, port });
 
@@ -121,10 +121,6 @@ async fn main() {
     endpoint!(app, post, "/api/reports/sum", report::sum);
     endpoint!(app, post, "/api/reports/balance", report::balance);
 
-    // chart config
-    endpoint_get!(app, "/api/chartConfig", chart_config::get);
-    endpoint!(app, post, "/api/chartConfig", chart_config::save);
-
     // invoice related
     endpoint!(app, post, "/api/invoices", invoice::save);
     endpoint!(app, delete, "/api/invoices", invoice::delete);
@@ -139,6 +135,10 @@ async fn main() {
     );
     app.at("/api/invoice/print")
         .get(service_adapter::invoice::print_pdf);
+
+    // config related
+    endpoint_get!(app, "/api/config", config::client::get);
+    endpoint!(app, post, "/api/config", config::client::save);
 
     // attachments
     app.at("/api/attachments")

@@ -1,11 +1,12 @@
+pub mod client;
+
+use std::borrow::Cow;
+use std::borrow::Cow::Owned;
+
 use serde::de::DeserializeOwned;
-use serde::Serialize;
 use sqlx::SqlitePool;
 
-pub async fn get<T>(key: &str, id: Option<&str>, conn: &SqlitePool) -> anyhow::Result<Option<T>>
-where
-    T: DeserializeOwned,
-{
+pub async fn get(key: &str, id: Option<&str>, conn: &SqlitePool) -> anyhow::Result<Option<String>> {
     let id = id.unwrap_or("");
     let value: Option<(String,)> =
         sqlx::query_as("SELECT value FROM configs WHERE name = ? AND id = ?")
@@ -15,59 +16,73 @@ where
             .await?;
 
     match value {
-        Some(v) => Ok(serde_json::from_str(&v.0)?),
+        Some((v,)) => Ok(Some(v)),
         None => Ok(None),
     }
 }
 
-pub async fn update<T, E, F>(
+pub async fn get_json<T>(
+    key: &str,
+    id: Option<&str>,
+    conn: &SqlitePool,
+) -> anyhow::Result<Option<T>>
+where
+    T: DeserializeOwned,
+{
+    Ok(match get(key, id, conn).await? {
+        Some(v) => Some(serde_json::from_str(&v)?),
+        None => None,
+    })
+}
+
+pub async fn update<R, F>(
     key: &str,
     id: Option<&str>,
     updater: F,
     conn: &SqlitePool,
-) -> anyhow::Result<Result<Option<T>, E>>
+) -> anyhow::Result<R>
 where
-    T: DeserializeOwned + Serialize,
-    F: FnOnce(Option<T>) -> Result<Option<T>, E>,
+    for<'c> F: FnOnce(&mut Cow<'c, Option<String>>) -> R,
 {
     let mut tx = conn.begin().await?;
     let id = id.unwrap_or("");
 
-    let value: Option<(String,)> =
-        sqlx::query_as("SELECT value FROM configs WHERE name = ? AND id = ?")
-            .bind(key)
-            .bind(id)
-            .fetch_optional(&mut tx)
-            .await?;
+    //language=sql
+    let value = sqlx::query_as("SELECT value FROM configs WHERE name = ? AND id = ?")
+        .bind(key)
+        .bind(id)
+        .fetch_optional(&mut tx)
+        .await?
+        .map(|(v,): (String,)| v);
 
-    let value: Option<T> = match value {
-        Some(v) => Some(serde_json::from_str(&v.0)?),
-        None => None,
-    };
+    let mut value = Cow::Borrowed(&value);
 
-    match updater(value) {
-        Ok(Some(value)) => {
+    let r = updater(&mut value);
+    match value {
+        Owned(Some(value)) => {
+            //language=sql
             let _ =
                 sqlx::query("INSERT OR REPLACE INTO configs (name, id, value) VALUES (?, ?, ?)")
                     .bind(key)
                     .bind(id)
-                    .bind(serde_json::to_string(&value)?)
+                    .bind(&value)
                     .execute(&mut tx)
                     .await?;
             tx.commit().await?;
-            Ok(Ok(Some(value)))
         }
-        Ok(None) => {
+        Owned(None) => {
+            //language=sql
             let _ = sqlx::query("DELETE FROM configs WHERE name = ? AND id = ?")
                 .bind(key)
                 .bind(id)
                 .execute(&mut tx)
                 .await?;
             tx.commit().await?;
-            Ok(Ok(None))
         }
-        Err(e) => Ok(Err(e)),
-    }
+        _ => {}
+    };
+
+    Ok(r)
 }
 
 #[cfg(test)]
@@ -117,43 +132,43 @@ mod tests {
         // Test update and read
         for TestData { name, id, value } in test_data.clone() {
             let value = value.map(|v| v.to_string());
-            assert_eq!(get::<String>(name, id, &conn).await.unwrap(), None);
+            assert_eq!(get(name, id, &conn).await.unwrap(), None);
 
-            let updated = update::<String, (), _>(
+            let updated = update(
                 name,
                 id,
                 |v| {
-                    assert_eq!(v, None);
-                    Ok(value.clone())
+                    assert_eq!(*v.as_ref(), None);
+                    *v = Cow::Owned(value.clone());
+                    value.clone()
                 },
                 &conn,
             )
             .await
-            .unwrap()
             .unwrap();
 
             assert_eq!(updated, value);
-            assert_eq!(get::<String>(name, id, &conn).await.unwrap(), value);
+            assert_eq!(get(name, id, &conn).await.unwrap(), value);
         }
 
         // Test deletion
         for TestData { name, id, value } in test_data.clone() {
             let value = value.map(|v| v.to_string());
-            let updated = update::<String, (), _>(
+            let updated: Option<String> = update(
                 name,
                 id,
                 |v| {
-                    assert_eq!(v, value);
-                    Ok(None)
+                    assert_eq!(*v.as_ref(), value);
+                    *v = Cow::Owned(None);
+                    None
                 },
                 &conn,
             )
             .await
-            .unwrap()
             .unwrap();
 
             assert_eq!(updated, None);
-            assert_eq!(get::<String>(name, id, &conn).await.unwrap(), None);
+            assert_eq!(get(name, id, &conn).await.unwrap(), None);
         }
     }
 }

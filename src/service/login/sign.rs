@@ -15,9 +15,10 @@ pub struct Output {
 }
 
 pub async fn execute(state: &AppState, input: Input) -> Result<Output> {
-    let c: CredentialsConfig = crate::config::get(CREDENTIALS_CONFIG_KEY, None, &state.conn)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("No credentials set"))?;
+    let c: CredentialsConfig =
+        crate::service::config::get_json(CREDENTIALS_CONFIG_KEY, None, &state.conn)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("No credentials set"))?;
 
     if c.verify_password(&input.password).is_none() {
         return Err(Error::InvalidCredentials);

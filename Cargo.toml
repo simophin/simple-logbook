@@ -30,5 +30,5 @@ tree_magic = "0"
 uuid = { version = "0", features = ["v4"] }
 chrono = { version = "0", features = ["serde"] }
 surf = "2"
-headless_chrome = "0"
+headless_chrome = { version = "0", features = ["default", "fetch"] }
 failure = "0"
