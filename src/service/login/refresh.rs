@@ -13,9 +13,12 @@ pub struct Output {
 }
 
 pub async fn execute(state: &AppState, _: Input) -> crate::service::Result<Output> {
-    let c: CredentialsConfig = crate::config::get(CREDENTIALS_CONFIG_KEY, None, &state.conn)
-        .await?
-        .ok_or_else(|| crate::service::Error::InvalidArgument(Cow::from("No credentials found")))?;
+    let c: CredentialsConfig =
+        crate::service::config::get_json(CREDENTIALS_CONFIG_KEY, None, &state.conn)
+            .await?
+            .ok_or_else(|| {
+                crate::service::Error::InvalidArgument(Cow::from("No credentials found"))
+            })?;
 
     Ok(Output { token: c.sign() })
 }

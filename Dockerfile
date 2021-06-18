@@ -12,8 +12,13 @@ COPY --from=0 /app/build app/build
 
 RUN cargo build --release
 
-FROM rust
+FROM ubuntu
+
+RUN useradd -m app
+USER app
+
 WORKDIR /app
+
 COPY --from=1 /rust_app/target/release/simple-log-book ./
 
 ENV DATABASE_URL=sqlite:/data/logbook.sqlitedb
