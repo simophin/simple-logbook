@@ -37,7 +37,7 @@ export default function AttachmentItem({id, ...reactProps}: Props) {
     return <div {...reactProps}>
         {imageUrl &&
         <Figure>
-            <a href={imageUrl} target='_blank'>
+            <a href={imageUrl} target='_blank' rel='noreferrer'>
                 <Figure.Image alt={summary?.name}
                               style={{width: 150, height: 150, objectFit: 'contain'}}
                               thumbnail={true}

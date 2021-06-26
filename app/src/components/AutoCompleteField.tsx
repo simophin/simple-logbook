@@ -1,5 +1,5 @@
 import {Observable, of} from "rxjs";
-import {useObservable} from "../hooks/useObservable";
+import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {Ref, useState} from "react";
 import {Either, left, right} from "fp-ts/Either";
 import Autosuggest from "react-autosuggest";
@@ -32,7 +32,7 @@ export default function AutoCompleteField<T extends object>(
         container: 'autosuggest',
         input: 'form-control',
         suggestionsContainer: 'dropdown',
-        suggestionsList: `dropdown-menu ${rows.type === 'loaded' && rows.data.length > 0 ? 'show' : ''}`,
+        suggestionsList: `dropdown-menu ${(getLoadedValue(rows)?.length ?? 0) > 0 ? 'show' : ''}`,
         suggestion: 'dropdown-item',
         suggestionHighlighted: 'active'
     };
@@ -66,6 +66,6 @@ export default function AutoCompleteField<T extends object>(
                 ...inputProps,
             }
         }
-        renderSuggestion={(value) => <span>{getLabel(value)}</span>}
+        renderSuggestion={(value) => <span data-cy='suggestion-item'>{getLabel(value)}</span>}
     />
 }

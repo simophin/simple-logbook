@@ -32,7 +32,10 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
     const [desc, setDesc, descError, validateDesc] = useFormField(editing?.description ?? '', {required: true});
     const [fromAccount, setFromAccount, fromAccountError, validateFromAccount] = useFormField(editing?.fromAccount ?? '', {required: true});
     const [toAccount, setToAccount, toAccountError, validateToAccount] = useFormField(editing?.toAccount ?? '', {required: true});
-    const [amount, setAmount, amountError, validateAmount] = useFormField(editing?.amount.toString() ?? '', {required: true, type: 'number'});
+    const [amount, setAmount, amountError, validateAmount] = useFormField(editing?.amount.toString() ?? '', {
+        required: true,
+        type: 'number'
+    });
     const [date, setDate, dateError, validateDate] = useFormField((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE), {required: true});
     const [attachments, setAttachments] = useState<string[]>(editing?.attachments ?? []);
 
@@ -146,6 +149,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                             <div ref={descRef}>
                                 <AutoCompleteField
                                     size='sm'
+                                    data-cy='transaction-entry-description'
                                     isInvalid={!!descError}
                                     search={handleDescSearch}
                                     onChange={handleDescChange}
@@ -162,6 +166,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                             <AutoCompleteField
                                 size='sm'
                                 search={handleAccountSearch}
+                                data-cy='transaction-entry-from'
                                 isInvalid={!!fromAccountError}
                                 onChange={handleFromAccountChange}
                                 getLabel={({name}) => name}
@@ -173,6 +178,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                             <Form.Label>To</Form.Label>
                             <AutoCompleteField
                                 size='sm'
+                                data-cy='transaction-entry-to'
                                 isInvalid={!!toAccountError}
                                 search={handleAccountSearch}
                                 onChange={handleToAccountChange}
@@ -190,6 +196,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                                     <InputGroup.Text>$</InputGroup.Text>
                                 </InputGroup.Prepend>
                                 <ValueFormControl
+                                    data-cy='transaction-entry-amount'
                                     ref={amountRef}
                                     value={amount}
                                     isInvalid={!!amountError}
@@ -203,6 +210,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                         <Form.Group as={Col}>
                             <Form.Label>Date</Form.Label>
                             <ValueFormControl
+                                data-cy='transaction-entry-date'
                                 size='sm'
                                 value={date}
                                 onValueChange={setDate}
@@ -224,7 +232,9 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                         <Form.Label>Account summary</Form.Label>
                         <Form.Text>
                             {showingAccounts.map((v) =>
-                                <div><strong>{v.name}: </strong>{formatAsCurrency(v.balance)}</div>
+                                <div
+                                    key={v.name}
+                                    data-cy={`transaction-account-${v.name}`}><strong>{v.name}: </strong><span data-cy='amount'>{formatAsCurrency(v.balance)}</span></div>
                             )}
                         </Form.Text>
                     </Form.Group>
@@ -234,10 +244,12 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
             <Modal.Footer>
                 <Button variant='link'
                         tabIndex={-1}
+                        data-cy='transaction-entry-close'
                         disabled={isSaving}
                         onClick={onClose}>Close</Button>
 
-                <Button onClick={handleSave}>{isSaving ? 'Saving' : 'Save'}</Button>
+                <Button onClick={handleSave}
+                        data-cy='transaction-entry-save'>{isSaving ? 'Saving' : 'Save'}</Button>
             </Modal.Footer>
         </Modal>
 
