@@ -68,8 +68,16 @@ async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
 
 #[async_std::main]
 async fn main() {
+    #[cfg(debug_assertions)]
     let _ = dotenv::dotenv().ok();
-    let port = 4000;
+
+    let port = u16::from_str(
+        std::env::var("PORT")
+            .unwrap_or_else(|_| "4000".to_string())
+            .as_ref(),
+    )
+    .expect("Port to be a number");
+
     sodiumoxide::init().expect("Sodium to start up");
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be specified");
@@ -88,8 +96,9 @@ async fn main() {
 
     tide::log::with_level(LevelFilter::Info);
 
-    #[cfg(not(debug_assertions))]
-    sqlx::migrate!().run(&conn).await.expect("Migration to run");
+    if std::env::var("DATABASE_RUN_MIGRATION") != Ok("false".to_string()) {
+        sqlx::migrate!().run(&conn).await.expect("Migration to run");
+    }
 
     let mut app = tide::with_state(AppState { conn, port });
 
@@ -150,11 +159,20 @@ async fn main() {
 
     endpoint!(app, post, "/api/attachments/list", attachment::list);
 
+    app.at("/healthcheck")
+        .get(|_: tide::Request<AppState>| async move {
+            Ok(tide::Response::new(tide::StatusCode::Ok))
+        });
+
     app.at("/public/*").get(serve_static_assert);
     app.at("/*").get(serve_static_assert);
     app.at("/").get(serve_static_assert);
 
-    app.listen(format!("0.0.0.0:{}", port))
-        .await
-        .expect("To run server");
+    app.listen(format!(
+        "{}:{}",
+        std::env::var("HOST").unwrap_or("127.0.0.1".to_string()),
+        port
+    ))
+    .await
+    .expect("To run server");
 }
