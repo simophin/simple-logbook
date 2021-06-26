@@ -34,5 +34,5 @@ push:
     - shell
   script:
     - podman login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - podman tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
+    - podman build -t $CI_REGISTRY_IMAGE:latest .
     - podman push $CI_REGISTRY_IMAGE:latest
