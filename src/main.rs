@@ -142,8 +142,6 @@ async fn main() {
         "/api/invoices/items/categories/search",
         invoice::search_cat
     );
-    app.at("/api/invoice/print")
-        .get(service_adapter::invoice::print_pdf);
 
     // config related
     endpoint_get!(app, "/api/config", config::client::get);

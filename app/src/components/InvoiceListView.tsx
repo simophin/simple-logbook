@@ -1,6 +1,6 @@
 import {deleteInvoice, listInvoice} from "../api/invoices";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
-import useAuthProps, {useAuthToken} from "../hooks/useAuthProps";
+import useAuthProps from "../hooks/useAuthProps";
 import {ReactElement, useCallback, useContext, useMemo, useState} from "react";
 import {LocalDate, ZonedDateTime} from "@js-joda/core";
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
@@ -16,9 +16,8 @@ import AsyncConfirm from "./AsyncConfirm";
 import {throwError} from "rxjs";
 import {AppStateContext} from "../state/AppStateContext";
 import {tap} from "rxjs/operators";
-import {DownloadIcon, FileIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
+import {FileIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
 import Paginator from "./Paginator";
-import config from "../config";
 
 
 const OpButton = ({children, ...props}: { children: ReactElement, title?: string, onClick?: () => unknown, } ) =>
@@ -49,8 +48,6 @@ export default function InvoiceListView() {
     }, authProps), [authProps, debouncedSearchTerm, from, to, page, transactionUpdatedTime]);
     useObservableErrorReport(rows);
 
-    const authToken = useAuthToken();
-
     const [pendingDelete, setPendingDelete] = useState<{ id: string, client: string, date: ZonedDateTime, amount: currency }>();
     const handleConfirmDeletion = useCallback(() => {
         if (!pendingDelete) {
@@ -74,11 +71,6 @@ export default function InvoiceListView() {
             </thead>
             <tbody>
             {data?.map(({id, reference, client, date, amount}) => {
-                let downloadUrl = `${config.baseUrl}/invoice/print?id=${encodeURIComponent(id)}`;
-                if (authToken) {
-                    downloadUrl += '&token=' + encodeURIComponent(authToken);
-                }
-
                 return <tr key={reference}>
                     <td>{reference}</td>
                     <td><a href={`/invoice/view/${id}?fullScreen=true`} target='_blank' rel="noreferrer">{client}</a>
@@ -97,14 +89,6 @@ export default function InvoiceListView() {
                         <OpButton title='Delete' onClick={() => setPendingDelete({client, id, date, amount})}>
                             <TrashIcon className='text-danger' size={14}/>
                         </OpButton>&nbsp;
-
-                        <a href={downloadUrl}
-                           rel='noreferrer'
-                           download={`Invoice #${reference} - ${client}.pdf`} target='_blank'>
-                            <OpButton title='Download PDF'>
-                                <DownloadIcon size={14}/>
-                            </OpButton>
-                        </a>
                     </td>
                 </tr>;
             })}
@@ -113,7 +97,7 @@ export default function InvoiceListView() {
             </tr>}
             </tbody>
         </Table>
-    }, [authToken, rows]);
+    }, [rows]);
 
     return <div style={flexContainer}>
         <InputGroup style={{...flexItem}} size='sm'>

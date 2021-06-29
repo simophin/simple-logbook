@@ -61,16 +61,21 @@ function groupItems(items: InvoiceItem[]): ItemRow[] {
                     .groupBy(({subCategory}: InvoiceItem) => subCategory.toLowerCase())
                     .flatMap((leafItems: InvoiceItem[]) => {
                         const merged = mergeItems(leafItems);
+                        const firstSubcategoryIsEmpty = leafItems[0].subCategory.trim().length === 0;
                         if (merged.length === 1) {
                             return indentDescription([{
                                 ...merged[0],
-                                desc: leafItems[0].subCategory
+                                desc: firstSubcategoryIsEmpty ?
+                                    leafItems[0].description :
+                                    leafItems[0].subCategory
                             }]);
-                        } else {
+                        } else if (!firstSubcategoryIsEmpty) {
                             return indentDescription([
                                 {desc: leafItems[0].subCategory},
                                 ...indentDescription(merged)
                             ]);
+                        } else {
+                            return indentDescription(merged);
                         }
                     })
                     .value()

@@ -1,7 +1,6 @@
 use tide::{Body, Response, StatusCode};
 
 pub mod attachment;
-pub mod invoice;
 
 pub fn transform_service_result<T: serde::Serialize>(r: crate::service::Result<T>) -> tide::Result {
     match r {
