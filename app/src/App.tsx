@@ -46,7 +46,7 @@ function App() {
     const appStateValue = useMemo(() => ({
         userState: (token ? {state: 'with_token', token} : userState) as UserState,
         transactionUpdatedTime,
-        setUserState: token ? (v: UserState) => {} : setUserState,
+        setUserState: token ? () => {} : setUserState,
         reportTransactionUpdated
     }), [token, userState, transactionUpdatedTime, setUserState, reportTransactionUpdated]);
 
@@ -98,8 +98,7 @@ function App() {
                         accounts = query.accounts as string[];
                     }
                     return <TransactionListPage
-                        accounts={accounts}
-                        showNewButton={!bigScreen}/>;
+                        accounts={accounts}/>;
                 }}
 
             </Route>

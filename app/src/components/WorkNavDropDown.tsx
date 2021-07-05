@@ -48,6 +48,7 @@ export default function WorkNavDropDown() {
 
         {showingCompleteTimedEntry && taskStartedState && <InvoiceItemEntry
             draft={{state: 'timer', ...taskStartedState}}
+            onDelete={() => setTaskState(undefined)}
             onSubmitted={() => {
                 setTaskState(undefined);
                 setShowingTimedEntry(true);
