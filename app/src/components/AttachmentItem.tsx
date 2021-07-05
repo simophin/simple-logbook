@@ -1,55 +1,97 @@
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import listAttachments from "../api/listAttachment";
 import useAuthProps, {useAuthToken} from "../hooks/useAuthProps";
-import React, {CSSProperties, useMemo} from "react";
+import React, {CSSProperties, useMemo, useState} from "react";
 import config from "../config";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
-import {Figure} from "react-bootstrap";
+import {flexContainer} from "../styles/common";
+import {Button} from "react-bootstrap";
+import {TrashIcon} from "@primer/octicons-react";
 
-type Props = { id: string, style?: CSSProperties } & React.ComponentProps<any>;
+type Props = {
+    id: string,
+    style?: CSSProperties,
+    onDelete?: (id: string) => unknown,
+} & React.ComponentProps<'div'>;
 
-const captionStyle: CSSProperties = {
-    maxLines: 1,
-    blockOverflow: 'ellipsis',
-    width: 150,
-    lineBreak: 'anywhere'
+const squared: CSSProperties = {
+    width: 120,
+    height: 120,
 };
 
-export default function AttachmentItem({id, ...reactProps}: Props) {
+const commonOverlay: CSSProperties = {
+    width: '100%',
+    position: 'absolute',
+    fontSize: 11,
+    padding: 4,
+};
+
+export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
     const props = useAuthProps();
     const data = useObservable(() => listAttachments([id], props), [id, props]);
     useObservableErrorReport(data);
     const summary = getLoadedValue(data)?.data?.[0];
     const token = useAuthToken();
-    const mimeType = summary?.mimeType;
-    const isImage = mimeType?.startsWith('image/') === true;
+    const [showingOptions, setShowingOptions] = useState(false);
 
-    const imageUrl = useMemo(() => {
-        if (isImage) {
-            let url = `${config.baseUrl}/attachments?id=${encodeURIComponent(id)}`;
-            if (token) {
-                url += `&token=${encodeURIComponent(token)}`;
-            }
-            return url;
+    const link = useMemo(() => {
+        let url = `${config.baseUrl}/attachments?id=${encodeURIComponent(id)}`;
+        if (token) {
+            url += `&token=${encodeURIComponent(token)}`;
         }
-    }, [id, isImage, token]);
+        return url;
+    }, [id, token]);
 
     return <div {...reactProps}>
-        {imageUrl &&
-        <Figure>
-            <a href={imageUrl} target='_blank' rel='noreferrer'>
-                <Figure.Image alt={summary?.name}
-                              style={{width: 150, height: 150, objectFit: 'contain'}}
-                              thumbnail={true}
-                              src={imageUrl}/>
+        <div style={{
+            position: 'relative',
+            border: '1px solid #dee2e6',
+            borderRadius: '0.25rem',
+        }}
+             onMouseEnter={() => setShowingOptions(!!onDelete)}
+             onMouseLeave={() => setShowingOptions(false)}
+             title={summary?.name}>
+
+            <a href={link}
+               style={{
+                   display: 'flex',
+                   justifyContent: 'center',
+                   justifyItems: 'center',
+                   ...squared,
+               }}
+               target='_blank'
+               rel='noreferrer'>
+                <img alt={summary?.name}
+                     style={{...squared, objectFit: 'contain', textAlign: 'center', lineHeight: squared.height}}
+                     src={`${link}&preview=true`}/>
             </a>
-            <Figure.Caption
-                as='div'
-                style={captionStyle}>
-                {summary?.name}
-            </Figure.Caption>
-        </Figure>
-        }
-        {mimeType && !isImage && <span>Type: {mimeType}</span>}
+
+            <div
+                className='text-center'
+                style={{
+                    ...commonOverlay,
+                    color: 'white',
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    bottom: 0,
+                    ...flexContainer,
+                }}>
+                <span style={{
+                    flex: 1,
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    lineHeight: '2em',
+                    maxHeight: '2em'
+                }}>
+                    {summary?.name}
+                </span>
+            </div>
+
+            {showingOptions && <div style={{...commonOverlay, top: 0, display: 'flex', justifyContent: 'right'}}>
+                {onDelete && <Button size='sm' variant='danger' style={{marginLeft: 4}} onClick={() => onDelete(id)}>
+                    <TrashIcon size={16}/>
+                </Button>}
+            </div>}
+        </div>
+
     </div>
 }

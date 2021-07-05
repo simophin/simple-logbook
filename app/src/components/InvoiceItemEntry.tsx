@@ -44,6 +44,7 @@ type Props = {
     draft: DraftState,
     onSubmitted?: () => unknown,
     onHide: () => unknown,
+    onDelete?: () => unknown,
     listInvoiceItemsFn?: typeof listInvoiceItems,
     searchCatFn?: typeof searchItemCategories,
     saveFn?: typeof saveInvoiceItem,
@@ -80,6 +81,7 @@ export default function InvoiceItemEntry({
                                              listInvoiceItemsFn = listInvoiceItems,
                                              searchCatFn = searchItemCategories,
                                              onSubmitted,
+    onDelete,
                                              now = ZonedDateTime.now(),
                                              saveFn = saveInvoiceItem,
                                          }: Props) {
@@ -187,9 +189,6 @@ export default function InvoiceItemEntry({
             setSaving(false);
             setError(e?.message ?? 'Unknown error');
         });
-    };
-
-    const handleDelete = () => {
     };
 
     const handleDescriptionChanged = (v: Either<string | undefined, InvoiceItem>) => {
@@ -363,7 +362,9 @@ export default function InvoiceItemEntry({
                      onCancel={() => setConfirmingDelete(false)}
                      onOk={() => {
                          setConfirmingDelete(false);
-                         handleDelete();
+                         if (onDelete) {
+                             onDelete();
+                         }
                          onHide();
                      }}
         />}

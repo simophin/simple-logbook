@@ -4,14 +4,14 @@ import {listTransaction} from "../api/listTransaction";
 import {Fragment, useCallback, useContext, useMemo, useState} from "react";
 import {useMediaPredicate} from "react-media-hook";
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
-import {FoldUpIcon, PencilIcon, PlusCircleIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
+import {FoldUpIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
 import SortedArray from "../utils/SortedArray";
 import {Transaction} from "../models/Transaction";
 import {EditState} from "../utils/EditState";
 import AsyncConfirm from "../components/AsyncConfirm";
 import deleteTransaction from "../api/deleteTransaction";
 import TransactionEntry from "../components/TransactionEntry";
-import {convert, ZoneId} from '@js-joda/core';
+import {convert, LocalDate, ZoneId} from '@js-joda/core';
 import AccountSelect from "../components/AccountSelect";
 import {useDebounce} from "../hooks/useDebounce";
 import useAuthProps from "../hooks/useAuthProps";
@@ -21,19 +21,21 @@ import {Helmet} from "react-helmet";
 import AttachmentItem from "../components/AttachmentItem";
 import {formatAsCurrency} from "../utils/numeric";
 import Paginator from "../components/Paginator";
+import ValueFormControl from "../components/ValueFormControl";
 
 type TransactionId = Transaction['id'];
 
 type Props = {
     accounts?: string[],
-    showNewButton?: boolean
 };
 
-export default function TransactionListPage({showNewButton, accounts: showAccounts = []}: Props) {
+export default function TransactionListPage({accounts: showAccounts = []}: Props) {
     const [page, setPage] = useState(0);
     const [pageSize] = useState(20);
     const [accounts, setAccounts] = useState<string[]>(showAccounts);
     const [searchTerm, setSearchTerm] = useState('');
+    const [from, setFrom] = useState('');
+    const [to, setTo] = useState('');
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
     const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppStateContext);
@@ -44,9 +46,12 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                 offset: pageSize * page,
                 limit: pageSize,
                 accounts: accounts.length > 0 ? accounts : undefined,
-                q: debouncedSearchTerm.trim()
+                q: debouncedSearchTerm.trim(),
+                from: from.length > 0 ? LocalDate.parse(from) : undefined,
+                to: to.length > 0 ? LocalDate.parse(to) : undefined,
             }, authProps),
-        [page, pageSize, accounts, debouncedSearchTerm, authProps, transactionUpdatedTime]);
+        [page, pageSize, accounts, debouncedSearchTerm,
+            authProps, transactionUpdatedTime, from, to]);
     useObservableErrorReport(rows);
 
     const totalItemsCount = getLoadedValue(rows)?.total ?? 0;
@@ -133,14 +138,6 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
     return <div style={flexContainer}>
         <Helmet><title>Transactions</title></Helmet>
 
-        {showNewButton &&
-        <Button size='sm'
-                onClick={() => setEditState({state: 'new'})}
-                style={flexFullLineItem}>
-            <PlusCircleIcon size={14}/>&nbsp;New transaction
-        </Button>
-        }
-
         <span style={bigScreen ? {...flexItem, flex: 2} : flexFullLineItem}>
             <InputGroup size='sm'>
                 <InputGroup.Prepend>
@@ -154,6 +151,7 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
             </InputGroup>
         </span>
 
+
         <span style={bigScreen ? {...flexItem, flex: 3} : flexFullLineItem}>
             <InputGroup size='sm'>
                 <InputGroup.Prepend>
@@ -165,6 +163,30 @@ export default function TransactionListPage({showNewButton, accounts: showAccoun
                     onChange={setAccounts}/>
             </InputGroup>
         </span>
+
+        <div style={{...flexFullLineItem, ...flexContainer, margin: 0, padding: 0}}>
+            <InputGroup size='sm' as='span' style={bigScreen ? { ...flexItem, flex: 1 } : flexFullLineItem}>
+                <InputGroup.Prepend>
+                    <InputGroup.Text>From</InputGroup.Text>
+                </InputGroup.Prepend>
+                <ValueFormControl
+                    value={from}
+                    onValueChange={setFrom}
+                    type='date'/>
+            </InputGroup>
+
+            <InputGroup size='sm' as='span' style={bigScreen ? { ...flexItem, flex: 1 } : flexFullLineItem}>
+                <InputGroup.Prepend>
+                    <InputGroup.Text>To</InputGroup.Text>
+                </InputGroup.Prepend>
+                <ValueFormControl
+                    value={to}
+                    onValueChange={setTo}
+                    type='date'/>
+            </InputGroup>
+
+        </div>
+
 
         {children.length > 0 && <div style={flexFullLineItem}>
             <Table bordered hover size='sm'>
