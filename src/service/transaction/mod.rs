@@ -1,7 +1,7 @@
 pub mod delete;
 pub mod list;
-mod model;
+pub mod model;
 pub mod save;
 
 #[cfg(test)]
-mod test;
+pub mod test;
