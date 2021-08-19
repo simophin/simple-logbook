@@ -13,12 +13,8 @@ import _ from "lodash";
 import {AppStateContext, UserState, userStateType} from "./state/AppStateContext";
 import Authenticator from "./components/Authenticator";
 import BalanceChart from "./pages/BalanceChart";
-import WorkNavDropDown from "./components/WorkNavDropDown";
 import TransactionNavDropdown from "./components/TransactionNavDropdown";
 import SettingDropdown from "./components/SettingDropdown";
-import InvoiceEntryPage, {InvoiceEditPage} from "./pages/InvoiceEntryPage";
-import InvoiceViewPage from "./pages/InvoiceViewPage";
-import InvoiceListPage from "./pages/InvoiceListPage";
 import {usePersistedState} from "./hooks/usePersistedState";
 
 
@@ -72,7 +68,6 @@ function App() {
                             </NavDropdown.Item>
                         </LinkContainer>
                     </NavDropdown>
-                    <WorkNavDropDown/>
                     <SettingDropdown/>
                 </Nav>
 
@@ -84,10 +79,6 @@ function App() {
             <Route path="/charts/income_expense" exact><IncomeExpenseChart/></Route>
             <Route path="/charts/balance" exact><BalanceChart/></Route>
             <Route path="/accounts"><AccountListPage/></Route>
-            <Route path="/invoices"><InvoiceListPage /></Route>
-            <Route path="/invoice/add"><InvoiceEntryPage /></Route>
-            <Route path="/invoice/edit/:id"><InvoiceEditPage /></Route>
-            <Route path="/invoice/view/:id"><InvoiceViewPage /></Route>
             <Route path="/transactions">
                 {(props) => {
                     const query = qs.parse(props.location.search.substr(1), {parseArrays: true});

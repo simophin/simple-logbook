@@ -123,6 +123,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
                     setToAccount('', true);
                     setAmount('', true);
                     setDesc('', true);
+                    setAttachments([]);
                     setTimeout(() =>
                             _.get(descRef.current?.getElementsByTagName('input'), 0)?.focus(),
                         100);
