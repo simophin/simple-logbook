@@ -8,11 +8,6 @@ RUN yarn install && yarn build
 FROM rust
 WORKDIR /rust_app
 
-COPY Cargo.lock Cargo.toml ./
-RUN mkdir src && \
-    echo "fn main() { todo!() }" > src/main.rs
-RUN cargo build --release && rm -rf src
-
 COPY . .
 COPY --from=0 /app/build app/build
 
