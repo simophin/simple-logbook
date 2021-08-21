@@ -26,6 +26,7 @@ const commonOverlay: CSSProperties = {
     padding: 4,
 };
 
+
 export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
     const props = useAuthProps();
     const data = useObservable(() => listAttachments([id], props), [id, props]);
@@ -41,6 +42,21 @@ export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
         }
         return url;
     }, [id, token]);
+
+    const dotIndex = summary?.name?.lastIndexOf('.') ?? -1;
+    let extName: string;
+    if (dotIndex >= 0) {
+        extName = summary?.name?.slice(dotIndex + 1) ?? '';
+    } else {
+        extName = '';
+    }
+
+    let previewLink: string;
+    if (summary?.mimeType?.startsWith("image/") === true) {
+        previewLink = `${link}&preview=true`;
+    } else {
+        previewLink = `../file_icons/${extName}.svg`;
+    }
 
     return <div {...reactProps}>
         <div style={{
@@ -63,7 +79,8 @@ export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
                rel='noreferrer'>
                 <img alt={summary?.name}
                      style={{...squared, objectFit: 'contain', textAlign: 'center', lineHeight: squared.height}}
-                     src={`${link}&preview=true`}/>
+                     src={previewLink}/>
+
             </a>
 
             <div

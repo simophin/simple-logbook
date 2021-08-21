@@ -1,12 +1,10 @@
 use std::borrow::Cow;
 
-use bytes::Bytes;
-
 use crate::state::AppState;
 
 pub struct Input<'a> {
     pub mime_type: Option<Cow<'a, str>>,
-    pub data: Bytes,
+    pub data: &'a [u8],
     pub name: Cow<'a, str>,
 }
 
@@ -42,7 +40,7 @@ pub async fn execute(
 
     let mime_type = match mime_type {
         Some(v) if v.as_ref() != "application/octet-stream" => v,
-        _ => Cow::from(tree_magic::from_u8(data.as_ref())),
+        _ => Cow::from(tree_magic::from_u8(data)),
     };
 
     let id = uuid::Uuid::new_v4().to_hyphenated().to_string();
@@ -54,7 +52,7 @@ pub async fn execute(
     .bind(mime_type.as_ref())
     .bind(name.as_ref())
     .bind(hash_code.as_ref())
-    .bind(data.as_ref())
+    .bind(data)
     .execute(&mut tx)
     .await?;
 
