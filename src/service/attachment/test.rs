@@ -16,7 +16,7 @@ pub async fn new_attachment(s: &AppState) -> (String, Bytes) {
     let save::Output { id } = save::execute(
         s,
         save::Input {
-            data: data.clone(),
+            data: &data,
             mime_type: Some(Cow::from(mime_type)),
             name: Cow::from(name),
         },
@@ -56,7 +56,7 @@ async fn attachment_rw_works() {
     let second_save_output = save::execute(
         &app_state,
         save::Input {
-            data: data.clone(),
+            data: &data,
             mime_type: Some(Cow::from("another_mimetype")),
             name: Cow::from("another_name"),
         },
