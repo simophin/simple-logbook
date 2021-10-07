@@ -1,5 +1,5 @@
 [package]
-name = "simple-log-book"
+name = "simple-logbook"
 version = "0.1.0"
 authors = ["fanchao <dev@fanchao.nz>"]
 edition = "2018"
