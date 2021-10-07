@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  backend_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2.1.6
+      with:
+        path: target
+        key: backend-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+      
+  frontend_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2.1.6
+      with:
+        path: app/node_modules
+        key: frontend-${{ runner.os }}-${{ hashFiles('app/yarn.lock') }}
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v2.4.1
+      with:
+        node-version: 14.x
+    - name: Build
+      run: cd app && yarn install
+    - name: Run tests
+      run: cd app && yarn run test
+  
