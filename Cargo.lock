@@ -2277,7 +2277,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c19772be3c4dd2ceaacf03cb41d5885f2a02c4d8804884918e3a258480803335"
 
 [[package]]
-name = "simple-log-book"
+name = "simple-logbook"
 version = "0.1.0"
 dependencies = [
  "anyhow",
