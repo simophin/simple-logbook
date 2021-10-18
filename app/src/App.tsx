@@ -16,6 +16,7 @@ import BalanceChart from "./pages/BalanceChart";
 import TransactionNavDropdown from "./components/TransactionNavDropdown";
 import SettingDropdown from "./components/SettingDropdown";
 import {usePersistedState} from "./hooks/usePersistedState";
+import AttachmentListPage from "./pages/AttachmentListPage";
 
 
 function App() {
@@ -79,6 +80,7 @@ function App() {
             <Route path="/charts/income_expense" exact><IncomeExpenseChart/></Route>
             <Route path="/charts/balance" exact><BalanceChart/></Route>
             <Route path="/accounts"><AccountListPage/></Route>
+            <Route path="/attachments"><AttachmentListPage /></Route>
             <Route path="/transactions">
                 {(props) => {
                     const query = qs.parse(props.location.search.substr(1), {parseArrays: true});

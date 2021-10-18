@@ -30,6 +30,13 @@ export default function TransactionNavDropdown() {
                     Account list
                 </NavDropdown.Item>
             </LinkContainer>
+
+            <LinkContainer to='/attachments'>
+                <NavDropdown.Item
+                    active={location.pathname === '/attachments'}>
+                    Attachment list
+                </NavDropdown.Item>
+            </LinkContainer>
         </NavDropdown>
 
         {addingTransaction && <TransactionEntry
