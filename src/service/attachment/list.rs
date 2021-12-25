@@ -38,6 +38,7 @@ pub struct Attachment {
 }
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AttachmentSigned<'a> {
     #[serde(flatten)]
     pub attachment: Attachment,

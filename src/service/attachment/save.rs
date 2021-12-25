@@ -1,3 +1,4 @@
+use super::list::AttachmentSigned;
 use std::borrow::Cow;
 
 use crate::state::AppState;
@@ -8,11 +9,6 @@ pub struct Input<'a> {
     pub name: Cow<'a, str>,
 }
 
-#[derive(serde::Serialize)]
-pub struct Output {
-    pub id: String,
-}
-
 pub async fn execute(
     state: &AppState,
     Input {
@@ -20,7 +16,7 @@ pub async fn execute(
         data,
         name,
     }: Input<'_>,
-) -> crate::service::Result<Output> {
+) -> crate::service::Result<AttachmentSigned> {
     let hash_code = sodiumoxide::crypto::hash::hash(&data);
 
     let mut tx = state.conn.begin().await?;

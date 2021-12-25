@@ -2,7 +2,7 @@ import {Observable} from "rxjs";
 import {isLeft} from "fp-ts/Either";
 import {PathReporter} from "io-ts/PathReporter";
 import * as t from "io-ts";
-import axios from "axios";
+import axios, {AxiosResponse} from "axios";
 
 export type ExtraRequestProps = {
     headers?: object,

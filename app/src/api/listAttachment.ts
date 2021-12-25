@@ -10,7 +10,10 @@ const attachmentSummaryType = t.type({
     mimeType: codec.NonEmptyString,
     created: zonedDateTimeType,
     lastUpdated: zonedDateTimeType,
+    signedId: codec.NonEmptyString,
 });
+
+export type AttachmentSummary = t.TypeOf<typeof attachmentSummaryType>;
 
 const responseType = t.type({
     data: t.array(attachmentSummaryType),

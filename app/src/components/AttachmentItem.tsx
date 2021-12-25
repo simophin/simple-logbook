@@ -1,15 +1,12 @@
-import {getLoadedValue, useObservable} from "../hooks/useObservable";
-import listAttachments from "../api/listAttachment";
-import useAuthProps, {useAuthToken} from "../hooks/useAuthProps";
-import React, {CSSProperties, useMemo, useState} from "react";
+import {AttachmentSummary} from "../api/listAttachment";
+import React, {CSSProperties, useState} from "react";
 import config from "../config";
-import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {flexContainer} from "../styles/common";
 import {Button} from "react-bootstrap";
 import {TrashIcon} from "@primer/octicons-react";
 
 type Props = {
-    id: string,
+    attachment: AttachmentSummary,
     style?: CSSProperties,
     onDelete?: (id: string) => unknown,
 } & React.ComponentProps<'div'>;
@@ -26,22 +23,11 @@ const commonOverlay: CSSProperties = {
     padding: 4,
 };
 
-
-export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
-    const props = useAuthProps();
-    const data = useObservable(() => listAttachments([id], props), [id, props]);
-    useObservableErrorReport(data);
-    const summary = getLoadedValue(data)?.data?.[0];
-    const token = useAuthToken();
+export default function AttachmentItem({attachment, onDelete, ...reactProps}: Props) {
     const [showingOptions, setShowingOptions] = useState(false);
+    const {signedId, ...summary} = attachment;
 
-    const link = useMemo(() => {
-        let url = `${config.baseUrl}/attachments?id=${encodeURIComponent(id)}`;
-        if (token) {
-            url += `&token=${encodeURIComponent(token)}`;
-        }
-        return url;
-    }, [id, token]);
+    const link = `${config.baseAttachmentUrl}?id=${encodeURIComponent(signedId)}`;
 
     const dotIndex = summary?.name?.lastIndexOf('.') ?? -1;
     let extName: string;
@@ -104,7 +90,7 @@ export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
             </div>
 
             {showingOptions && <div style={{...commonOverlay, top: 0, display: 'flex', justifyContent: 'right'}}>
-                {onDelete && <Button size='sm' variant='danger' style={{marginLeft: 4}} onClick={() => onDelete(id)}>
+                {onDelete && <Button size='sm' variant='danger' style={{marginLeft: 4}} onClick={() => onDelete(summary.id)}>
                     <TrashIcon size={16}/>
                 </Button>}
             </div>}
