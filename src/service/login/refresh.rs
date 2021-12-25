@@ -1,6 +1,7 @@
 use super::creds::*;
 use crate::state::AppState;
 
+use super::DEFAULT_LOGIN_TOKEN_VALID_DURATION;
 use serde_derive::*;
 use std::borrow::Cow;
 
@@ -9,7 +10,7 @@ pub struct Input {}
 
 #[derive(Serialize)]
 pub struct Output {
-    token: String,
+    token: Signed<'static>,
 }
 
 pub async fn execute(state: &AppState, _: Input) -> crate::service::Result<Output> {
@@ -18,6 +19,6 @@ pub async fn execute(state: &AppState, _: Input) -> crate::service::Result<Outpu
         .ok_or_else(|| crate::service::Error::InvalidArgument(Cow::from("No credentials found")))?;
 
     Ok(Output {
-        token: c.sign_token().to_string(),
+        token: c.sign(&Asset::new(DEFAULT_LOGIN_TOKEN_VALID_DURATION, None, None)),
     })
 }

@@ -168,7 +168,8 @@ async fn main() {
     endpoint!(app, post, "/api/config", config::client::save);
 
     // attachments
-    app.at("/attachment").get(service_adapter::attachment::get);
+    app.at("/api/attachment")
+        .get(service_adapter::attachment::get);
 
     app.at("/api/attachments")
         .post(service_adapter::attachment::post);

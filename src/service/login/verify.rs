@@ -1,4 +1,3 @@
-use crate::service::Error;
 use serde_derive::*;
 
 use crate::state::AppState;
@@ -14,8 +13,8 @@ pub type Output = bool;
 
 pub async fn query(state: &AppState, input: Input<'_>) -> crate::service::Result<Output> {
     match CredentialsConfig::from_app(state).await {
-        Some(config) if config.verify_token(&input.token).is_none() => Ok(false),
-        Some(_) => Ok(true),
-        None => Err(Error::InvalidCredentials),
+        Some(config) if config.verify(&input.token).is_some() => Ok(true),
+        None => Ok(true),
+        _ => Ok(false),
     }
 }

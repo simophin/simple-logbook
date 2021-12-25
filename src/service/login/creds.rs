@@ -1,8 +1,7 @@
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::ops::Deref;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use crate::AppState;
 use sodiumoxide::{base64, crypto};
@@ -16,35 +15,10 @@ pub struct CredentialsConfig {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Token {
+pub struct Asset<'a> {
     exp: u64,
-}
-
-pub type AssetId = String;
-pub type AssetKind = String;
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Asset<'a> {
-    exp: u64,
-    id: Cow<'a, str>,
-    kind: Cow<'a, str>,
-}
-
-trait WithExp {
-    fn get_exp_seconds(&self) -> u64;
-}
-
-impl WithExp for Token {
-    fn get_exp_seconds(&self) -> u64 {
-        self.exp
-    }
-}
-
-impl<'a> WithExp for Asset<'a> {
-    fn get_exp_seconds(&self) -> u64 {
-        self.exp
-    }
+    pub kind: Option<Cow<'a, str>>,
+    pub id: Option<Cow<'a, str>>,
 }
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize, Debug, Default)]
@@ -65,6 +39,32 @@ fn now_seconds() -> u64 {
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("Timestamp")
         .as_secs()
+}
+
+impl<'a> Asset<'a> {
+    pub fn new(exp_delay: Duration, kind: Option<&'a str>, id: Option<&'a str>) -> Self {
+        Self {
+            exp: now_seconds() + exp_delay.as_secs(),
+            kind: kind.map(Cow::from),
+            id: id.map(Cow::from),
+        }
+    }
+
+    pub fn sign(&self, config: Option<&CredentialsConfig>) -> Signed<'static> {
+        match config {
+            Some(c) => c.sign(self),
+            None => Signed(Cow::from(
+                serde_json::to_string(self).expect("to convert to json"),
+            )),
+        }
+    }
+
+    pub fn verify<'b: 'a>(s: &Signed, config: Option<&'b CredentialsConfig>) -> Option<Self> {
+        match config {
+            Some(c) => c.verify(s),
+            None => serde_json::from_str::<Self>(s.as_ref()).ok(),
+        }
+    }
 }
 
 impl CredentialsConfig {
@@ -95,7 +95,7 @@ impl CredentialsConfig {
         .expect("A valid signing key")
     }
 
-    fn sign(&self, input: &impl Serialize) -> Signed<'static> {
+    pub fn sign(&self, input: &Asset) -> Signed<'static> {
         let mut result = serde_json::to_vec(input).expect("To serialize asset json");
 
         let tag = crypto::auth::authenticate(&result, &self.get_signing_key());
@@ -103,7 +103,7 @@ impl CredentialsConfig {
         Signed(Cow::from(base64::encode(result, DEFAULT_VARIANT)))
     }
 
-    fn verify<R: DeserializeOwned + WithExp>(&self, input: &Signed) -> Option<R> {
+    pub fn verify(&self, input: &Signed) -> Option<Asset> {
         let token = base64::decode(input.as_bytes(), DEFAULT_VARIANT).ok()?;
         if token.len() < crypto::auth::TAGBYTES {
             return None;
@@ -115,8 +115,8 @@ impl CredentialsConfig {
             json,
             &self.get_signing_key(),
         ) {
-            let result: R = serde_json::from_slice(json).ok()?;
-            if now_seconds() > result.get_exp_seconds() {
+            let result: Asset = serde_json::from_slice(json).ok()?;
+            if now_seconds() > result.exp {
                 return None;
             }
 
@@ -124,30 +124,6 @@ impl CredentialsConfig {
         } else {
             None
         }
-    }
-
-    pub fn sign_asset(&self, id: &str, kind: &str) -> Signed<'static> {
-        self.sign(&Asset {
-            exp: now_seconds() + 3600,
-            id: Cow::from(id),
-            kind: Cow::from(kind),
-        })
-    }
-
-    pub fn verify_asset(&self, token: &Signed) -> Option<(AssetKind, AssetId)> {
-        return self
-            .verify::<Asset>(token)
-            .map(|a| (a.kind.to_string(), a.id.to_string()));
-    }
-
-    pub fn sign_token(&self) -> Signed<'static> {
-        self.sign(&Token {
-            exp: now_seconds() + 3600 * 24 * 10,
-        })
-    }
-
-    pub fn verify_token(&self, token: &Signed) -> Option<()> {
-        return self.verify::<Token>(token).map(|_| ());
     }
 
     pub fn new(pw: &str) -> Self {
@@ -172,11 +148,11 @@ mod tests {
     #[test]
     fn signing_works() {
         let c = CredentialsConfig::new("12345");
-        let token = c.sign_token();
-        assert_eq!(c.verify_token(&token), Some(()));
+        let token = c.sign(&Asset::new(Duration::from_secs(10), None, None));
+        assert_eq!(c.verify(&token), Some(()));
         assert_eq!(c.verify_password("12345"), Some(()));
         assert_eq!(c.verify_password("123456"), None);
-        let token = format!("{}1", token);
-        assert_eq!(c.verify_token(&Signed(Cow::from(token))), None);
+        let token = format!("{}1", token.to_string());
+        assert_eq!(c.verify(&Signed(Cow::from(token))), None);
     }
 }

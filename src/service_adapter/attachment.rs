@@ -6,7 +6,7 @@ use bytes::Bytes;
 use futures_util::Stream;
 use multer::{parse_boundary, Multipart};
 
-use crate::service::login::creds::{CredentialsConfig, Signed};
+use crate::service::login::creds::{Asset, CredentialsConfig, Signed};
 use crate::service::Error;
 use crate::state::AppState;
 use futures_io::AsyncBufRead;
@@ -124,12 +124,14 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     use crate::service::attachment::list::*;
 
     let GetQuery { id, preview } = req.query()?;
-    let id = match CredentialsConfig::from_app(req.state())
-        .await
-        .and_then(|c| c.verify_asset(&id))
-    {
-        Some((kind, id)) if kind == "attachment" => id,
-        _ => return Err(Error::InvalidCredentials.into()),
+    let config = CredentialsConfig::from_app(req.state()).await;
+    let id = match Asset::verify(&id, config.as_ref()) {
+        Some(Asset { id, kind, .. })
+            if id.is_some() && kind == Some(Cow::from(ATTACHMENT_SIGNATURE_KIND)) =>
+        {
+            id.unwrap()
+        }
+        _ => return Err(Error::ResourceNotFound.into()),
     };
 
     let Attachment {
@@ -138,7 +140,7 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
         req.state(),
         Input {
             req: Default::default(),
-            includes: Some(Json(vec![id])),
+            includes: Some(Json(vec![id.into_owned()])),
             accounts: None,
             with_data: true,
         },
@@ -153,13 +155,10 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     let mut mime_type = mime_type.as_str();
 
     match preview {
-        Some(max) => {
-            if mime_type.starts_with("image/") {
-                let (resized_data, resized_mime_type) = resize_image(data, max, max, mime_type);
-                mime_type = resized_mime_type;
-                data = resized_data;
-            } else if mime_type.starts_with("application/pdf") {
-            }
+        Some(max) if mime_type.starts_with("image/") => {
+            let (resized_data, resized_mime_type) = resize_image(data, max, max, mime_type);
+            mime_type = resized_mime_type;
+            data = resized_data;
         }
 
         _ => {}

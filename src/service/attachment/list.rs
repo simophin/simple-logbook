@@ -2,6 +2,7 @@ use crate::service::{CommonListRequest, PaginatedResponse};
 use crate::sqlx_ext::Json;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
+use std::time::Duration;
 
 const fn default_with_data() -> bool {
     false
@@ -36,12 +37,12 @@ pub struct Attachment {
     pub data_hash: Option<Vec<u8>>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct AttachmentSigned {
-    pub signed_id: Signed<'static>,
-
+#[derive(serde::Serialize)]
+pub struct AttachmentSigned<'a> {
     #[serde(flatten)]
     pub attachment: Attachment,
+
+    pub signed_id: Signed<'a>,
 }
 
 mod sql {
@@ -86,25 +87,32 @@ where
     );
 }
 
-use crate::service::login::creds::{CredentialsConfig, Signed};
+use crate::service::login::creds::{Asset, CredentialsConfig, Signed};
+use crate::AppState;
 pub use sql::execute as execute_sql;
 
+pub const ATTACHMENT_SIGNATURE_EXP_DURATION: Duration = Duration::from_secs(60 * 10);
+pub const ATTACHMENT_SIGNATURE_KIND: &str = "attachments";
+
 pub async fn execute(
-    state: &crate::state::AppState,
-    req: Input,
-) -> crate::service::Result<crate::service::PaginatedResponse<AttachmentSigned>> {
-    let c = CredentialsConfig::from_app(state)
-        .await
-        .ok_or_else(|| anyhow::anyhow!("No credentials set"))?;
-    let PaginatedResponse { data, total } = execute_sql(state, req).await?;
+    state: &AppState,
+    input: Input,
+) -> crate::service::Result<PaginatedResponse<AttachmentSigned<'static>>> {
+    let PaginatedResponse { total, data } = execute_sql(state, input).await?;
+    let config = CredentialsConfig::from_app(state).await;
     Ok(PaginatedResponse {
+        total,
         data: data
             .into_iter()
-            .map(|a| AttachmentSigned {
-                signed_id: c.sign_asset(&a.id, "attachment"),
-                attachment: a,
+            .map(|attachment| AttachmentSigned {
+                signed_id: Asset::new(
+                    ATTACHMENT_SIGNATURE_EXP_DURATION,
+                    Some(ATTACHMENT_SIGNATURE_KIND),
+                    Some(&attachment.id),
+                )
+                .sign(config.as_ref()),
+                attachment,
             })
             .collect_vec(),
-        total,
     })
 }
