@@ -59,7 +59,7 @@ function textToCharges(text: string): InvoiceExtraCharge[] | string {
             });
             priority++;
         }
-    } catch (e) {
+    } catch (e: any) {
         return e?.message ?? 'Unknown error';
     }
 

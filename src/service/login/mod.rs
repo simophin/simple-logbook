@@ -1,4 +1,4 @@
-mod creds;
+pub mod creds;
 pub mod refresh;
 pub mod sign;
 pub mod update;

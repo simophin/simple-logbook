@@ -6,6 +6,7 @@ use bytes::Bytes;
 use futures_util::Stream;
 use multer::{parse_boundary, Multipart};
 
+use crate::service::login::creds::{CredentialsConfig, Signed};
 use crate::service::Error;
 use crate::state::AppState;
 use futures_io::AsyncBufRead;
@@ -114,8 +115,8 @@ fn resize_image(
 }
 
 #[derive(serde::Deserialize)]
-struct GetQuery {
-    id: String,
+struct GetQuery<'a> {
+    id: Signed<'a>,
     preview: Option<u32>,
 }
 
@@ -123,10 +124,17 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     use crate::service::attachment::list::*;
 
     let GetQuery { id, preview } = req.query()?;
+    let id = match CredentialsConfig::from_app(req.state())
+        .await
+        .and_then(|c| c.verify_asset(&id))
+    {
+        Some((kind, id)) if kind == "attachment" => id,
+        _ => return Err(Error::InvalidCredentials.into()),
+    };
 
     let Attachment {
         mime_type, data, ..
-    } = execute(
+    } = execute_sql(
         req.state(),
         Input {
             req: Default::default(),

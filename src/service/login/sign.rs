@@ -24,5 +24,7 @@ pub async fn execute(state: &AppState, input: Input) -> Result<Output> {
         return Err(Error::InvalidCredentials);
     }
 
-    Ok(Output { token: c.sign() })
+    Ok(Output {
+        token: c.sign_token().to_string(),
+    })
 }

@@ -1,14 +1,9 @@
+use crate::service::login::creds::Signed;
 use crate::state::AppState;
 use async_trait::async_trait;
-use serde_derive::*;
 use std::borrow::Cow;
 use tide::http::Method;
 use tide::{Middleware, Next, Request, Response, StatusCode};
-
-#[derive(Deserialize)]
-struct TokenParams<'a> {
-    token: Cow<'a, str>,
-}
 
 pub struct Verifier;
 
@@ -26,12 +21,7 @@ impl Middleware<AppState> for Verifier {
         let token = req
             .header("Authorization")
             .and_then(|v| v.last().as_str().split("Bearer ").skip(1).next())
-            .map(Cow::from)
-            .or_else(|| {
-                req.query::<TokenParams<'_>>()
-                    .ok()
-                    .map(|TokenParams { token }| token)
-            })
+            .map(|v| Signed(Cow::from(v)))
             .unwrap_or_default();
 
         let verified = verify::query(req.state(), verify::Input { token }).await?;

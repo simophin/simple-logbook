@@ -59,6 +59,8 @@ pub async fn execute(
     .await??;
 
     Ok(Output {
-        token: credentials.map(|c| c.sign()).unwrap_or_default(),
+        token: credentials
+            .map(|c| c.sign_token().to_string())
+            .unwrap_or_default(),
     })
 }
