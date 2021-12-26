@@ -2,7 +2,6 @@ use crate::service::{CommonListRequest, PaginatedResponse};
 use crate::sqlx_ext::Json;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
-use std::time::Duration;
 
 const fn default_with_data() -> bool {
     false
@@ -88,12 +87,9 @@ where
     );
 }
 
-use crate::service::login::creds::{Asset, CredentialsConfig, Signed};
+use crate::service::login::creds::{CredentialsConfig, Signed};
 use crate::AppState;
 pub use sql::execute as execute_sql;
-
-pub const ATTACHMENT_SIGNATURE_EXP_DURATION: Duration = Duration::from_secs(60 * 10);
-pub const ATTACHMENT_SIGNATURE_KIND: &str = "attachments";
 
 pub async fn execute(
     state: &AppState,
@@ -106,12 +102,7 @@ pub async fn execute(
         data: data
             .into_iter()
             .map(|attachment| AttachmentSigned {
-                signed_id: Asset::new(
-                    ATTACHMENT_SIGNATURE_EXP_DURATION,
-                    Some(ATTACHMENT_SIGNATURE_KIND),
-                    Some(&attachment.id),
-                )
-                .sign(config.as_ref()),
+                signed_id: super::sign::sign(&attachment.id, config.as_ref()),
                 attachment,
             })
             .collect_vec(),
