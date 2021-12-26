@@ -13,7 +13,7 @@ pub struct CredentialsConfig {
     signing_key: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Asset<'a> {
     exp: u64,
@@ -149,7 +149,7 @@ mod tests {
     fn signing_works() {
         let c = CredentialsConfig::new("12345");
         let token = c.sign(&Asset::new(Duration::from_secs(10), None, None));
-        assert_eq!(c.verify(&token), Some(()));
+        assert!(c.verify(&token).is_some());
         assert_eq!(c.verify_password("12345"), Some(()));
         assert_eq!(c.verify_password("123456"), None);
         let token = format!("{}1", token.to_string());

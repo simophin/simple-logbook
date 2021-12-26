@@ -11,7 +11,7 @@ pub struct Input<'a> {
 
 #[derive(Serialize)]
 pub struct Output {
-    id: String,
+    pub id: String,
 }
 
 pub async fn execute(
