@@ -6,13 +6,23 @@ import ValueFormControl from "../components/ValueFormControl";
 import AccountSelect from "../components/AccountSelect";
 import {Helmet} from "react-helmet";
 import {useMediaPredicate} from "react-media-hook";
+import useAuthProps from "../hooks/useAuthProps";
+import { useObservable } from "../hooks/useObservable";
+import {searchAttachments} from "../api/listAttachment";
 
 
 export default function AttachmentListPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [accounts, setAccounts] = useState<string[]>([]);
     const bigScreen = useMediaPredicate('(min-width: 420px)');
-
+    const authProps = useAuthProps();
+    const [currentPage, setCurrentPage] = useState(0);
+    const attachments = useObservable(() => {
+        let trimmedSearchTerm = searchTerm.trim();
+        return searchAttachments({
+            q: trimmedSearchTerm.length === 0 ? undefined : trimmedSearchTerm,
+        });
+    }, [authProps, currentPage, searchTerm, accounts]);
 
     return <div style={flexContainer}>
         <Helmet><title>Attachment list</title></Helmet>
