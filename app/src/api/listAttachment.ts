@@ -37,7 +37,7 @@ export default function listAttachments(ids: string[], extraProps?: ExtraRequest
 
 const searchFilterType = t.partial({
     accounts: t.array(t.string),
-    q: codec.NonEmptyString,
+    q: t.string,
     offset: t.number,
     limit: t.number,
     from: localDateType,

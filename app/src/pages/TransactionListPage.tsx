@@ -23,6 +23,7 @@ import {formatAsCurrency} from "../utils/numeric";
 import Paginator from "../components/Paginator";
 import ValueFormControl from "../components/ValueFormControl";
 import AttachmentSelect from "../components/AttachmentSelect";
+import {Filter} from "../components/MultiFilter";
 
 type TransactionId = Transaction['id'];
 
@@ -33,12 +34,10 @@ type Props = {
 export default function TransactionListPage({accounts: showAccounts = []}: Props) {
     const [page, setPage] = useState(0);
     const [pageSize] = useState(20);
-    const [accounts, setAccounts] = useState<string[]>(showAccounts);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [from, setFrom] = useState('');
-    const [to, setTo] = useState('');
+    const bigScreen = useMediaPredicate('(min-width: 800px)');
+    const [filter, setFilter] = useState<Filter>({q: ''});
 
-    const debouncedSearchTerm = useDebounce(searchTerm, 200);
+    const debouncedSearchTerm = useDebounce(filter.q ?? '', 200);
     const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppStateContext);
     const authProps = useAuthProps();
 
@@ -63,7 +62,7 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
     }
 
     const [selected, setSelected] = useState(new SortedArray<TransactionId>([]));
-    const bigScreen = useMediaPredicate('(min-width: 800px)');
+
 
     const toggleExpanded = useCallback((id: TransactionId) => {
         const [newSelected, removed] = selected.remove(id);
