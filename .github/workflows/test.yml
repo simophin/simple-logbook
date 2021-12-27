@@ -38,5 +38,6 @@ jobs:
   build_docker:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Build
         run: docker build -t server .
