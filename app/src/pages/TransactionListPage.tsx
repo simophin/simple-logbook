@@ -22,6 +22,7 @@ import AttachmentItem from "../components/AttachmentItem";
 import {formatAsCurrency} from "../utils/numeric";
 import Paginator from "../components/Paginator";
 import ValueFormControl from "../components/ValueFormControl";
+import AttachmentSelect from "../components/AttachmentSelect";
 
 type TransactionId = Transaction['id'];
 
@@ -101,8 +102,9 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
                                             date: </strong>{transDate}</div>
                                         <div style={flexFullLineItem}><strong>Last
                                             updated: </strong>{convert(r.updatedDate).toDate().toLocaleString()}</div>
+
                                         <div style={{...flexFullLineItem, ...flexContainer}}>
-                                            {r.attachments.map(r => <AttachmentItem id={r} style={flexItem} />)}
+                                            <AttachmentSelect readonly value={r.attachments} />
                                         </div>
                                         <div style={flexContainer}>
                                             <Button style={flexItem}

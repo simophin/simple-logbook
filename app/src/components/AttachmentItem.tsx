@@ -8,7 +8,7 @@ import {TrashIcon} from "@primer/octicons-react";
 type Props = {
     attachment: AttachmentSummary,
     style?: CSSProperties,
-    onDelete?: (id: string) => unknown,
+    onDelete?: (id: AttachmentSummary['id']) => unknown,
 } & React.ComponentProps<'div'>;
 
 const squared: CSSProperties = {
@@ -39,7 +39,7 @@ export default function AttachmentItem({attachment, onDelete, ...reactProps}: Pr
 
     let previewLink: string;
     if (summary?.mimeType?.startsWith("image/") === true) {
-        previewLink = `${link}&preview=true`;
+        previewLink = `${link}&preview=300`;
     } else {
         previewLink = `../file_icons/${extName}.svg`;
     }

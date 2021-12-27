@@ -20,6 +20,7 @@ import AttachmentSelect from "./AttachmentSelect";
 import {formatAsCurrency, numericRegExp} from "../utils/numeric";
 import useFormField, {checkFormValidity} from "../hooks/useFormField";
 import ValueFormControl from "./ValueFormControl";
+import { AttachmentSummary } from "../api/listAttachment";
 
 type Props = {
     editing?: Transaction,
@@ -37,7 +38,7 @@ export default function TransactionEntry({editing, onFinish, onClose}: Props) {
         type: 'number'
     });
     const [date, setDate, dateError, validateDate] = useFormField((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE), {required: true});
-    const [attachments, setAttachments] = useState<string[]>(editing?.attachments ?? []);
+    const [attachments, setAttachments] = useState<AttachmentSummary['id'][]>(editing?.attachments ?? []);
 
     const descRef = useRef<any>(null);
     const amountRef = useRef<any>(null);
