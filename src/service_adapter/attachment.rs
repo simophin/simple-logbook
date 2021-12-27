@@ -3,14 +3,13 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use bytes::Bytes;
-use futures_util::Stream;
+use futures_util::{AsyncWriteExt, Stream};
 use multer::{parse_boundary, Multipart};
 
 use crate::service::login::creds::{CredentialsConfig, Signed};
 use crate::service::Error;
 use crate::state::AppState;
 use futures_io::AsyncBufRead;
-use image::{GenericImageView, ImageFormat};
 use sqlx::types::Json;
 
 struct TideBody(tide::Body);
@@ -66,13 +65,14 @@ pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
         }
     }
 
-    let (data, mime_type) = resize_image(
+    let (data, mime_type) = gen_thumbnail(
         data.ok_or_else(|| Error::InvalidArgument(Cow::from("data is missing")))?
             .to_vec(),
         2048,
         2048,
         &mime_type,
-    );
+    )
+    .await?;
     let name = name.ok_or_else(|| Error::InvalidArgument(Cow::from("file_name is missing")))?;
     let response = execute(
         req.state(),
@@ -86,32 +86,43 @@ pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
     Ok(tide::Response::from(tide::Body::from_json(&response)?))
 }
 
-fn resize_image(
+async fn gen_thumbnail(
     data: Vec<u8>,
     max_width: u32,
     max_height: u32,
     mime_type: &str,
-) -> (Vec<u8>, &str) {
-    let img = match image::load_from_memory(&data) {
-        Ok(v) => v,
-        Err(_) => return (data, mime_type),
+) -> anyhow::Result<(Vec<u8>, &str)> {
+    use async_std::process::{Command, Stdio};
+    let mut child = if mime_type.starts_with("application/pdf") {
+        Command::new("magick")
+            .arg("convert")
+            .arg("-density")
+            .arg("100")
+            .arg("-resize")
+            .arg(format!("{}x{}", max_width, max_height))
+            .arg("-")
+            .arg("png:-")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?
+    } else {
+        Command::new("magick")
+            .arg("convert")
+            .arg("-resize")
+            .arg(format!("{}x{}", max_width, max_height))
+            .arg("-")
+            .arg("png:-")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?
     };
 
-    if img.width() <= max_width && img.height() <= max_height {
-        return (data, mime_type);
+    child.stdin.as_mut().unwrap().write_all(&data).await?;
+    let status = child.output().await?;
+    if !status.status.success() {
+        return Err(anyhow::anyhow!("Error running process"));
     }
-
-    let mut out = Vec::new();
-
-    if img
-        .thumbnail(max_width, max_height)
-        .write_to(&mut out, ImageFormat::Png)
-        .is_err()
-    {
-        return (data, mime_type);
-    }
-
-    (out, "image/png")
+    Ok((status.stdout, "image/png"))
 }
 
 #[derive(serde::Deserialize)]
@@ -149,8 +160,11 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     let mut mime_type = mime_type.as_str();
 
     match preview {
-        Some(max) if mime_type.starts_with("image/") => {
-            let (resized_data, resized_mime_type) = resize_image(data, max, max, mime_type);
+        Some(max)
+            if mime_type.starts_with("image/") || mime_type.starts_with("application/pdf") =>
+        {
+            let (resized_data, resized_mime_type) =
+                gen_thumbnail(data, max, max, mime_type).await?;
             mime_type = resized_mime_type;
             data = resized_data;
         }

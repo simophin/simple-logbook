@@ -4,22 +4,39 @@ import {PencilIcon, SearchIcon} from "@primer/octicons-react";
 import AccountSelect from "./AccountSelect";
 import ValueFormControl from "./ValueFormControl";
 import {useMediaPredicate} from "react-media-hook";
+import {useDebounce} from "../hooks/useDebounce";
+import {useEffect, useState} from "react";
+import {LocalDate} from "@js-joda/core";
 
 export type Filter = {
     accounts?: string[],
-    q: string,
-    from?: string,
-    to?: string,
+    q?: string,
+    from?: LocalDate,
+    to?: LocalDate,
 };
 
 type Props = {
-    value: Filter,
     onChanged: (filter: Filter) => unknown,
 }
 
-export default function MultiFilter({value, onChanged}: Props) {
+export default function MultiFilter({onChanged}: Props) {
     const bigScreen = useMediaPredicate('(min-width: 800px)');
-    const {q, accounts, from, to} = value;
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [accounts, setAccounts] = useState<string[]>([]);
+    const [from, setFrom] = useState('');
+    const [to, setTo] = useState('');
+
+    const debouncedSearchTerm = useDebounce(searchTerm, 200);
+
+    useEffect(() => {
+        onChanged({
+            accounts: accounts.length === 0 ? undefined : accounts,
+            from: from.length > 0 ? LocalDate.parse(from) : undefined,
+            to: to.length > 0 ? LocalDate.parse(to) : undefined,
+            q: debouncedSearchTerm.length === 0 ? undefined : debouncedSearchTerm,
+        });
+    }, [debouncedSearchTerm, accounts, from, to, onChanged]);
 
     return <div style={flexContainer}>
         <span style={bigScreen ? {...flexItem, flex: 2} : flexFullLineItem}>
@@ -28,8 +45,8 @@ export default function MultiFilter({value, onChanged}: Props) {
                     <InputGroup.Text><SearchIcon size={12}/></InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl
-                    value={q}
-                    onChange={(e) => onChanged({...value, q: e.target.value})}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     type='text'
                     placeholder='Search'/>
             </InputGroup>
@@ -44,7 +61,7 @@ export default function MultiFilter({value, onChanged}: Props) {
                 <AccountSelect
                     placeholder='Accounts'
                     selected={accounts}
-                    onChange={accounts => onChanged({...value, accounts})}/>
+                    onChange={setAccounts}/>
             </InputGroup>
         </span>
 
@@ -55,7 +72,7 @@ export default function MultiFilter({value, onChanged}: Props) {
                 </InputGroup.Prepend>
                 <ValueFormControl
                     value={from}
-                    onValueChange={from => onChanged({...value, from})}
+                    onValueChange={setFrom}
                     type='date'/>
             </InputGroup>
 
@@ -65,7 +82,7 @@ export default function MultiFilter({value, onChanged}: Props) {
                 </InputGroup.Prepend>
                 <ValueFormControl
                     value={to}
-                    onValueChange={to => onChanged({...value, to})}
+                    onValueChange={setTo}
                     type='date'/>
             </InputGroup>
 

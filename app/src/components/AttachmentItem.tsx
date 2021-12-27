@@ -1,5 +1,5 @@
 import {AttachmentSummary} from "../api/listAttachment";
-import React, {CSSProperties, useState} from "react";
+import React, {CSSProperties, useMemo, useState} from "react";
 import config from "../config";
 import {flexContainer} from "../styles/common";
 import {Button} from "react-bootstrap";
@@ -25,24 +25,30 @@ const commonOverlay: CSSProperties = {
 
 export default function AttachmentItem({attachment, onDelete, ...reactProps}: Props) {
     const [showingOptions, setShowingOptions] = useState(false);
-    const {signedId, ...summary} = attachment;
+    const {signedId, name, mimeType, id} = attachment;
 
     const link = `${config.baseAttachmentUrl}?id=${encodeURIComponent(signedId)}`;
 
-    const dotIndex = summary?.name?.lastIndexOf('.') ?? -1;
-    let extName: string;
-    if (dotIndex >= 0) {
-        extName = summary?.name?.slice(dotIndex + 1) ?? '';
-    } else {
-        extName = '';
-    }
+    const extName = useMemo(() => {
+        const dotIndex = name.lastIndexOf('.') ?? -1;
+        if (dotIndex >= 0) {
+            return name.slice(dotIndex + 1) ?? '';
+        } else {
+            return '';
+        }
+    }, [name]);
 
-    let previewLink: string;
-    if (summary?.mimeType?.startsWith("image/") === true) {
-        previewLink = `${link}&preview=300`;
-    } else {
-        previewLink = `../file_icons/${extName}.svg`;
-    }
+
+    const previewElement = useMemo(() => {
+        if (mimeType.startsWith("image/") || mimeType.startsWith("application/pdf")) {
+            return <img alt={name}
+                style={{...squared, objectFit: 'contain', textAlign: 'center', lineHeight: squared.height}}
+                src={`${link}&preview=300`}/>
+        }
+        else {
+            return <span>{extName}</span>
+        }
+    }, [mimeType]);
 
     return <div {...reactProps}>
         <div style={{
@@ -52,7 +58,7 @@ export default function AttachmentItem({attachment, onDelete, ...reactProps}: Pr
         }}
              onMouseEnter={() => setShowingOptions(!!onDelete)}
              onMouseLeave={() => setShowingOptions(false)}
-             title={summary?.name}>
+             title={name}>
 
             <a href={link}
                style={{
@@ -63,10 +69,7 @@ export default function AttachmentItem({attachment, onDelete, ...reactProps}: Pr
                }}
                target='_blank'
                rel='noreferrer'>
-                <img alt={summary?.name}
-                     style={{...squared, objectFit: 'contain', textAlign: 'center', lineHeight: squared.height}}
-                     src={previewLink}/>
-
+                {previewElement}
             </a>
 
             <div
@@ -85,12 +88,12 @@ export default function AttachmentItem({attachment, onDelete, ...reactProps}: Pr
                     lineHeight: '2em',
                     maxHeight: '2em'
                 }}>
-                    {summary?.name}
+                    {name}
                 </span>
             </div>
 
             {showingOptions && <div style={{...commonOverlay, top: 0, display: 'flex', justifyContent: 'right'}}>
-                {onDelete && <Button size='sm' variant='danger' style={{marginLeft: 4}} onClick={() => onDelete(summary.id)}>
+                {onDelete && <Button size='sm' variant='danger' style={{marginLeft: 4}} onClick={() => onDelete(id)}>
                     <TrashIcon size={16}/>
                 </Button>}
             </div>}
