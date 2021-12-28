@@ -17,6 +17,7 @@ FROM ubuntu
 
 WORKDIR /app
 RUN apt update -y && apt install -y curl imagemagick
+RUN sed -i '/disable ghostscript format types/,+6d' /etc/ImageMagick-6/policy.xml
 HEALTHCHECK --interval=10s --timeout=2s CMD curl -fL http://localhost:4000/healthcheck
 
 COPY --from=1 /rust_app/target/release/simple-logbook ./
