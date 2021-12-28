@@ -1,4 +1,5 @@
 use super::*;
+use crate::service::login::creds::Signed;
 use crate::state::AppState;
 use std::borrow::Cow;
 
@@ -11,7 +12,7 @@ async fn login_works() {
         verify::query(
             &state,
             verify::Input {
-                token: Cow::from(""),
+                token: Signed(Cow::from("")),
             },
         )
         .await
@@ -38,7 +39,7 @@ async fn login_works() {
         verify::query(
             &state,
             verify::Input {
-                token: Cow::from("")
+                token: Signed(Cow::from("")),
             }
         )
         .await
@@ -51,7 +52,7 @@ async fn login_works() {
         verify::query(
             &state,
             verify::Input {
-                token: Cow::from(token.clone()),
+                token: Signed(Cow::from(token.clone())),
             }
         )
         .await

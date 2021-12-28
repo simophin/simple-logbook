@@ -26,6 +26,7 @@ import {map} from "rxjs/operators";
 import InvoiceExtraInfoSelect from "../components/InvoiceExtraInfoSelect";
 import {v4 as uuid} from 'uuid';
 import AlertDialog from "../components/AlertDialog";
+import { AttachmentSummary } from "../api/listAttachment";
 
 type Props = {
     editing?: Invoice,
@@ -62,7 +63,7 @@ export default function InvoiceEntryPage({editing}: Props) {
     const [extraCharges, setExtraCharges] = useState<Invoice['extraCharges']>(editing?.extraCharges ?? []);
     const [invoiceDate, setInvoiceDate, invoiceDateError, checkInvoiceDate] = useFormField(formatAsStandardLocalDate(editing?.date ?? ZonedDateTime.now()), {required: true});
     const [dueDate, setDueDate, dueDateError, checkDueDate] = useFormField(editing?.dueDate ? formatAsStandardLocalDate(editing.dueDate) : '', {required: true});
-    const [attachments, setAttachments] = useState<string[]>(editing?.attachments ?? []);
+    const [attachments, setAttachments] = useState<AttachmentSummary['id'][]>(editing?.attachments ?? []);
     const [totalSelectedAmount, setTotalSelectedAmount] = useState(currency(0));
     const [notes, setNotes, notesError, checkNotes] = useFormField(editing?.notes ?? '', {required: false});
     const [extraInfo, setExtraInfo] = useState<Invoice['extraInfo']>(editing?.extraInfo ?? []);

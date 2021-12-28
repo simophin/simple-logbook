@@ -16,7 +16,7 @@ pub async fn new_attachment(s: &AppState) -> (String, Bytes) {
     let save::Output { id } = save::execute(
         s,
         save::Input {
-            data: data.clone(),
+            data: &data,
             mime_type: Some(Cow::from(mime_type)),
             name: Cow::from(name),
         },
@@ -49,14 +49,14 @@ async fn attachment_rw_works() {
     .next()
     .expect("To have an element");
 
-    assert_eq!(output.data, Some(data.to_vec()));
-    assert_eq!(output.mime_type, "text/plain");
-    assert_eq!(output.name, "my-file");
+    assert_eq!(output.attachment.data, Some(data.to_vec()));
+    assert_eq!(output.attachment.mime_type, "text/plain");
+    assert_eq!(output.attachment.name, "my-file");
 
     let second_save_output = save::execute(
         &app_state,
         save::Input {
-            data: data.clone(),
+            data: &data,
             mime_type: Some(Cow::from("another_mimetype")),
             name: Cow::from("another_name"),
         },
@@ -114,7 +114,10 @@ async fn list_by_account_works() {
 
     assert_eq!(total as usize, attachments.len());
     assert_eq!(
-        data.into_iter().map(|a| a.id).sorted().collect_vec(),
+        data.into_iter()
+            .map(|a| a.attachment.id)
+            .sorted()
+            .collect_vec(),
         attachments.clone().into_iter().sorted().collect_vec()
     );
 
@@ -132,7 +135,10 @@ async fn list_by_account_works() {
 
     assert_eq!(total as usize, attachments.len());
     assert_eq!(
-        data.into_iter().map(|a| a.id).sorted().collect_vec(),
+        data.into_iter()
+            .map(|a| a.attachment.id)
+            .sorted()
+            .collect_vec(),
         attachments.clone().into_iter().sorted().collect_vec()
     );
 }

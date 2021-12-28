@@ -3,15 +3,14 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use bytes::Bytes;
-use futures_util::Stream;
+use futures_util::{AsyncWriteExt, Stream};
 use multer::{parse_boundary, Multipart};
 
+use crate::service::login::creds::{CredentialsConfig, Signed};
 use crate::service::Error;
 use crate::state::AppState;
 use futures_io::AsyncBufRead;
-use image::{GenericImageView, ImageFormat};
 use sqlx::types::Json;
-use tide::StatusCode;
 
 struct TideBody(tide::Body);
 
@@ -66,17 +65,19 @@ pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
         }
     }
 
-    let (data, mime_type) = resize_image(
-        data.ok_or_else(|| Error::InvalidArgument(Cow::from("data is missing")))?,
+    let (data, mime_type) = gen_thumbnail(
+        data.ok_or_else(|| Error::InvalidArgument(Cow::from("data is missing")))?
+            .to_vec(),
         2048,
         2048,
         &mime_type,
-    );
+    )
+    .await?;
     let name = name.ok_or_else(|| Error::InvalidArgument(Cow::from("file_name is missing")))?;
     let response = execute(
         req.state(),
         Input {
-            data,
+            data: data.as_ref(),
             name,
             mime_type: Some(Cow::from(mime_type)),
         },
@@ -85,49 +86,66 @@ pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
     Ok(tide::Response::from(tide::Body::from_json(&response)?))
 }
 
-fn resize_image(data: Bytes, max_width: u32, max_height: u32, mime_type: &str) -> (Bytes, &str) {
-    let img = match image::load_from_memory(&data) {
-        Ok(v) => v,
-        Err(_) => return (data, mime_type),
+async fn gen_thumbnail(
+    data: Vec<u8>,
+    max_width: u32,
+    max_height: u32,
+    mime_type: &str,
+) -> anyhow::Result<(Vec<u8>, &str)> {
+    use async_std::process::{Command, Stdio};
+    let mut child = if mime_type.starts_with("application/pdf") {
+        Command::new("magick")
+            .arg("convert")
+            .arg("-density")
+            .arg("100")
+            .arg("-resize")
+            .arg(format!("{}x{}", max_width, max_height))
+            .arg("-")
+            .arg("png:-")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?
+    } else {
+        Command::new("magick")
+            .arg("convert")
+            .arg("-resize")
+            .arg(format!("{}x{}", max_width, max_height))
+            .arg("-")
+            .arg("png:-")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?
     };
 
-    if img.width() <= max_width && img.height() <= max_height {
-        return (data, mime_type);
+    child.stdin.as_mut().unwrap().write_all(&data).await?;
+    let status = child.output().await?;
+    if !status.status.success() {
+        return Err(anyhow::anyhow!("Error running process"));
     }
-
-    let mut out = Vec::new();
-
-    if img
-        .thumbnail(max_width, max_height)
-        .write_to(&mut out, ImageFormat::Png)
-        .is_err()
-    {
-        return (data, mime_type);
-    }
-
-    (Bytes::from(out), "image/png")
+    Ok((status.stdout, "image/png"))
 }
 
 #[derive(serde::Deserialize)]
-struct GetQuery {
-    id: String,
+struct GetQuery<'a> {
+    id: Signed<'a>,
+    preview: Option<u32>,
 }
 
 pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     use crate::service::attachment::list::*;
+    use crate::service::attachment::sign::*;
+
+    let GetQuery { id, preview } = req.query()?;
+    let config = CredentialsConfig::from_app(req.state()).await;
+    let id = verify(&id, config.as_ref()).ok_or_else(|| Error::ResourceNotFound)?;
 
     let Attachment {
-        mime_type,
-        created,
-        last_updated,
-        data,
-        data_hash,
-        ..
-    } = execute(
+        mime_type, data, ..
+    } = execute_sql(
         req.state(),
         Input {
             req: Default::default(),
-            includes: Some(Json(vec![req.query::<GetQuery>()?.id])),
+            includes: Some(Json(vec![id])),
             accounts: None,
             with_data: true,
         },
@@ -138,25 +156,24 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     .next()
     .ok_or_else(|| Error::ResourceNotFound)?;
 
-    let latest_etag = sodiumoxide::base64::encode(
-        data_hash.expect("To have data"),
-        sodiumoxide::base64::Variant::UrlSafeNoPadding,
-    );
-    match req.header("If-None-Match") {
-        Some(v) if v.last().as_str() == latest_etag => {
-            return Ok(tide::Response::new(StatusCode::NotModified));
+    let mut data = data.expect("To have data");
+    let mut mime_type = mime_type.as_str();
+
+    match preview {
+        Some(max)
+            if mime_type.starts_with("image/") || mime_type.starts_with("application/pdf") =>
+        {
+            let (resized_data, resized_mime_type) =
+                gen_thumbnail(data, max, max, mime_type).await?;
+            mime_type = resized_mime_type;
+            data = resized_data;
         }
+
         _ => {}
     }
 
-    let mut res = tide::Response::from(tide::Body::from_bytes(data.expect("To have data")));
-    res.insert_header(
-        "Last-Modified",
-        last_updated.format(super::HTTP_DATE_FORMAT).to_string(),
-    );
-    res.insert_header("ETag", latest_etag);
-    res.insert_header("Cache-Control", "no-cache");
-    res.insert_header("Date", created.format(super::HTTP_DATE_FORMAT).to_string());
-    res.set_content_type(mime_type.as_str());
+    let mut res = tide::Response::from(tide::Body::from_bytes(data));
+    res.insert_header("Cache-Control", "immutable");
+    res.set_content_type(mime_type);
     Ok(res)
 }

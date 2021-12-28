@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use crate::service::login::creds::Signed;
 use serde_derive::*;
 
 use crate::state::AppState;
@@ -15,7 +16,7 @@ pub struct Input {
 
 #[derive(Serialize)]
 pub struct Output {
-    pub token: String,
+    pub token: Signed<'static>,
 }
 
 pub async fn execute(
@@ -59,6 +60,14 @@ pub async fn execute(
     .await??;
 
     Ok(Output {
-        token: credentials.map(|c| c.sign()).unwrap_or_default(),
+        token: credentials
+            .map(|c| {
+                c.sign(&Asset::new(
+                    super::DEFAULT_LOGIN_TOKEN_VALID_DURATION,
+                    None,
+                    None,
+                ))
+            })
+            .unwrap_or_default(),
     })
 }

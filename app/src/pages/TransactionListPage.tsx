@@ -1,10 +1,10 @@
-import {Button, FormControl, InputGroup, Table} from "react-bootstrap";
+import {Button, Table} from "react-bootstrap";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import {listTransaction} from "../api/listTransaction";
 import {Fragment, useCallback, useContext, useMemo, useState} from "react";
 import {useMediaPredicate} from "react-media-hook";
 import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
-import {FoldUpIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
+import {FoldUpIcon, PencilIcon, TrashIcon} from "@primer/octicons-react";
 import SortedArray from "../utils/SortedArray";
 import {Transaction} from "../models/Transaction";
 import {EditState} from "../utils/EditState";
@@ -12,16 +12,15 @@ import AsyncConfirm from "../components/AsyncConfirm";
 import deleteTransaction from "../api/deleteTransaction";
 import TransactionEntry from "../components/TransactionEntry";
 import {convert, LocalDate, ZoneId} from '@js-joda/core';
-import AccountSelect from "../components/AccountSelect";
 import {useDebounce} from "../hooks/useDebounce";
 import useAuthProps from "../hooks/useAuthProps";
 import {AppStateContext} from "../state/AppStateContext";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {Helmet} from "react-helmet";
-import AttachmentItem from "../components/AttachmentItem";
 import {formatAsCurrency} from "../utils/numeric";
 import Paginator from "../components/Paginator";
-import ValueFormControl from "../components/ValueFormControl";
+import AttachmentSelect from "../components/AttachmentSelect";
+import MultiFilter, {Filter} from "../components/MultiFilter";
 
 type TransactionId = Transaction['id'];
 
@@ -32,12 +31,9 @@ type Props = {
 export default function TransactionListPage({accounts: showAccounts = []}: Props) {
     const [page, setPage] = useState(0);
     const [pageSize] = useState(20);
-    const [accounts, setAccounts] = useState<string[]>(showAccounts);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [from, setFrom] = useState('');
-    const [to, setTo] = useState('');
+    const bigScreen = useMediaPredicate('(min-width: 800px)');
+    const [filter, setFilter] = useState<Filter>();
 
-    const debouncedSearchTerm = useDebounce(searchTerm, 200);
     const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppStateContext);
     const authProps = useAuthProps();
 
@@ -45,13 +41,12 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
             listTransaction({
                 offset: pageSize * page,
                 limit: pageSize,
-                accounts: accounts.length > 0 ? accounts : undefined,
-                q: debouncedSearchTerm.trim(),
-                from: from.length > 0 ? LocalDate.parse(from) : undefined,
-                to: to.length > 0 ? LocalDate.parse(to) : undefined,
+                accounts: filter?.accounts,
+                q: filter?.q,
+                from: filter?.from,
+                to: filter?.to,
             }, authProps),
-        [page, pageSize, accounts, debouncedSearchTerm,
-            authProps, transactionUpdatedTime, from, to]);
+        [page, pageSize, authProps, transactionUpdatedTime, filter]);
     useObservableErrorReport(rows);
 
     const totalItemsCount = getLoadedValue(rows)?.total ?? 0;
@@ -62,7 +57,7 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
     }
 
     const [selected, setSelected] = useState(new SortedArray<TransactionId>([]));
-    const bigScreen = useMediaPredicate('(min-width: 800px)');
+
 
     const toggleExpanded = useCallback((id: TransactionId) => {
         const [newSelected, removed] = selected.remove(id);
@@ -101,8 +96,9 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
                                             date: </strong>{transDate}</div>
                                         <div style={flexFullLineItem}><strong>Last
                                             updated: </strong>{convert(r.updatedDate).toDate().toLocaleString()}</div>
+
                                         <div style={{...flexFullLineItem, ...flexContainer}}>
-                                            {r.attachments.map(r => <AttachmentItem id={r} style={flexItem} />)}
+                                            <AttachmentSelect readonly value={r.attachments} />
                                         </div>
                                         <div style={flexContainer}>
                                             <Button style={flexItem}
@@ -138,55 +134,9 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
     return <div style={flexContainer}>
         <Helmet><title>Transactions</title></Helmet>
 
-        <span style={bigScreen ? {...flexItem, flex: 2} : flexFullLineItem}>
-            <InputGroup size='sm'>
-                <InputGroup.Prepend>
-                    <InputGroup.Text><SearchIcon size={12}/></InputGroup.Text>
-                </InputGroup.Prepend>
-                <FormControl
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    type='text'
-                    placeholder='Search'/>
-            </InputGroup>
-        </span>
-
-
-        <span style={bigScreen ? {...flexItem, flex: 3} : flexFullLineItem}>
-            <InputGroup size='sm'>
-                <InputGroup.Prepend>
-                    <InputGroup.Text><PencilIcon size={12}/></InputGroup.Text>
-                </InputGroup.Prepend>
-                <AccountSelect
-                    placeholder='Accounts'
-                    selected={accounts}
-                    onChange={setAccounts}/>
-            </InputGroup>
-        </span>
-
-        <div style={{...flexFullLineItem, ...flexContainer, margin: 0, padding: 0}}>
-            <InputGroup size='sm' as='span' style={bigScreen ? { ...flexItem, flex: 1 } : flexFullLineItem}>
-                <InputGroup.Prepend>
-                    <InputGroup.Text>From</InputGroup.Text>
-                </InputGroup.Prepend>
-                <ValueFormControl
-                    value={from}
-                    onValueChange={setFrom}
-                    type='date'/>
-            </InputGroup>
-
-            <InputGroup size='sm' as='span' style={bigScreen ? { ...flexItem, flex: 1 } : flexFullLineItem}>
-                <InputGroup.Prepend>
-                    <InputGroup.Text>To</InputGroup.Text>
-                </InputGroup.Prepend>
-                <ValueFormControl
-                    value={to}
-                    onValueChange={setTo}
-                    type='date'/>
-            </InputGroup>
-
+        <div style={flexFullLineItem}>
+            <MultiFilter onChanged={setFilter} />
         </div>
-
 
         {children.length > 0 && <div style={flexFullLineItem}>
             <Table bordered hover size='sm'>

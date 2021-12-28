@@ -1,7 +1,6 @@
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-#[cfg(not(debug_assertions))]
 use rust_embed::*;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
@@ -21,6 +20,27 @@ mod state;
 #[macro_use]
 mod utils;
 
+#[derive(RustEmbed)]
+#[folder = "static"]
+#[prefix = "static/"]
+struct StaticAsset;
+
+async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
+    use tide::StatusCode;
+
+    let path = req.url().path();
+    log::info!("Looking for static path {}", &path[1..]);
+    let asset = StaticAsset::get(path)
+        .ok_or_else(|| tide::Error::from_str(StatusCode::NotFound, "Unable to find given path"))?;
+    let mime = mime_guess::from_path(path).first_or_octet_stream();
+
+    Ok(tide::Response::builder(StatusCode::Ok)
+        .content_type(mime.as_ref())
+        .header("Cache-Control", "immutable")
+        .body(tide::Body::from(asset.as_ref()))
+        .build())
+}
+
 #[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
 #[folder = "app/build"]
@@ -28,7 +48,7 @@ mod utils;
 struct Asset;
 
 #[cfg(not(debug_assertions))]
-async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
+async fn serve_react_assert(req: tide::Request<AppState>) -> tide::Result {
     use tide::StatusCode;
     let path = match req.url().path() {
         p if p.eq_ignore_ascii_case("/") || !p.starts_with("/public") => "public/index.html",
@@ -48,7 +68,7 @@ async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
 }
 
 #[cfg(debug_assertions)]
-async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
+async fn serve_react_assert(req: tide::Request<AppState>) -> tide::Result {
     let mut url = req.url().clone();
     url.set_host(Some("127.0.0.1"))?;
     let _ = url.set_port(Some(3000));
@@ -148,8 +168,7 @@ async fn main() {
     endpoint!(app, post, "/api/config", config::client::save);
 
     // attachments
-    app.at("/api/attachments")
-        .get(service_adapter::attachment::get);
+    app.at("/attachment").get(service_adapter::attachment::get);
 
     app.at("/api/attachments")
         .post(service_adapter::attachment::post);
@@ -162,9 +181,10 @@ async fn main() {
             Ok(tide::Response::new(tide::StatusCode::Ok))
         });
 
-    app.at("/public/*").get(serve_static_assert);
-    app.at("/*").get(serve_static_assert);
-    app.at("/").get(serve_static_assert);
+    app.at("/static/*").get(serve_static_assert);
+    app.at("/public/*").get(serve_react_assert);
+    app.at("/*").get(serve_react_assert);
+    app.at("/").get(serve_react_assert);
 
     app.listen(format!(
         "{}:{}",

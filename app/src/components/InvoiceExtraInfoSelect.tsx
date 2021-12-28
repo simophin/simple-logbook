@@ -21,7 +21,7 @@ function textToInfo(text: string): InvoiceExtraInfo[] | string {
             rs.push({name: name as NonEmptyString, value, priority});
             priority++;
         }
-    } catch (e) {
+    } catch (e: any) {
         return e?.message ?? 'Unknown error';
     }
 

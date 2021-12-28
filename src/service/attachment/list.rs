@@ -1,6 +1,7 @@
-use crate::service::CommonListRequest;
+use crate::service::{CommonListRequest, PaginatedResponse};
 use crate::sqlx_ext::Json;
 use chrono::{DateTime, Utc};
+use itertools::Itertools;
 
 const fn default_with_data() -> bool {
     false
@@ -35,8 +36,18 @@ pub struct Attachment {
     pub data_hash: Option<Vec<u8>>,
 }
 
-//language=sql
-const SQL: &str = r#"
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentSigned<'a> {
+    #[serde(flatten)]
+    pub attachment: Attachment,
+
+    pub signed_id: Signed<'a>,
+}
+
+mod sql {
+    //language=sql
+    const SQL: &str = r#"
 with account_attachments(account, attachmentId) as (
     select a.name, ta.attachmentId from accounts a 
     inner join account_transactions tx on tx.account = a.name
@@ -53,8 +64,8 @@ where
 order by created desc, lastUpdated desc, name
 "#;
 
-//language=sql
-const COUNT_SQL: &str = r#"
+    //language=sql
+    const COUNT_SQL: &str = r#"
 with account_attachments(account, attachmentId) as (
     select a.name, ta.attachmentId from accounts a 
     inner join account_transactions tx on tx.account = a.name
@@ -69,7 +80,31 @@ where
       (?6 is null or ?6 = '[]' or id in (select attachmentId from account_attachments where account collate nocase in (select trim(value) from json_each(?6))))
 "#;
 
-crate::list_sql_paginated_impl!(
-    Input, Attachment, query_as, SQL, COUNT_SQL, offset, limit, with_data, q, from, to, includes,
-    accounts
-);
+    use super::{Attachment, Input};
+    crate::list_sql_paginated_impl!(
+        Input, Attachment, query_as, SQL, COUNT_SQL, offset, limit, with_data, q, from, to,
+        includes, accounts
+    );
+}
+
+use crate::service::login::creds::{CredentialsConfig, Signed};
+use crate::AppState;
+pub use sql::execute as execute_sql;
+
+pub async fn execute(
+    state: &AppState,
+    input: Input,
+) -> crate::service::Result<PaginatedResponse<AttachmentSigned<'static>>> {
+    let PaginatedResponse { total, data } = execute_sql(state, input).await?;
+    let config = CredentialsConfig::from_app(state).await;
+    Ok(PaginatedResponse {
+        total,
+        data: data
+            .into_iter()
+            .map(|attachment| AttachmentSigned {
+                signed_id: super::sign::sign(&attachment.id, config.as_ref()),
+                attachment,
+            })
+            .collect_vec(),
+    })
+}

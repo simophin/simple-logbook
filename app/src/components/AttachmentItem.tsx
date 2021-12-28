@@ -1,17 +1,14 @@
-import {getLoadedValue, useObservable} from "../hooks/useObservable";
-import listAttachments from "../api/listAttachment";
-import useAuthProps, {useAuthToken} from "../hooks/useAuthProps";
+import {AttachmentSummary} from "../api/listAttachment";
 import React, {CSSProperties, useMemo, useState} from "react";
 import config from "../config";
-import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import {flexContainer} from "../styles/common";
 import {Button} from "react-bootstrap";
 import {TrashIcon} from "@primer/octicons-react";
 
 type Props = {
-    id: string,
+    attachment: AttachmentSummary,
     style?: CSSProperties,
-    onDelete?: (id: string) => unknown,
+    onDelete?: (id: AttachmentSummary['id']) => unknown,
 } & React.ComponentProps<'div'>;
 
 const squared: CSSProperties = {
@@ -26,21 +23,32 @@ const commonOverlay: CSSProperties = {
     padding: 4,
 };
 
-export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
-    const props = useAuthProps();
-    const data = useObservable(() => listAttachments([id], props), [id, props]);
-    useObservableErrorReport(data);
-    const summary = getLoadedValue(data)?.data?.[0];
-    const token = useAuthToken();
+export default function AttachmentItem({attachment, onDelete, ...reactProps}: Props) {
     const [showingOptions, setShowingOptions] = useState(false);
+    const {signedId, name, mimeType, id} = attachment;
 
-    const link = useMemo(() => {
-        let url = `${config.baseUrl}/attachments?id=${encodeURIComponent(id)}`;
-        if (token) {
-            url += `&token=${encodeURIComponent(token)}`;
+    const link = `${config.baseAttachmentUrl}?id=${encodeURIComponent(signedId)}`;
+
+    const extName = useMemo(() => {
+        const dotIndex = name.lastIndexOf('.') ?? -1;
+        if (dotIndex >= 0) {
+            return name.slice(dotIndex + 1) ?? '';
+        } else {
+            return '';
         }
-        return url;
-    }, [id, token]);
+    }, [name]);
+
+
+    const previewElement = useMemo(() => {
+        if (mimeType.startsWith("image/") || mimeType.startsWith("application/pdf")) {
+            return <img alt={name}
+                style={{...squared, objectFit: 'contain', textAlign: 'center', lineHeight: squared.height}}
+                src={`${link}&preview=300`}/>
+        }
+        else {
+            return <span>{extName}</span>
+        }
+    }, [mimeType]);
 
     return <div {...reactProps}>
         <div style={{
@@ -50,7 +58,7 @@ export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
         }}
              onMouseEnter={() => setShowingOptions(!!onDelete)}
              onMouseLeave={() => setShowingOptions(false)}
-             title={summary?.name}>
+             title={name}>
 
             <a href={link}
                style={{
@@ -61,9 +69,7 @@ export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
                }}
                target='_blank'
                rel='noreferrer'>
-                <img alt={summary?.name}
-                     style={{...squared, objectFit: 'contain', textAlign: 'center', lineHeight: squared.height}}
-                     src={`${link}&preview=true`}/>
+                {previewElement}
             </a>
 
             <div
@@ -82,7 +88,7 @@ export default function AttachmentItem({id, onDelete, ...reactProps}: Props) {
                     lineHeight: '2em',
                     maxHeight: '2em'
                 }}>
-                    {summary?.name}
+                    {name}
                 </span>
             </div>
 

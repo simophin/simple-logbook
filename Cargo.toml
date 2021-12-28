@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 dotenv = "0"
-async-std = { version = "1", features = ["attributes"] }
+async-std = { version = "1", features = ["attributes", "unstable"] }
 sqlx = { version = "0", features = ["sqlite", "chrono", "runtime-async-std-native-tls", "migrate", "json"]}
 serde = "1"
 serde_derive = "1"

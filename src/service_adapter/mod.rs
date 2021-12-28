@@ -44,5 +44,3 @@ macro_rules! endpoint_get {
             });
     };
 }
-
-const HTTP_DATE_FORMAT: &str = "%a, %d %b %Y %T GMT";

@@ -18,6 +18,7 @@ import {v4 as uuid} from 'uuid';
 import {NonEmptyString} from "io-ts-types";
 import AttachmentSelect from "./AttachmentSelect";
 import {AppStateContext} from "../state/AppStateContext";
+import { AttachmentSummary } from "../api/listAttachment";
 
 
 type EditingState = {
@@ -99,7 +100,7 @@ export default function InvoiceItemEntry({
     const [category, setCategory, categoryError, validateCategory] = useFormField(_.get(draft, 'category') ?? '', {required: true});
     const [subCategory, setSubCategory, subCategoryError, validateSubCategory] = useFormField(_.get(draft, 'subCategory') ?? '');
     const [desc, setDesc, descError, validateDesc] = useFormField(_.get(draft, 'description') ?? '', {required: true});
-    const [attachments, setAttachments] = useState<string[]>('attachments' in draft ? draft.attachments : []);
+    const [attachments, setAttachments] = useState<AttachmentSummary['id'][]>('attachments' in draft ? draft.attachments : []);
     const [notes, setNotes, notesError, checkNotes] = useFormField(_.get(draft, 'notes') ?? '');
 
     const [roundingMode, setRoundingMode] = usePersistedState('item-entry-rounding-mode', roundingModeType, allRoundingModes[0]);
