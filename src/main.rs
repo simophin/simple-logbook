@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::str::FromStr;
 
+#[cfg(not(debug_assertions))]
 use rust_embed::*;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
@@ -19,27 +20,6 @@ mod sqlx_ext;
 mod state;
 #[macro_use]
 mod utils;
-
-#[derive(RustEmbed)]
-#[folder = "static"]
-#[prefix = "static/"]
-struct StaticAsset;
-
-async fn serve_static_assert(req: tide::Request<AppState>) -> tide::Result {
-    use tide::StatusCode;
-
-    let path = req.url().path();
-    log::info!("Looking for static path {}", &path[1..]);
-    let asset = StaticAsset::get(path)
-        .ok_or_else(|| tide::Error::from_str(StatusCode::NotFound, "Unable to find given path"))?;
-    let mime = mime_guess::from_path(path).first_or_octet_stream();
-
-    Ok(tide::Response::builder(StatusCode::Ok)
-        .content_type(mime.as_ref())
-        .header("Cache-Control", "immutable")
-        .body(tide::Body::from(asset.as_ref()))
-        .build())
-}
 
 #[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
@@ -181,7 +161,6 @@ async fn main() {
             Ok(tide::Response::new(tide::StatusCode::Ok))
         });
 
-    app.at("/static/*").get(serve_static_assert);
     app.at("/public/*").get(serve_react_assert);
     app.at("/*").get(serve_react_assert);
     app.at("/").get(serve_react_assert);
