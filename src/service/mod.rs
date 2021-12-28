@@ -50,9 +50,9 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub fn new(f: &'static str, order: SortOrder) -> Self {
+    pub const fn new(f: &'static str, order: SortOrder) -> Self {
         return Sort {
-            field: Cow::from(f),
+            field: Cow::Borrowed(f),
             order,
         };
     }
@@ -87,17 +87,13 @@ impl Default for CommonListRequest {
 
 pub trait WithOrder {
     fn get_sorts(&self) -> &Vec<Sort>;
-    fn get_default_sorts() -> Vec<Sort>;
+    fn get_default_sorts() -> &'static [Sort];
     fn map_to_db(input: &str) -> Option<&'static str>;
 
     fn gen_sql(&self) -> Vec<(&'static str, &'static str)> {
         let mut fields = HashSet::new();
-        let default_sorts: Vec<Sort>;
         match self.get_sorts() {
-            v if v.is_empty() => {
-                default_sorts = Self::get_default_sorts();
-                default_sorts.iter()
-            }
+            v if v.is_empty() => Self::get_default_sorts().iter(),
             v => v.iter(),
         }
         .filter(|sort| fields.insert(&sort.field))

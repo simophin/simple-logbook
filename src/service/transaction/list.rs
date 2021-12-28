@@ -10,16 +10,18 @@ pub struct Input {
     pub accounts: Option<Json<Vec<String>>>,
 }
 
+const DEFAULT_SORTS: &[Sort] = &[
+    Sort::new("created", SortOrder::DESC),
+    Sort::new("updated", SortOrder::DESC),
+];
+
 impl WithOrder for Input {
     fn get_sorts(&self) -> &Vec<Sort> {
         &self.sorts
     }
 
-    fn get_default_sorts() -> Vec<Sort> {
-        vec![
-            Sort::new("created", SortOrder::DESC),
-            Sort::new("updated", SortOrder::DESC),
-        ]
+    fn get_default_sorts() -> &'static [Sort] {
+        DEFAULT_SORTS
     }
 
     fn map_to_db(input: &str) -> Option<&'static str> {

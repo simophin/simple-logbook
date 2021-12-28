@@ -16,18 +16,20 @@ pub struct Input {
     include_deleted: bool,
 }
 
+const DEFAULT_SORTS: &[Sort] = &[
+    Sort::new("created", SortOrder::DESC),
+    Sort::new("due", SortOrder::DESC),
+    Sort::new("client", SortOrder::ASC),
+    Sort::new("companyName", SortOrder::ASC),
+];
+
 impl WithOrder for Input {
     fn get_sorts(&self) -> &Vec<Sort> {
         &self.sorts
     }
 
-    fn get_default_sorts() -> Vec<Sort> {
-        vec![
-            Sort::new("created", SortOrder::DESC),
-            Sort::new("due", SortOrder::DESC),
-            Sort::new("client", SortOrder::ASC),
-            Sort::new("companyName", SortOrder::ASC),
-        ]
+    fn get_default_sorts() -> &'static [Sort] {
+        DEFAULT_SORTS
     }
 
     fn map_to_db(input: &str) -> Option<&'static str> {
