@@ -1,4 +1,4 @@
-use crate::service::CommonListRequest;
+use crate::service::{CommonListRequest, Sort, SortOrder, WithOrder};
 use crate::sqlx_ext::Json;
 
 use super::model::Invoice;
@@ -16,6 +16,31 @@ pub struct Input {
     include_deleted: bool,
 }
 
+impl WithOrder for Input {
+    fn get_sorts(&self) -> &Vec<Sort> {
+        &self.sorts
+    }
+
+    fn get_default_sorts() -> Vec<Sort> {
+        vec![
+            Sort::new("created", SortOrder::DESC),
+            Sort::new("due", SortOrder::DESC),
+            Sort::new("client", SortOrder::ASC),
+            Sort::new("companyName", SortOrder::ASC),
+        ]
+    }
+
+    fn map_to_db(input: &str) -> Option<&'static str> {
+        match input {
+            "created" => Some("date"),
+            "due" => Some("dueDate"),
+            "client" => Some("client"),
+            "companyName" => Some("companyName"),
+            _ => None,
+        }
+    }
+}
+
 crate::impl_deref!(Input, req, CommonListRequest);
 
 //language=sql
@@ -31,7 +56,6 @@ where (
     (?3 is null or date <= ?3) and 
     (?4 is null or iv.id in (select value from json_each(?4))) and
     (?5 or deleted = false)
-order by date desc, dueDate desc, client, companyName
 "#;
 
 //language=sql

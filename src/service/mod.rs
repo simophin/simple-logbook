@@ -10,6 +10,9 @@ pub mod transaction;
 
 use chrono::NaiveDate;
 pub use error::Error;
+use itertools::Itertools;
+use std::borrow::Cow;
+use std::collections::HashSet;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -25,6 +28,36 @@ pub const fn no_limit() -> i64 {
     -1
 }
 
+#[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq, Copy)]
+pub enum SortOrder {
+    ASC,
+    DESC,
+}
+
+impl SortOrder {
+    pub const fn to_sql(self) -> &'static str {
+        match self {
+            SortOrder::ASC => "asc",
+            SortOrder::DESC => "desc",
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct Sort {
+    pub field: Cow<'static, str>,
+    pub order: SortOrder,
+}
+
+impl Sort {
+    pub fn new(f: &'static str, order: SortOrder) -> Self {
+        return Sort {
+            field: Cow::from(f),
+            order,
+        };
+    }
+}
+
 #[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct CommonListRequest {
     #[serde(default = "default_offset")]
@@ -36,6 +69,7 @@ pub struct CommonListRequest {
     pub q: Option<String>,
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
+    pub sorts: Vec<Sort>,
 }
 
 impl Default for CommonListRequest {
@@ -43,10 +77,37 @@ impl Default for CommonListRequest {
         CommonListRequest {
             offset: default_offset(),
             limit: default_limit(),
-            q: Default::default(),
-            from: Default::default(),
-            to: Default::default(),
+            q: None,
+            from: None,
+            to: None,
+            sorts: Default::default(),
         }
+    }
+}
+
+pub trait WithOrder {
+    fn get_sorts(&self) -> &Vec<Sort>;
+    fn get_default_sorts() -> Vec<Sort>;
+    fn map_to_db(input: &str) -> Option<&'static str>;
+
+    fn gen_sql(&self) -> Vec<(&'static str, &'static str)> {
+        let mut fields = HashSet::new();
+        let default_sorts: Vec<Sort>;
+        match self.get_sorts() {
+            v if v.is_empty() => {
+                default_sorts = Self::get_default_sorts();
+                default_sorts.iter()
+            }
+            v => v.iter(),
+        }
+        .filter(|sort| fields.insert(&sort.field))
+        .filter_map(
+            |Sort { field, order }| match Self::map_to_db(field.as_ref()) {
+                Some(v) => Some((v, order.to_sql())),
+                None => None,
+            },
+        )
+        .collect_vec()
     }
 }
 
@@ -82,8 +143,25 @@ macro_rules! list_sql_paginated_impl {
             state: &crate::state::AppState,
             req: $inputType,
         ) -> crate::service::Result<crate::service::PaginatedResponse<$outputType>> {
+            use crate::service::WithOrder;
+            use itertools::Itertools;
+
+            let order_fields = req.gen_sql();
+            let orders = if order_fields.len() > 0 {
+                format!("ORDER BY {}",
+                    order_fields
+                    .into_iter()
+                    .map(|(name, o)| format!("{} {}", name, o))
+                    .collect_vec()
+                    .join(",")
+                )
+            } else {
+                String::new()
+            };
+
+            let sql = format!("{} {} LIMIT {}, {}", $sql, orders, req.$offset, req.$limit);
+
             let mut tx = state.conn.begin().await?;
-            let sql = format!("{} LIMIT {}, {}", $sql, req.$offset, req.$limit);
             let mut e = sqlx::$query_op(&sql);
             $(
                 e = e.bind(&req.$binding);
