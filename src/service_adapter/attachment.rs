@@ -94,8 +94,7 @@ async fn gen_thumbnail(
 ) -> anyhow::Result<(Vec<u8>, &str)> {
     use async_std::process::{Command, Stdio};
     let mut child = if mime_type.starts_with("application/pdf") {
-        Command::new("magick")
-            .arg("convert")
+        Command::new("convert")
             .arg("-density")
             .arg("100")
             .arg("-resize")
@@ -106,8 +105,7 @@ async fn gen_thumbnail(
             .stdout(Stdio::piped())
             .spawn()?
     } else {
-        Command::new("magick")
-            .arg("convert")
+        Command::new("convert")
             .arg("-resize")
             .arg(format!("{}x{}", max_width, max_height))
             .arg("-")
