@@ -1,10 +1,10 @@
-import {Dropdown, DropdownButton, FormControl, InputGroup} from "react-bootstrap";
+import { Dropdown, DropdownButton, FormControl, InputGroup } from "react-bootstrap";
 import DropdownItem from "react-bootstrap/DropdownItem";
 import AccountSelect from "./AccountSelect";
-import {CirclePicker} from 'react-color';
-import {createEnumType} from "../utils/codecs";
+import { CirclePicker } from 'react-color';
+import { createEnumType } from "../utils/codecs";
 import * as t from 'io-ts';
-import {NonEmptyString} from "io-ts-types";
+import { NonEmptyString } from "io-ts-types";
 import React from "react";
 
 const allSeriesTypes = ['Income', 'Expense'] as const;
@@ -54,7 +54,7 @@ function hashString(str: string) {
 }
 
 
-export function getSeriesColor({id, type, color}: SeriesConfig) {
+export function getSeriesColor({ id, type, color }: SeriesConfig) {
     if (color) {
         return color;
     }
@@ -63,52 +63,48 @@ export function getSeriesColor({id, type, color}: SeriesConfig) {
     return colors[hashString(id) % colors.length];
 }
 
-export function SeriesEdit({value, onChange, addSeries, removable, removeSeries}: SeriesEditProps) {
+export function SeriesEdit({ value, onChange, addSeries, removable, removeSeries }: SeriesEditProps) {
     return <InputGroup size='sm'>
-        <InputGroup.Prepend>
-            <DropdownButton size='sm' title={`${value.name} (${value.type})`}>
-                <FormControl
-                    type='text'
-                    size='sm'
-                    autoFocus
-                    className="mx-3 my-2 w-auto"
-                    placeholder='Rename this series'
-                    value={value.name}
-                    onChange={(e) =>
-                        onChange({...value, name: e.target.value as NonEmptyString})}/>
-                <Dropdown.Header>Show as</Dropdown.Header>
-                <DropdownItem active={value.type === 'Income'}
-                              onSelect={() => onChange({...value, type: 'Income'})}>
-                    Income
-                </DropdownItem>
-                <DropdownItem active={value.type === 'Expense'}
-                              onSelect={() => onChange({...value, type: 'Expense'})}>
-                    Expense
-                </DropdownItem>
+        <DropdownButton size='sm' title={`${value.name} (${value.type})`}>
+            <FormControl
+                type='text'
+                size='sm'
+                autoFocus
+                className="mx-3 my-2 w-auto"
+                placeholder='Rename this series'
+                value={value.name}
+                onChange={(e) =>
+                    onChange({ ...value, name: e.target.value as NonEmptyString })} />
+            <Dropdown.Header>Show as</Dropdown.Header>
+            <DropdownItem active={value.type === 'Income'}
+                onSelect={() => onChange({ ...value, type: 'Income' })}>
+                Income
+            </DropdownItem>
+            <DropdownItem active={value.type === 'Expense'}
+                onSelect={() => onChange({ ...value, type: 'Expense' })}>
+                Expense
+            </DropdownItem>
 
-                <Dropdown.Divider/>
+            <Dropdown.Divider />
 
-                <DropdownItem onSelect={addSeries}>Add a series</DropdownItem>
-                {removable &&
+            <DropdownItem onSelect={addSeries}>Add a series</DropdownItem>
+            {removable &&
                 <DropdownItem onSelect={() => removeSeries(value.id)}>Remove this series</DropdownItem>}
 
-                <Dropdown.Divider/>
-                <Dropdown.Header>Color</Dropdown.Header>
-                <DropdownItem>
-                    <CirclePicker
-                        color={value.color}
-                        onChange={(c) => onChange({...value, color: `${c.hex}`})}/>
-                </DropdownItem>
-            </DropdownButton>
-        </InputGroup.Prepend>
+            <Dropdown.Divider />
+            <Dropdown.Header>Color</Dropdown.Header>
+            <DropdownItem>
+                <CirclePicker
+                    color={value.color}
+                    onChange={(c) => onChange({ ...value, color: `${c.hex}` })} />
+            </DropdownItem>
+        </DropdownButton>
         <AccountSelect
             placeholder='Select account(s)'
-            onChange={(accounts) => onChange({...value, accounts: accounts as NonEmptyString[]})}
-            selected={value.accounts}/>
-        <InputGroup.Append>
-            <InputGroup.Checkbox checked={value.visible}
-                onChange={() => onChange({...value, visible: !value.visible})}
-            />
-        </InputGroup.Append>
+            onChange={(accounts) => onChange({ ...value, accounts: accounts as NonEmptyString[] })}
+            selected={value.accounts} />
+        <InputGroup.Checkbox checked={value.visible}
+            onChange={() => onChange({ ...value, visible: !value.visible })}
+        />
     </InputGroup>;
 }

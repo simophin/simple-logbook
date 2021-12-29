@@ -48,7 +48,7 @@ export default function AttachmentItem({attachment, onDelete, ...reactProps}: Pr
         else {
             return <span>{extName}</span>
         }
-    }, [mimeType]);
+    }, [mimeType, name, link, extName]);
 
     return <div {...reactProps}>
         <div style={{

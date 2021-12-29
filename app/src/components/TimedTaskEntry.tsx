@@ -1,4 +1,4 @@
-import {Button, Col, Form, Modal} from "react-bootstrap";
+import {Button, Col, Form, Modal, Row} from "react-bootstrap";
 import {useCallback} from "react";
 import useAuthProps from "../hooks/useAuthProps";
 import {map} from "rxjs/operators";
@@ -102,7 +102,7 @@ export default function TimedTaskEntry({
         <Modal.Header>Start time tracker</Modal.Header>
         <Modal.Body>
             <Form>
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Description</Form.Label>
                         <AutoCompleteField search={searchByDesc}
@@ -119,9 +119,9 @@ export default function TimedTaskEntry({
                                            value={desc} />
                         <Form.Text>{descError}</Form.Text>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Category</Form.Label>
                         <AutoCompleteField search={searchCategory}
@@ -155,9 +155,9 @@ export default function TimedTaskEntry({
                                            value={subCategory} />
                         <Form.Text>{subCatError}</Form.Text>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Unit price</Form.Label>
                         <ValueFormControl
@@ -168,7 +168,7 @@ export default function TimedTaskEntry({
                             value={unitPrice} />
                         <Form.Text>{unitPriceError}</Form.Text>
                     </Form.Group>
-                </Form.Row>
+                </Row>
             </Form>
         </Modal.Body>
         <Modal.Footer>

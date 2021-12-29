@@ -46,7 +46,7 @@ export default function ChangePasswordDropdownItem() {
     };
 
     return <>
-        {<DropdownItem onSelect={() => setShowing(true)}>
+        {<DropdownItem onClick={() => setShowing(true)}>
             Change password
         </DropdownItem>}
 

@@ -1,4 +1,4 @@
-import {Button, ButtonGroup, Col, Form, Modal} from "react-bootstrap";
+import {Button, ButtonGroup, Col, Form, Modal, Row} from "react-bootstrap";
 import {InvoiceItem, listInvoiceItems, saveInvoiceItem, searchItemCategories} from "../api/invoiceItems";
 import {FormEvent, useCallback, useContext, useMemo, useState} from "react";
 import AlertDialog from "./AlertDialog";
@@ -212,7 +212,7 @@ export default function InvoiceItemEntry({
                 {draft.state === 'timer' && 'Save timed task'}
             </Modal.Header>
             <Modal.Body>
-                <Form.Row>
+                <Row>
                     {draft.state === 'timer' && <Form.Group as={Col}>
                         <Form.Label>Started time</Form.Label>
                         <Form.Control readOnly
@@ -229,9 +229,9 @@ export default function InvoiceItemEntry({
                         <Form.Text>{dateError}</Form.Text>
                     </Form.Group>}
 
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Description</Form.Label>
                         <AutoCompleteField
@@ -242,9 +242,9 @@ export default function InvoiceItemEntry({
                             value={desc}/>
                         <Form.Text>{descError}</Form.Text>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Category</Form.Label>
                         <AutoCompleteField
@@ -278,9 +278,9 @@ export default function InvoiceItemEntry({
                             value={subCategory}/>
                         <Form.Text>{subCategoryError}</Form.Text>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Unit</Form.Label>
                         <ValueFormControl
@@ -304,9 +304,9 @@ export default function InvoiceItemEntry({
                                 >{mode}</Button>)}
                         </ButtonGroup>
                     </Form.Group>}
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Unit price</Form.Label>
                         <ValueFormControl
@@ -323,9 +323,9 @@ export default function InvoiceItemEntry({
                             readOnly
                             value={totalPrice}/>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Notes</Form.Label>
                         <ValueFormControl
@@ -335,14 +335,14 @@ export default function InvoiceItemEntry({
                             isInvalid={!!notesError} />
                         <Form.Text>{notesError}</Form.Text>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>Attachments</Form.Label>
                         <AttachmentSelect value={attachments} onChange={setAttachments}/>
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
             </Modal.Body>
             <Modal.Footer>

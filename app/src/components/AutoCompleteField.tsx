@@ -6,7 +6,7 @@ import Autosuggest from "react-autosuggest";
 import {useDebounce} from "../hooks/useDebounce";
 import {Form, FormControlProps} from "react-bootstrap";
 
-type Props<T> = Omit<Omit<FormControlProps, 'value'>, 'onChange'> & {
+type Props<T> = Omit<Omit<Omit<FormControlProps, 'value'>, 'onChange'>, 'onBlur'> & {
     search: (term: string) => Observable<T[]>,
     onChange: (value: Either<string, T>) => unknown,
     getLabel: (v: T) => string,

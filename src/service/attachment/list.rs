@@ -1,4 +1,4 @@
-use crate::service::{CommonListRequest, PaginatedResponse};
+use crate::service::{CommonListRequest, PaginatedResponse, Sort, SortOrder, WithOrder};
 use crate::sqlx_ext::Json;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
@@ -19,6 +19,30 @@ pub struct Input {
 
     #[serde(default = "default_with_data")]
     pub with_data: bool,
+}
+
+const DEFAULT_SORTS: &'static [Sort] = &[
+    Sort::new("created", SortOrder::DESC),
+    Sort::new("updated", SortOrder::DESC),
+];
+
+impl WithOrder for Input {
+    fn get_sorts(&self) -> &Option<Vec<Sort>> {
+        &self.sorts
+    }
+
+    fn get_default_sorts() -> &'static [Sort] {
+        DEFAULT_SORTS
+    }
+
+    fn map_to_db(input: &str) -> Option<&'static str> {
+        match input {
+            "created" => Some("created"),
+            "updated" => Some("lastUpdated"),
+            "size" => Some("length(data)"),
+            _ => None,
+        }
+    }
 }
 
 crate::impl_deref!(Input, req, CommonListRequest);
@@ -61,7 +85,6 @@ where
       (?4 is null or created <= ?4) and
       (?5 is null or id in (select value from json_each(?5))) and
       (?6 is null or ?6 = '[]' or id in (select attachmentId from account_attachments where account collate nocase in (select trim(value) from json_each(?6))))
-order by created desc, lastUpdated desc, name
 "#;
 
     //language=sql

@@ -1,8 +1,8 @@
-import {Observable} from "rxjs";
-import {isLeft} from "fp-ts/Either";
-import {PathReporter} from "io-ts/PathReporter";
+import axios from "axios";
+import { isLeft } from "fp-ts/Either";
 import * as t from "io-ts";
-import axios, {AxiosResponse} from "axios";
+import { PathReporter } from "io-ts/PathReporter";
+import { Observable } from "rxjs";
 
 export type ExtraRequestProps = {
     headers?: object,

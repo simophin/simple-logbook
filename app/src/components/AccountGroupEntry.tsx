@@ -99,7 +99,7 @@ export default function AccountGroupEntry({
                             multiple
                             onChange={(e) =>
                                 setAccounts(
-                                    _.map((e.target as HTMLSelectElement).selectedOptions, 'value'))}>
+                                    _.map((e.target as unknown as HTMLSelectElement).selectedOptions, 'value'))}>
                             {accountOptions}
                         </Form.Control>
                     </Form.Group>

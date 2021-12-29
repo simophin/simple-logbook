@@ -2,7 +2,8 @@ import {ExtraRequestProps, request} from "./common";
 import config from "../config";
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
-import {localDateType, zonedDateTimeType} from "./codecs";
+import {zonedDateTimeType} from "./codecs";
+import { commonListFilterType } from "./commonList";
 
 const attachmentSummaryType = t.type({
     id: codec.NonEmptyString,
@@ -35,14 +36,13 @@ export default function listAttachments(ids: string[], extraProps?: ExtraRequest
     })
 }
 
-const searchFilterType = t.partial({
-    accounts: t.array(t.string),
-    q: t.string,
-    offset: t.number,
-    limit: t.number,
-    from: localDateType,
-    to: localDateType,
-});
+const searchFilterType = t.union(
+    [
+        t.partial({
+            accounts: t.array(t.string),
+        }), 
+        commonListFilterType
+    ]);
 
 type SearchFilter = t.TypeOf<typeof searchFilterType>;
 
