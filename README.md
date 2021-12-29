@@ -64,7 +64,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-### Magick license
+### ImageMagick license
 
 Copyright 2021 Fanchao Liu
 
