@@ -13,7 +13,7 @@ import { formatAsCurrency } from "../utils/numeric";
 import { LinkContainer } from "react-router-bootstrap";
 import currency from "currency.js";
 import AsyncConfirm from "./AsyncConfirm";
-import { throwError } from "rxjs";
+import { NEVER, throwError } from "rxjs";
 import { AppStateContext } from "../state/AppStateContext";
 import { tap } from "rxjs/operators";
 import { FileIcon, PencilIcon, SearchIcon, TrashIcon } from "@primer/octicons-react";
@@ -32,20 +32,22 @@ export default function InvoiceListView() {
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
 
-    const pageSize = 20;
-    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState<number>();
+    const [page, setPage] = useState<number>();
 
     const authProps = useAuthProps();
     const { transactionUpdatedTime, reportTransactionUpdated } = useContext(AppStateContext);
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
-    const rows = useObservable(() => listInvoice({
-        q: debouncedSearchTerm.trim(),
-        from: from.length > 0 ? LocalDate.parse(from) : undefined,
-        to: to.length > 0 ? LocalDate.parse(to) : undefined,
-        limit: pageSize,
-        offset: page * pageSize,
-    }, authProps), [authProps, debouncedSearchTerm, from, to, page, transactionUpdatedTime]);
+    const rows = useObservable(() =>
+        (page === undefined || pageSize === undefined) ? NEVER
+            : listInvoice({
+                q: debouncedSearchTerm.trim(),
+                from: from.length > 0 ? LocalDate.parse(from) : undefined,
+                to: to.length > 0 ? LocalDate.parse(to) : undefined,
+                limit: pageSize,
+                offset: page * pageSize,
+            }, authProps), [authProps, debouncedSearchTerm, from, to, page, transactionUpdatedTime, pageSize]);
     useObservableErrorReport(rows);
 
     const [pendingDelete, setPendingDelete] = useState<{ id: string, client: string, date: ZonedDateTime, amount: currency }>();
@@ -106,7 +108,7 @@ export default function InvoiceListView() {
                 placeholder='Search text'
                 onValueChange={setSearchTerm} />
         </InputGroup>
-        
+
 
         <span style={{ ...flexItem, flex: 1 }}>
             <InputGroup size='sm'>
@@ -132,9 +134,10 @@ export default function InvoiceListView() {
         </div>
 
         <Paginator totalItemCount={getLoadedValue(rows)?.total ?? 0}
-            onChange={setPage}
-            currentPage={page}
-            pageSize={pageSize} />
+            onChange={(page, size) => {
+                setPage(page);
+                setPageSize(size);
+            }} />
 
         {pendingDelete &&
             <AsyncConfirm body={`Are you sure to delete this invoice? 

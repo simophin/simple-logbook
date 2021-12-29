@@ -4,6 +4,7 @@ import { Fragment, useCallback, useContext, useMemo, useState } from "react";
 import { Button, Table } from "react-bootstrap";
 import { Helmet } from "react-helmet";
 import { useMediaPredicate } from "react-media-hook";
+import { NEVER } from 'rxjs';
 import deleteTransaction from "../api/deleteTransaction";
 import { listTransaction } from "../api/listTransaction";
 import AsyncConfirm from "../components/AsyncConfirm";
@@ -27,17 +28,18 @@ type Props = {
     accounts?: string[],
 };
 
-export default function TransactionListPage({accounts: showAccounts = []}: Props) {
-    const [page, setPage] = useState(0);
-    const [pageSize] = useState(20);
+export default function TransactionListPage({ accounts: showAccounts = [] }: Props) {
+    const [page, setPage] = useState<number>();
+    const [pageSize, setPageSize] = useState<number>();
     const bigScreen = useMediaPredicate('(min-width: 800px)');
     const [filter, setFilter] = useState<Filter>();
 
-    const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppStateContext);
+    const { transactionUpdatedTime, reportTransactionUpdated } = useContext(AppStateContext);
     const authProps = useAuthProps();
 
     const rows = useObservable(() =>
-            listTransaction({
+        (page === undefined || pageSize === undefined) ? NEVER
+            : listTransaction({
                 offset: pageSize * page,
                 limit: pageSize,
                 accounts: filter?.accounts,
@@ -49,12 +51,6 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
     useObservableErrorReport(rows);
 
     const totalItemsCount = getLoadedValue(rows)?.total ?? 0;
-    const numPages = Math.ceil(totalItemsCount / pageSize);
-
-    if (numPages > 0 && page >= numPages) {
-        setPage(numPages - 1);
-    }
-
     const [selected, setSelected] = useState(new SortedArray<TransactionId>([]));
 
 
@@ -68,23 +64,23 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
     }, [selected]);
 
     const children = useMemo(() => {
-            return (getLoadedValue(rows)?.data ?? [])
-                .map((r) => {
-                    const isSelected = selected.has(r.id);
-                    const transDate = convert(r.transDate, ZoneId.systemDefault()).toDate().toLocaleDateString();
-                    return (
-                        <Fragment key={`row-${r.id}`}>
-                            <tr key={r.id}
-                                onClick={() => toggleExpanded(r.id)}>
-                                <td>{r.description}</td>
-                                {bigScreen && <>
-                                    <td>{r.fromAccount}</td>
-                                    <td>{r.toAccount}</td>
-                                </>}
-                                <td>{formatAsCurrency(r.amount)}</td>
-                                <td>{transDate}</td>
-                            </tr>
-                            {isSelected &&
+        return (getLoadedValue(rows)?.data ?? [])
+            .map((r) => {
+                const isSelected = selected.has(r.id);
+                const transDate = convert(r.transDate, ZoneId.systemDefault()).toDate().toLocaleDateString();
+                return (
+                    <Fragment key={`row-${r.id}`}>
+                        <tr key={r.id}
+                            onClick={() => toggleExpanded(r.id)}>
+                            <td>{r.description}</td>
+                            {bigScreen && <>
+                                <td>{r.fromAccount}</td>
+                                <td>{r.toAccount}</td>
+                            </>}
+                            <td>{formatAsCurrency(r.amount)}</td>
+                            <td>{transDate}</td>
+                        </tr>
+                        {isSelected &&
                             <tr key={`expanded-${r.id}`} className='bg-light'>
                                 <td colSpan={bigScreen ? 5 : 3}>
                                     <div style={flexContainer}>
@@ -96,37 +92,37 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
                                         <div style={flexFullLineItem}><strong>Last
                                             updated: </strong>{convert(r.updatedDate).toDate().toLocaleString()}</div>
 
-                                        <div style={{...flexFullLineItem, ...flexContainer}}>
+                                        <div style={{ ...flexFullLineItem, ...flexContainer }}>
                                             <AttachmentSelect readonly value={r.attachments} />
                                         </div>
                                         <div style={flexContainer}>
                                             <Button style={flexItem}
-                                                    onClick={() => setEditState({state: 'edit', editing: r})}
-                                                    size='sm'>
-                                                <PencilIcon size='small'/>&nbsp;EDIT
+                                                onClick={() => setEditState({ state: 'edit', editing: r })}
+                                                size='sm'>
+                                                <PencilIcon size='small' />&nbsp;EDIT
                                             </Button>
                                             <Button style={flexItem}
-                                                    onClick={() => setEditState({state: 'delete', deleting: r})}
-                                                    size='sm'
-                                                    variant='danger'>
-                                                <TrashIcon size='small'/>&nbsp;DELETE
+                                                onClick={() => setEditState({ state: 'delete', deleting: r })}
+                                                size='sm'
+                                                variant='danger'>
+                                                <TrashIcon size='small' />&nbsp;DELETE
                                             </Button>
                                             <Button style={flexItem} size='sm' variant='secondary'
-                                                    onClick={() => toggleExpanded(r.id)}>
-                                                <FoldUpIcon size='small'/>&nbsp;Hide
+                                                onClick={() => toggleExpanded(r.id)}>
+                                                <FoldUpIcon size='small' />&nbsp;Hide
                                             </Button>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                            }
-                        </Fragment>
-                    );
-                });
-        },
+                        }
+                    </Fragment>
+                );
+            });
+    },
         [bigScreen, rows, selected, toggleExpanded]
-        )
-    ;
+    )
+        ;
 
     const [editState, setEditState] = useState<EditState<Transaction>>();
 
@@ -140,18 +136,18 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
         {children.length > 0 && <div style={flexFullLineItem}>
             <Table bordered hover size='sm'>
                 <thead>
-                <tr>
-                    <th>Comments</th>
-                    {bigScreen && <>
-                        <th>From</th>
-                        <th>To</th>
-                    </>}
-                    <th>Amount</th>
-                    <th>Date</th>
-                </tr>
+                    <tr>
+                        <th>Comments</th>
+                        {bigScreen && <>
+                            <th>From</th>
+                            <th>To</th>
+                        </>}
+                        <th>Amount</th>
+                        <th>Date</th>
+                    </tr>
                 </thead>
                 <tbody>
-                {children}
+                    {children}
                 </tbody>
             </Table>
         </div>}
@@ -161,33 +157,35 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
         </div>}
 
 
-        <Paginator onChange={setPage}
-            currentPage={page}
-            totalItemCount={totalItemsCount}
-            pageSize={pageSize} />
+        <Paginator
+            onChange={(page, size) => {
+                setPage(page);
+                setPageSize(size);
+            }}
+            totalItemCount={totalItemsCount} />
 
         {editState?.state === 'delete' &&
-        <AsyncConfirm
-            body={`Are you sure to delete "${editState.deleting.description}"?`}
-            okText='Delete'
-            okVariant='danger'
-            doConfirm={() => deleteTransaction({id: editState.deleting.id}, authProps)}
-            onCancel={() => setEditState(undefined)}
-            onConfirmed={() => {
-                setEditState(undefined);
-                reportTransactionUpdated();
-            }}
-            confirmInProgressText='Deleting'/>
+            <AsyncConfirm
+                body={`Are you sure to delete "${editState.deleting.description}"?`}
+                okText='Delete'
+                okVariant='danger'
+                doConfirm={() => deleteTransaction({ id: editState.deleting.id }, authProps)}
+                onCancel={() => setEditState(undefined)}
+                onConfirmed={() => {
+                    setEditState(undefined);
+                    reportTransactionUpdated();
+                }}
+                confirmInProgressText='Deleting' />
         }
 
         {(editState?.state === 'edit' || editState?.state === 'new') &&
-        <TransactionEntry
-            editing={editState?.state === 'edit' ? editState.editing : undefined}
-            onFinish={() => {
-                setEditState(undefined);
-                reportTransactionUpdated();
-            }}
-            onClose={() => setEditState(undefined)}/>
+            <TransactionEntry
+                editing={editState?.state === 'edit' ? editState.editing : undefined}
+                onFinish={() => {
+                    setEditState(undefined);
+                    reportTransactionUpdated();
+                }}
+                onClose={() => setEditState(undefined)} />
         }
     </div>
 }
