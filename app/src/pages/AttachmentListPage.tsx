@@ -1,20 +1,14 @@
-import { flexContainer, flexFullLineItem, flexItem } from "../styles/common";
-import { InputGroup } from "react-bootstrap";
-import { ProjectIcon, SearchIcon } from "@primer/octicons-react";
 import { useMemo, useState } from "react";
-import ValueFormControl from "../components/ValueFormControl";
-import AccountSelect from "../components/AccountSelect";
 import { Helmet } from "react-helmet";
-import { useMediaPredicate } from "react-media-hook";
+import { NEVER } from "rxjs";
+import { searchAttachments } from "../api/listAttachment";
+import AttachmentItem from "../components/AttachmentItem";
+import MultiFilter, { Filter } from "../components/MultiFilter";
+import Paginator from "../components/Paginator";
 import useAuthProps from "../hooks/useAuthProps";
 import { getLoadedValue, useObservable } from "../hooks/useObservable";
-import { searchAttachments } from "../api/listAttachment";
-import MultiFilter, { Filter } from "../components/MultiFilter";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
-import Paginator from "../components/Paginator";
-import AttachmentSelect from "../components/AttachmentSelect";
-import AttachmentItem from "../components/AttachmentItem";
-import { NEVER } from "rxjs";
+import { flexContainer, flexFullLineItem, flexItem } from "../styles/common";
 
 
 export default function AttachmentListPage() {

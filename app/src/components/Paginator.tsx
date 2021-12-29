@@ -15,11 +15,11 @@ export default function Paginator({ onChange, totalItemCount }: Props) {
     const [currentPage, setCurrentPage] = useState(0);
     useEffect(() => {
         onChange(currentPage, pageSize);
-    }, [pageSize, currentPage]);
+    }, [pageSize, currentPage, onChange]);
 
     const options = useMemo(() => pageSizeOptions.map(opt => {
         return <option value={opt.toString()}>{opt}pp</option>
-    }), [pageSizeOptions]);
+    }), []);
     
     return <div style={{...flexFullLineItem, ...flexContainer}}>
         {totalItemCount > pageSize && <span style={flexItem}>

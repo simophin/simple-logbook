@@ -1,5 +1,5 @@
 import { convert, ZoneId } from '@js-joda/core';
-import { SortAscIcon, FoldUpIcon, PencilIcon, TrashIcon, SortDescIcon } from "@primer/octicons-react";
+import { FoldUpIcon, PencilIcon, TrashIcon } from "@primer/octicons-react";
 import { Fragment, useCallback, useContext, useMemo, useState } from "react";
 import { Button, Table } from "react-bootstrap";
 import { Helmet } from "react-helmet";

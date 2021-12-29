@@ -12,7 +12,7 @@ export default function SettingDropdown() {
 
     return <NavDropdown id='nav-option' title='Settings'>
         <ChangePasswordDropdownItem />
-        {userState?.state === 'with_token' && <DropdownItem onSelect={handleLogoutClicked}>
+        {userState?.state === 'with_token' && <DropdownItem onClick={handleLogoutClicked}>
             Log out
         </DropdownItem>}
 

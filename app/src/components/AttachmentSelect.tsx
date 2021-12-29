@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AttachmentItem from "./AttachmentItem";
-import { flexContainer, flexFullLineItem, flexItem } from "../styles/common";
-import useAuthProps from "../hooks/useAuthProps";
-import uploadAttachment from "../api/uploadAttachment";
 import _ from "lodash";
-import listAttachments, { AttachmentSummary } from "../api/listAttachment";
-import { getLoadedValue, useObservable } from "../hooks/useObservable";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { map } from "rxjs/operators";
-import { boolean } from "fp-ts";
+import listAttachments, { AttachmentSummary } from "../api/listAttachment";
+import uploadAttachment from "../api/uploadAttachment";
+import useAuthProps from "../hooks/useAuthProps";
+import { getLoadedValue, useObservable } from "../hooks/useObservable";
+import { flexContainer, flexFullLineItem, flexItem } from "../styles/common";
+import AttachmentItem from "./AttachmentItem";
 
 type AttachmentId = AttachmentSummary['id'];
 

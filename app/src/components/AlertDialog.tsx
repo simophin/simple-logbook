@@ -13,7 +13,7 @@ export type Props = {
 
 export default function AlertDialog(
     {okText = 'OK', cancelText = 'Cancel', okLoading, body, onCancel, onOk, okVariant = 'primary'}: Props) {
-    return <Modal onHide={onCancel} show autofocus>
+    return <Modal onHide={onCancel} show autoFocus>
         <Modal.Body>{body}</Modal.Body>
         <Modal.Footer>
             {(cancelText?.length ?? 0) > 0 &&
