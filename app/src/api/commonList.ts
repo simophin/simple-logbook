@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { localDateType } from './codecs';
 
-const sortType = t.type({
+export const sortType = t.type({
     field: t.string,
     order: t.union([t.literal('ASC'), t.literal('DESC')]),
 });

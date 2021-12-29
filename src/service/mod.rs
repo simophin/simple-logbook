@@ -10,7 +10,6 @@ pub mod transaction;
 
 use chrono::NaiveDate;
 pub use error::Error;
-use itertools::Itertools;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
@@ -90,9 +89,11 @@ pub trait WithOrder {
     fn get_default_sorts() -> &'static [Sort];
     fn map_to_db(input: &str) -> Option<&'static str>;
 
-    fn gen_sql(&self) -> Vec<(&'static str, &'static str)> {
+    fn gen_order_by(&self, out: &mut String) {
         let mut fields = HashSet::new();
-        match self.get_sorts() {
+        let mut written_to_out = false;
+        let start_index = out.len();
+        for (field, order) in match self.get_sorts() {
             Some(v) if !v.is_empty() => v.iter(),
             _ => Self::get_default_sorts().iter(),
         }
@@ -102,8 +103,20 @@ pub trait WithOrder {
                 Some(v) => Some((v, order.to_sql())),
                 None => None,
             },
-        )
-        .collect_vec()
+        ) {
+            if written_to_out {
+                out.push_str(",");
+            }
+
+            out.push_str(field);
+            out.push_str(" ");
+            out.push_str(order);
+            written_to_out = true
+        }
+
+        if written_to_out {
+            out.insert_str(start_index, " ORDER BY ");
+        }
     }
 }
 
@@ -131,6 +144,26 @@ macro_rules! list_sql_impl {
 }
 
 #[macro_export]
+macro_rules! list_sql_with_sort_impl {
+    ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr $(,$binding:ident)*) => {
+        #[allow(unused_mut, unused_variables)]
+        pub async fn execute(
+            state: &crate::state::AppState,
+            req: $inputType,
+        ) -> crate::service::Result<Vec<$outputType>> {
+            use crate::service::WithOrder;
+            let mut sql: String = $sql.to_string();
+            req.gen_order_by(&mut sql);
+            let mut e = sqlx::$query_op(&sql);
+            $(
+                e = e.bind(req.$binding);
+            )*
+            Ok(e.fetch_all(&state.conn).await?)
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! list_sql_paginated_impl {
     ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr, $count_sql:expr,
     $offset:ident, $limit:ident $(,$binding:ident)*) => {
@@ -140,22 +173,12 @@ macro_rules! list_sql_paginated_impl {
             req: $inputType,
         ) -> crate::service::Result<crate::service::PaginatedResponse<$outputType>> {
             use crate::service::WithOrder;
-            use itertools::Itertools;
-
-            let order_fields = req.gen_sql();
-            let orders = if order_fields.len() > 0 {
-                format!("ORDER BY {}",
-                    order_fields
-                    .into_iter()
-                    .map(|(name, o)| format!("{} {}", name, o))
-                    .collect_vec()
-                    .join(",")
-                )
-            } else {
-                String::new()
-            };
-
-            let sql = format!("{} {} LIMIT {}, {}", $sql, orders, req.$offset, req.$limit);
+            let mut sql: String = $sql.to_string();
+            req.gen_order_by(&mut sql);
+            sql.push_str(" LIMIT ");
+            sql.push_str(&req.$offset.to_string());
+            sql.push_str(",");
+            sql.push_str(&req.$limit.to_string());
 
             let mut tx = state.conn.begin().await?;
             let mut e = sqlx::$query_op(&sql);
