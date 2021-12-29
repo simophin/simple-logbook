@@ -16,7 +16,7 @@ const DEFAULT_SORTS: &[Sort] = &[
 ];
 
 impl WithOrder for Input {
-    fn get_sorts(&self) -> &Vec<Sort> {
+    fn get_sorts(&self) -> &Option<Vec<Sort>> {
         &self.sorts
     }
 
@@ -30,6 +30,7 @@ impl WithOrder for Input {
             "toAccount" => Some("toAccount"),
             "created" => Some("transDate"),
             "updated" => Some("updatedDate"),
+            "amount" => Some("amount"),
             _ => None,
         }
     }

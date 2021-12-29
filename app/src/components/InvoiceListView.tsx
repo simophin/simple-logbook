@@ -1,31 +1,31 @@
-import {deleteInvoice, listInvoice} from "../api/invoices";
-import {getLoadedValue, useObservable} from "../hooks/useObservable";
+import { deleteInvoice, listInvoice } from "../api/invoices";
+import { getLoadedValue, useObservable } from "../hooks/useObservable";
 import useAuthProps from "../hooks/useAuthProps";
-import {ReactElement, useCallback, useContext, useMemo, useState} from "react";
-import {LocalDate, ZonedDateTime} from "@js-joda/core";
-import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
-import {InputGroup, Table} from "react-bootstrap";
+import { ReactElement, useCallback, useContext, useMemo, useState } from "react";
+import { LocalDate, ZonedDateTime } from "@js-joda/core";
+import { flexContainer, flexFullLineItem, flexItem } from "../styles/common";
+import { InputGroup, Table } from "react-bootstrap";
 import ValueFormControl from "./ValueFormControl";
-import {useDebounce} from "../hooks/useDebounce";
-import {formatAsLocaleLocalDate} from "../utils/dates";
+import { useDebounce } from "../hooks/useDebounce";
+import { formatAsLocaleLocalDate } from "../utils/dates";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
-import {formatAsCurrency} from "../utils/numeric";
-import {LinkContainer} from "react-router-bootstrap";
+import { formatAsCurrency } from "../utils/numeric";
+import { LinkContainer } from "react-router-bootstrap";
 import currency from "currency.js";
 import AsyncConfirm from "./AsyncConfirm";
-import {throwError} from "rxjs";
-import {AppStateContext} from "../state/AppStateContext";
-import {tap} from "rxjs/operators";
-import {FileIcon, PencilIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
+import { throwError } from "rxjs";
+import { AppStateContext } from "../state/AppStateContext";
+import { tap } from "rxjs/operators";
+import { FileIcon, PencilIcon, SearchIcon, TrashIcon } from "@primer/octicons-react";
 import Paginator from "./Paginator";
 
 
-const OpButton = ({children, ...props}: { children: ReactElement, title?: string, onClick?: () => unknown, } ) =>
+const OpButton = ({ children, ...props }: { children: ReactElement, title?: string, onClick?: () => unknown, }) =>
     <span {...props}
-          style={{padding: 2}}
-          role='button'>
-    {children}
-</span>;
+        style={{ padding: 2 }}
+        role='button'>
+        {children}
+    </span>;
 
 export default function InvoiceListView() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -36,7 +36,7 @@ export default function InvoiceListView() {
     const [page, setPage] = useState(0);
 
     const authProps = useAuthProps();
-    const {transactionUpdatedTime, reportTransactionUpdated} = useContext(AppStateContext);
+    const { transactionUpdatedTime, reportTransactionUpdated } = useContext(AppStateContext);
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const rows = useObservable(() => listInvoice({
@@ -51,7 +51,7 @@ export default function InvoiceListView() {
     const [pendingDelete, setPendingDelete] = useState<{ id: string, client: string, date: ZonedDateTime, amount: currency }>();
     const handleConfirmDeletion = useCallback(() => {
         if (!pendingDelete) {
-            return throwError({message: 'Nothing to delete'});
+            return throwError({ message: 'Nothing to delete' });
         }
         return deleteInvoice([pendingDelete.id])
             .pipe(tap(reportTransactionUpdated));
@@ -61,74 +61,69 @@ export default function InvoiceListView() {
         const data = getLoadedValue(rows)?.data;
         return data && <Table responsive hover striped bordered size='sm'>
             <thead>
-            <tr>
-                <th>No.</th>
-                <th>Client</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th />
-            </tr>
+                <tr>
+                    <th>No.</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th />
+                </tr>
             </thead>
             <tbody>
-            {data?.map(({id, reference, client, date, amount}) => {
-                return <tr key={reference}>
-                    <td>{reference}</td>
-                    <td><a href={`/invoice/view/${id}?fullScreen=true`} target='_blank' rel="noreferrer">{client}</a>
-                    </td>
-                    <td>{formatAsLocaleLocalDate(date)}</td>
-                    <td>{formatAsCurrency(amount)}</td>
-                    <td width={100} align='center'>
-                        <LinkContainer to={`/invoice/edit/${id}`}>
-                            <OpButton title='Edit'><PencilIcon size={14}/></OpButton>
-                        </LinkContainer>&nbsp;
+                {data?.map(({ id, reference, client, date, amount }) => {
+                    return <tr key={reference}>
+                        <td>{reference}</td>
+                        <td><a href={`/invoice/view/${id}?fullScreen=true`} target='_blank' rel="noreferrer">{client}</a>
+                        </td>
+                        <td>{formatAsLocaleLocalDate(date)}</td>
+                        <td>{formatAsCurrency(amount)}</td>
+                        <td width={100} align='center'>
+                            <LinkContainer to={`/invoice/edit/${id}`}>
+                                <OpButton title='Edit'><PencilIcon size={14} /></OpButton>
+                            </LinkContainer>&nbsp;
 
-                        <LinkContainer to={`/invoice/add?copyFrom=${id}`}>
-                            <OpButton title='Make a copy'><FileIcon size={14}/></OpButton>
-                        </LinkContainer>&nbsp;
+                            <LinkContainer to={`/invoice/add?copyFrom=${id}`}>
+                                <OpButton title='Make a copy'><FileIcon size={14} /></OpButton>
+                            </LinkContainer>&nbsp;
 
-                        <OpButton title='Delete' onClick={() => setPendingDelete({client, id, date, amount})}>
-                            <TrashIcon className='text-danger' size={14}/>
-                        </OpButton>&nbsp;
-                    </td>
-                </tr>;
-            })}
-            {data.length === 0 && <tr>
-                <td colSpan={5} align='center'>No data found</td>
-            </tr>}
+                            <OpButton title='Delete' onClick={() => setPendingDelete({ client, id, date, amount })}>
+                                <TrashIcon className='text-danger' size={14} />
+                            </OpButton>&nbsp;
+                        </td>
+                    </tr>;
+                })}
+                {data.length === 0 && <tr>
+                    <td colSpan={5} align='center'>No data found</td>
+                </tr>}
             </tbody>
         </Table>
     }, [rows]);
 
     return <div style={flexContainer}>
-        <InputGroup style={{...flexItem}} size='sm'>
-            <InputGroup.Prepend>
-                <InputGroup.Text><SearchIcon size={14}/></InputGroup.Text>
-            </InputGroup.Prepend>
+        <InputGroup style={{ ...flexItem }} size='sm'>
+            <InputGroup.Text><SearchIcon size={14} /></InputGroup.Text>
             <ValueFormControl value={searchTerm}
-                              placeholder='Search text'
-                              onValueChange={setSearchTerm}/>
+                placeholder='Search text'
+                onValueChange={setSearchTerm} />
         </InputGroup>
+        
 
-        <span style={{...flexItem, flex: 1}}>
+        <span style={{ ...flexItem, flex: 1 }}>
             <InputGroup size='sm'>
-                <InputGroup.Prepend>
-                    <InputGroup.Text>From</InputGroup.Text>
-                </InputGroup.Prepend>
+                <InputGroup.Text>From</InputGroup.Text>
                 <ValueFormControl value={from}
-                                  type='date'
-                                  onValueChange={setFrom}/>
+                    type='date'
+                    onValueChange={setFrom} />
             </InputGroup>
         </span>
 
 
-        <span style={{...flexItem, flex: 1}}>
+        <span style={{ ...flexItem, flex: 1 }}>
             <InputGroup size='sm'>
-                <InputGroup.Prepend>
-                    <InputGroup.Text>To</InputGroup.Text>
-                </InputGroup.Prepend>
+                <InputGroup.Text>To</InputGroup.Text>
                 <ValueFormControl value={to}
-                                  type='date'
-                                  onValueChange={setTo}/>
+                    type='date'
+                    onValueChange={setTo} />
             </InputGroup>
         </span>
 
@@ -137,17 +132,17 @@ export default function InvoiceListView() {
         </div>
 
         <Paginator totalItemCount={getLoadedValue(rows)?.total ?? 0}
-                   onChange={setPage}
-                   currentPage={page}
-                   pageSize={pageSize}/>
+            onChange={setPage}
+            currentPage={page}
+            pageSize={pageSize} />
 
         {pendingDelete &&
-        <AsyncConfirm body={`Are you sure to delete this invoice? 
+            <AsyncConfirm body={`Are you sure to delete this invoice? 
             ${pendingDelete.client}, on ${formatAsLocaleLocalDate(pendingDelete.date)}, ${formatAsCurrency(pendingDelete.amount)}`}
-                      doConfirm={handleConfirmDeletion}
-                      onConfirmed={() => setPendingDelete(undefined)}
-                      onCancel={() => setPendingDelete(undefined)}
-                      confirmInProgressText='Deleting'/>
+                doConfirm={handleConfirmDeletion}
+                onConfirmed={() => setPendingDelete(undefined)}
+                onCancel={() => setPendingDelete(undefined)}
+                confirmInProgressText='Deleting' />
         }
     </div>;
 }

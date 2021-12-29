@@ -1,4 +1,4 @@
-import {Badge, Button, Col, Dropdown, Form, FormControl} from "react-bootstrap";
+import {Badge, Button, Col, Dropdown, Form, FormControl, Row} from "react-bootstrap";
 import {flexContainer, flexFullLineItem} from "../styles/common";
 import {Helmet} from "react-helmet";
 import useFormField, {checkFormValidity} from "../hooks/useFormField";
@@ -35,7 +35,6 @@ type Props = {
 const CopyFromToggle = forwardRef<any, { onClick: (e: any) => unknown }>(({children, onClick}, ref) => (
     <Badge
         ref={ref}
-        variant='primary'
         role='button'
         onClick={onClick}>
         {children}
@@ -164,24 +163,24 @@ export default function InvoiceEntryPage({editing}: Props) {
     return <div style={flexContainer}>
         <Helmet><title>Invoice</title></Helmet>
         <Form style={flexFullLineItem}>
-            <Form.Row>
+            <Row>
                 <Col>
                     <h4 style={{
                         display: 'inline',
                         marginRight: 8
                     }}>{editing ? 'Edit invoice' : 'New invoice'}</h4>{copyFrom}
                 </Col>
-            </Form.Row>
+            </Row>
 
-            {editing && <Form.Row>
+            {editing && <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Invoice number</Form.Label>
                     <FormControl value={editing.reference.toString()} readOnly/>
                 </Form.Group>
-            </Form.Row>}
+            </Row>}
 
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Invoice date</Form.Label>
                     <ValueFormControl
@@ -191,9 +190,9 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!invoiceDateError}/>
                     {invoiceDateError && <Form.Text>{invoiceDateError}</Form.Text>}
                 </Form.Group>
-            </Form.Row>
+            </Row>
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Client name</Form.Label>
                     <ValueFormControl
@@ -202,8 +201,8 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!clientError}/>
                     {clientError && <Form.Text>{clientError}</Form.Text>}
                 </Form.Group>
-            </Form.Row>
-            <Form.Row>
+            </Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Client details</Form.Label>
                     <ValueFormControl
@@ -214,9 +213,9 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!clientDetailsError}/>
                     {clientDetailsError && <Form.Text>{clientDetailsError}</Form.Text>}
                 </Form.Group>
-            </Form.Row>
+            </Row>
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Company name</Form.Label>
                     <ValueFormControl
@@ -225,16 +224,16 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!companyNameError}/>
                     {companyNameError && <Form.Text>{companyNameError}</Form.Text>}
                 </Form.Group>
-            </Form.Row>
+            </Row>
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Additional info</Form.Label>
                     <InvoiceExtraInfoSelect value={extraInfo} onChange={setExtraInfo}/>
                 </Form.Group>
-            </Form.Row>
+            </Row>
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Items</Form.Label>
                     <InvoiceItemSelect selected={items} onChange={setItems}
@@ -242,15 +241,15 @@ export default function InvoiceEntryPage({editing}: Props) {
                                        onSelectedAmountChanged={setTotalSelectedAmount}/>
                     <Form.Text>{Error}</Form.Text>
                 </Form.Group>
-            </Form.Row>
-            <Form.Row>
+            </Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Extra charges</Form.Label>
                     <Form.Text>These charges will add/apply to the sum in according to their order</Form.Text><br/>
                     <InvoiceExtraChargeSelect value={extraCharges} onChange={setExtraCharges}/>
                 </Form.Group>
-            </Form.Row>
-            <Form.Row>
+            </Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Due amount</Form.Label>
                     <ValueFormControl
@@ -266,9 +265,9 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!dueDateError}/>
                     {dueDateError && <Form.Text>{dueDateError}</Form.Text>}
                 </Form.Group>
-            </Form.Row>
+            </Row>
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Payment instruction</Form.Label>
                     <ValueFormControl
@@ -279,9 +278,9 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!paymentInfoError}/>
                     <Form.Text>{paymentInfoError}</Form.Text>
                 </Form.Group>
-            </Form.Row>
+            </Row>
 
-            <Form.Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Notes</Form.Label>
                     <ValueFormControl
@@ -292,18 +291,18 @@ export default function InvoiceEntryPage({editing}: Props) {
                         isInvalid={!!notesError}/>
                     {notesError && <Form.Text>{notesError}</Form.Text>}
                 </Form.Group>
-            </Form.Row>
-            <Form.Row>
+            </Row>
+            <Row>
                 <Form.Group as={Col}>
                     <Form.Label>Attachments</Form.Label>
                     <AttachmentSelect value={attachments} onChange={setAttachments}/>
                 </Form.Group>
-            </Form.Row>
-            <Form.Row>
+            </Row>
+            <Row>
                 <Col>
                     <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving' : 'Save'}</Button>
                 </Col>
-            </Form.Row>
+            </Row>
         </Form>
 
         {error && <AlertDialog body={`Error: ${error}`}

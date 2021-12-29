@@ -1,18 +1,16 @@
 import * as t from 'io-ts';
-import {transactionArrayType} from "../models/Transaction";
-import {ExtraRequestProps, request} from "./common";
+import { transactionArrayType } from "../models/Transaction";
+import { ExtraRequestProps, request } from "./common";
 import config from "../config";
-import {localDateType} from "./codecs";
+import { commonListFilterType } from './commonList';
 
-
-const filterType = t.partial({
-    from: localDateType,
-    to: localDateType,
-    q: t.string,
-    limit: t.number,
-    offset: t.number,
-    accounts: t.array(t.string),
-})
+const filterType = t.union(
+    [
+        t.partial({
+            accounts: t.array(t.string),
+        }), 
+        commonListFilterType
+    ]);
 
 export type Filter = t.TypeOf<typeof filterType>;
 

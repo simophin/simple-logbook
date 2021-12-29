@@ -24,7 +24,7 @@ const DEFAULT_SORTS: &[Sort] = &[
 ];
 
 impl WithOrder for Input {
-    fn get_sorts(&self) -> &Vec<Sort> {
+    fn get_sorts(&self) -> &Option<Vec<Sort>> {
         &self.sorts
     }
 

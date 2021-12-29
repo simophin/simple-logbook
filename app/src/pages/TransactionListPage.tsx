@@ -1,26 +1,25 @@
-import {Button, Table} from "react-bootstrap";
-import {getLoadedValue, useObservable} from "../hooks/useObservable";
-import {listTransaction} from "../api/listTransaction";
-import {Fragment, useCallback, useContext, useMemo, useState} from "react";
-import {useMediaPredicate} from "react-media-hook";
-import {flexContainer, flexFullLineItem, flexItem} from "../styles/common";
-import {FoldUpIcon, PencilIcon, TrashIcon} from "@primer/octicons-react";
-import SortedArray from "../utils/SortedArray";
-import {Transaction} from "../models/Transaction";
-import {EditState} from "../utils/EditState";
-import AsyncConfirm from "../components/AsyncConfirm";
+import { convert, ZoneId } from '@js-joda/core';
+import { FoldUpIcon, PencilIcon, TrashIcon } from "@primer/octicons-react";
+import { Fragment, useCallback, useContext, useMemo, useState } from "react";
+import { Button, Table } from "react-bootstrap";
+import { Helmet } from "react-helmet";
+import { useMediaPredicate } from "react-media-hook";
 import deleteTransaction from "../api/deleteTransaction";
-import TransactionEntry from "../components/TransactionEntry";
-import {convert, LocalDate, ZoneId} from '@js-joda/core';
-import {useDebounce} from "../hooks/useDebounce";
-import useAuthProps from "../hooks/useAuthProps";
-import {AppStateContext} from "../state/AppStateContext";
-import useObservableErrorReport from "../hooks/useObservableErrorReport";
-import {Helmet} from "react-helmet";
-import {formatAsCurrency} from "../utils/numeric";
-import Paginator from "../components/Paginator";
+import { listTransaction } from "../api/listTransaction";
+import AsyncConfirm from "../components/AsyncConfirm";
 import AttachmentSelect from "../components/AttachmentSelect";
-import MultiFilter, {Filter} from "../components/MultiFilter";
+import MultiFilter, { Filter } from "../components/MultiFilter";
+import Paginator from "../components/Paginator";
+import TransactionEntry from "../components/TransactionEntry";
+import useAuthProps from "../hooks/useAuthProps";
+import { getLoadedValue, useObservable } from "../hooks/useObservable";
+import useObservableErrorReport from "../hooks/useObservableErrorReport";
+import { Transaction } from "../models/Transaction";
+import { AppStateContext } from "../state/AppStateContext";
+import { flexContainer, flexFullLineItem, flexItem } from "../styles/common";
+import { EditState } from "../utils/EditState";
+import { formatAsCurrency } from "../utils/numeric";
+import SortedArray from "../utils/SortedArray";
 
 type TransactionId = Transaction['id'];
 
@@ -162,12 +161,10 @@ export default function TransactionListPage({accounts: showAccounts = []}: Props
         </div>}
 
 
-        <div style={flexContainer}>
-            <Paginator onChange={setPage}
-                       currentPage={page}
-                       totalItemCount={totalItemsCount}
-                       pageSize={pageSize} />
-        </div>
+        <Paginator onChange={setPage}
+            currentPage={page}
+            totalItemCount={totalItemsCount}
+            pageSize={pageSize} />
 
         {editState?.state === 'delete' &&
         <AsyncConfirm

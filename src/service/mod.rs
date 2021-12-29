@@ -69,7 +69,7 @@ pub struct CommonListRequest {
     pub q: Option<String>,
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
-    pub sorts: Vec<Sort>,
+    pub sorts: Option<Vec<Sort>>,
 }
 
 impl Default for CommonListRequest {
@@ -80,23 +80,23 @@ impl Default for CommonListRequest {
             q: None,
             from: None,
             to: None,
-            sorts: Default::default(),
+            sorts: None,
         }
     }
 }
 
 pub trait WithOrder {
-    fn get_sorts(&self) -> &Vec<Sort>;
+    fn get_sorts(&self) -> &Option<Vec<Sort>>;
     fn get_default_sorts() -> &'static [Sort];
     fn map_to_db(input: &str) -> Option<&'static str>;
 
     fn gen_sql(&self) -> Vec<(&'static str, &'static str)> {
         let mut fields = HashSet::new();
         match self.get_sorts() {
-            v if v.is_empty() => Self::get_default_sorts().iter(),
-            v => v.iter(),
+            Some(v) if !v.is_empty() => v.iter(),
+            _ => Self::get_default_sorts().iter(),
         }
-        .filter(|sort| fields.insert(&sort.field))
+        .filter(|sort| fields.insert(sort.field.as_ref()))
         .filter_map(
             |Sort { field, order }| match Self::map_to_db(field.as_ref()) {
                 Some(v) => Some((v, order.to_sql())),
