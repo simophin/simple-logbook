@@ -1,16 +1,18 @@
 import { convert, ZoneId } from '@js-joda/core';
-import { FoldUpIcon, PencilIcon, TrashIcon } from "@primer/octicons-react";
+import { SortAscIcon, FoldUpIcon, PencilIcon, TrashIcon, SortDescIcon } from "@primer/octicons-react";
 import { Fragment, useCallback, useContext, useMemo, useState } from "react";
 import { Button, Table } from "react-bootstrap";
 import { Helmet } from "react-helmet";
 import { useMediaPredicate } from "react-media-hook";
 import { NEVER } from 'rxjs';
+import { Sort } from '../api/commonList';
 import deleteTransaction from "../api/deleteTransaction";
 import { listTransaction } from "../api/listTransaction";
 import AsyncConfirm from "../components/AsyncConfirm";
 import AttachmentSelect from "../components/AttachmentSelect";
 import MultiFilter, { Filter } from "../components/MultiFilter";
 import Paginator from "../components/Paginator";
+import SortColumn from '../components/SortColumn';
 import TransactionEntry from "../components/TransactionEntry";
 import useAuthProps from "../hooks/useAuthProps";
 import { getLoadedValue, useObservable } from "../hooks/useObservable";
@@ -31,6 +33,7 @@ type Props = {
 export default function TransactionListPage({ accounts: showAccounts = [] }: Props) {
     const [page, setPage] = useState<number>();
     const [pageSize, setPageSize] = useState<number>();
+    const [sort, setSort] = useState<Sort>();
     const bigScreen = useMediaPredicate('(min-width: 800px)');
     const [filter, setFilter] = useState<Filter>();
 
@@ -42,17 +45,14 @@ export default function TransactionListPage({ accounts: showAccounts = [] }: Pro
             : listTransaction({
                 offset: pageSize * page,
                 limit: pageSize,
-                accounts: filter?.accounts,
-                q: filter?.q,
-                from: filter?.from,
-                to: filter?.to,
+                ...filter,
+                sorts: sort ? [sort] : undefined,
             }, authProps),
-        [page, pageSize, authProps, transactionUpdatedTime, filter]);
+        [page, pageSize, authProps, transactionUpdatedTime, filter, sort]);
     useObservableErrorReport(rows);
 
     const totalItemsCount = getLoadedValue(rows)?.total ?? 0;
     const [selected, setSelected] = useState(new SortedArray<TransactionId>([]));
-
 
     const toggleExpanded = useCallback((id: TransactionId) => {
         const [newSelected, removed] = selected.remove(id);
@@ -121,8 +121,7 @@ export default function TransactionListPage({ accounts: showAccounts = [] }: Pro
             });
     },
         [bigScreen, rows, selected, toggleExpanded]
-    )
-        ;
+    );
 
     const [editState, setEditState] = useState<EditState<Transaction>>();
 
@@ -139,11 +138,31 @@ export default function TransactionListPage({ accounts: showAccounts = [] }: Pro
                     <tr>
                         <th>Comments</th>
                         {bigScreen && <>
-                            <th>From</th>
-                            <th>To</th>
+                            <th>
+                                <SortColumn label='From'
+                                    order={sort?.field === 'fromAccount' ? sort.order : undefined}
+                                    onChanged={order => setSort(order ? { field: 'fromAccount', order } : undefined)}
+                                />
+                            </th>
+                            <th>
+                                <SortColumn label='To'
+                                    order={sort?.field === 'toAccount' ? sort.order : undefined}
+                                    onChanged={order => setSort(order ? { field: 'toAccount', order } : undefined)}
+                                />
+                            </th>
                         </>}
-                        <th>Amount</th>
-                        <th>Date</th>
+                        <th>
+                            <SortColumn label='Amount'
+                                order={sort?.field === 'amount' ? sort.order : undefined}
+                                onChanged={order => setSort(order ? { field: 'amount', order } : undefined)}
+                            />
+                        </th>
+                        <th>
+                            <SortColumn label='Date'
+                                order={sort?.field === 'created' ? sort.order : undefined}
+                                onChanged={order => setSort(order ? { field: 'created', order } : undefined)}
+                            />
+                        </th>
                     </tr>
                 </thead>
                 <tbody>

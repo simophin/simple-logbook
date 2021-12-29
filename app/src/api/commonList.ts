@@ -2,9 +2,11 @@ import * as t from 'io-ts';
 import { localDateType } from './codecs';
 
 const sortType = t.type({
-    sort: t.string,
-    order: t.union([t.literal('asc'), t.literal('desc')]),
+    field: t.string,
+    order: t.union([t.literal('ASC'), t.literal('DESC')]),
 });
+
+export type Sort = t.TypeOf<typeof sortType>;
 
 export const commonListFilterType = t.partial({
     from: localDateType,
