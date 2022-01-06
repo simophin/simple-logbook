@@ -65,14 +65,16 @@ pub async fn post(mut req: tide::Request<AppState>) -> tide::Result {
         }
     }
 
-    let (data, mime_type) = gen_thumbnail(
-        data.ok_or_else(|| Error::InvalidArgument(Cow::from("data is missing")))?
-            .to_vec(),
-        2048,
-        2048,
-        &mime_type,
-    )
-    .await?;
+    let raw_data = data
+        .ok_or_else(|| Error::InvalidArgument(Cow::from("data is missing")))?
+        .to_vec();
+
+    let (data, mime_type) = if mime_type.starts_with("image/") {
+        (raw_data, mime_type.as_str())
+    } else {
+        gen_thumbnail(raw_data, 2048, 2048, &mime_type).await?
+    };
+
     let name = name.ok_or_else(|| Error::InvalidArgument(Cow::from("file_name is missing")))?;
     let response = execute(
         req.state(),
