@@ -8,6 +8,7 @@ pub mod login;
 pub mod report;
 pub mod transaction;
 
+use itertools::Itertools;
 use chrono::NaiveDate;
 pub use error::Error;
 use std::borrow::Cow;
@@ -124,6 +125,16 @@ pub trait WithOrder {
 pub struct PaginatedResponse<T: serde::Serialize> {
     pub data: Vec<T>,
     pub total: i64,
+}
+
+impl <T: serde::Serialize> PaginatedResponse<T> {
+    pub fn map<R: serde::Serialize>(self, f: impl Fn(T) -> R) -> PaginatedResponse<R> {
+        let PaginatedResponse { data, total } = self;
+        return PaginatedResponse {
+            data: data.into_iter().map(f).collect_vec(),
+            total,
+        }
+    }
 }
 
 #[macro_export]

@@ -1,7 +1,6 @@
 use crate::service::{CommonListRequest, PaginatedResponse, Sort, SortOrder, WithOrder};
 use crate::sqlx_ext::Json;
 use chrono::{DateTime, Utc};
-use itertools::Itertools;
 
 const fn default_with_data() -> bool {
     false
@@ -118,16 +117,11 @@ pub async fn execute(
     state: &AppState,
     input: Input,
 ) -> crate::service::Result<PaginatedResponse<AttachmentSigned<'static>>> {
-    let PaginatedResponse { total, data } = execute_sql(state, input).await?;
     let config = CredentialsConfig::from_app(state).await;
-    Ok(PaginatedResponse {
-        total,
-        data: data
-            .into_iter()
-            .map(|attachment| AttachmentSigned {
-                signed_id: super::sign::sign(&attachment.id, config.as_ref()),
-                attachment,
-            })
-            .collect_vec(),
+    execute_sql(state, input).await.map(|data| {
+        data.map(|attachment| AttachmentSigned {
+            signed_id: super::sign::sign(&attachment.id, config.as_ref()),
+            attachment,
+        })
     })
 }
