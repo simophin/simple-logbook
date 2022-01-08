@@ -53,16 +53,20 @@ impl<'a> Asset<'a> {
     pub fn sign(&self, config: Option<&CredentialsConfig>) -> Signed<'static> {
         match config {
             Some(c) => c.sign(self),
-            None => Signed(Cow::from(
-                serde_json::to_string(self).expect("to convert to json"),
-            )),
+            None => Signed(Cow::from(base64::encode(
+                serde_json::to_vec(&self).expect("to convert to json"),
+                DEFAULT_VARIANT,
+            ))),
         }
     }
 
     pub fn verify<'b: 'a>(s: &Signed, config: Option<&'b CredentialsConfig>) -> Option<Self> {
         match config {
             Some(c) => c.verify(s),
-            None => serde_json::from_str::<Self>(s.as_ref()).ok(),
+            None => {
+                serde_json::from_slice::<Self>(&base64::decode(s.as_ref(), DEFAULT_VARIANT).ok()?)
+                    .ok()
+            }
         }
     }
 }
