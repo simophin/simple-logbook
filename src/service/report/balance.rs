@@ -38,8 +38,9 @@ with recursive input_accounts(name) as (select value from json_each(?3)),
                    from balance
                    inner join daily on daily.i = balance.i + 1
                )
-select balanceDate date, balance
+select balanceDate `date`, balance
 from balance
+where `date` is not null
 "#;
 
 crate::list_sql_impl!(Input, DataRow, query_as, SQL, from, to, accounts);

@@ -1,16 +1,16 @@
-import {InputProps, Typeahead} from "react-bootstrap-typeahead";
+import {Typeahead} from "react-bootstrap-typeahead";
 import {getLoadedValue, useObservable} from "../hooks/useObservable";
 import listAccounts from "../api/listAccount";
 import {map} from "rxjs/operators";
 import _ from "lodash";
 import useAuthProps from "../hooks/useAuthProps";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
+import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 type Props = {
     onChange: (selected: string[]) => unknown,
     selected: string[],
     placeholder?: string,
-    inputProps?: InputProps,
 };
 
 export default function AccountSelect({onChange, selected, ...props}: Props) {
@@ -21,13 +21,15 @@ export default function AccountSelect({onChange, selected, ...props}: Props) {
         , [authProps]);
     useObservableErrorReport(accounts);
 
+    // @ts-ignore
     return <Typeahead
         id="account-select"
         options={getLoadedValue(accounts) ?? []}
         multiple
-        size='sm'
+        // @ts-ignore
+        size="small"
         selected={selected}
-        onChange={(selected) => onChange(selected)}
+        onChange={(selected) => onChange(selected as string[])}
         {...props}
     />
 }

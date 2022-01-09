@@ -35,8 +35,7 @@ export default function MultipleSeriesEdit({persistKey, onChange, containerProps
 
     useEffect(() => {
         onChange(seriesConfigs);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [seriesConfigs]);
+    }, [seriesConfigs, onChange]);
 
     const handleRemoveSeries = useCallback((toRemove: SeriesConfig['id']) => {
         setSeriesConfigs(seriesConfigs.filter(({id}) => id !== toRemove));
@@ -54,6 +53,7 @@ export default function MultipleSeriesEdit({persistKey, onChange, containerProps
 
     const handleSeriesChange = useCallback(
         (c: SeriesConfig) => {
+            console.log('Series changed to', c);
             const index = _.findIndex(seriesConfigs, ({id}) => id === c.id);
             if (index < 0) {
                 return;
