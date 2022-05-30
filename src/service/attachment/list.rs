@@ -1,15 +1,18 @@
 use crate::service::{CommonListRequest, PaginatedResponse, Sort, SortOrder, WithOrder};
 use crate::sqlx_ext::Json;
 use chrono::{DateTime, Utc};
+use derive_more::Deref;
+use serde::Deserialize;
 
 const fn default_with_data() -> bool {
     false
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, Deref)]
 #[serde(rename_all = "camelCase")]
 pub struct Input {
     #[serde(flatten)]
+    #[deref]
     pub req: CommonListRequest,
 
     pub includes: Option<Json<Vec<String>>>,
@@ -43,8 +46,6 @@ impl WithOrder for Input {
         }
     }
 }
-
-crate::impl_deref!(Input, req, CommonListRequest);
 
 #[derive(serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]

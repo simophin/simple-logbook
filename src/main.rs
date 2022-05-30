@@ -121,6 +121,9 @@ async fn main() {
     endpoint!(app, delete, "/api/transactions", transaction::delete);
     endpoint!(app, post, "/api/accounts/list", account::list);
 
+    // tags
+    endpoint!(app, post, "/api/tags/list", tag::list);
+
     // account group
     endpoint_get!(app, "/api/accountGroups", account_group::list);
     endpoint!(app, delete, "/api/accountGroups", account_group::delete);

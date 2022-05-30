@@ -83,6 +83,8 @@ async fn list_by_account_works() {
         new_attachment(&app_state).await.0,
     ];
 
+    let tags = vec!["tag1".to_string(), "tag2".to_string()];
+
     use crate::service::transaction as tx;
     tx::save::execute(
         &app_state,
@@ -95,6 +97,7 @@ async fn list_by_account_works() {
             trans_date: "2020-01-01".to_string(),
             updated_date: DateTime::from(SystemTime::now()),
             attachments: Json(attachments.clone()),
+            tags: Json(tags),
         }],
     )
     .await

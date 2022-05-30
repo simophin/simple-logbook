@@ -39,6 +39,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
     });
     const [date, setDate, dateError, validateDate] = useFormField((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE), { required: true });
     const [attachments, setAttachments] = useState<AttachmentSummary['id'][]>(editing?.attachments ?? []);
+    const [tags, setTags] = useState<Transaction['tags']>(editing?.tags ?? []);
 
     const descRef = useRef<any>(null);
     const amountRef = useRef<any>(null);
@@ -112,6 +113,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
             description: desc as NonEmptyString,
             updatedDate: ZonedDateTime.now(),
             attachments: attachments as NonEmptyString[],
+            tags,
         }, authProps).subscribe(
             () => {
                 setSaving(false);

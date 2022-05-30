@@ -44,7 +44,7 @@ pub async fn execute(
         _ => Cow::from(tree_magic::from_u8(data)),
     };
 
-    let id = uuid::Uuid::new_v4().to_hyphenated().to_string();
+    let id = uuid::Uuid::new_v4().as_hyphenated().to_string();
     sqlx::query(
         "INSERT INTO attachments (id, mimeType, name, lastUpdated, dataHash, data) \
                 VALUES (?, ?, ?, current_timestamp, ?, ?)",

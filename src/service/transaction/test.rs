@@ -29,6 +29,7 @@ pub async fn new_transaction(state: &AppState, id: Option<String>) -> model::Tra
         trans_date: "2019-01-01".to_string(),
         updated_date: DateTime::from(SystemTime::now()),
         attachments: Json(attachment_ids),
+        tags: Json(vec!["tag1".to_string(), "tag2".to_string()]),
     };
     save::execute(state, vec![tx.clone()])
         .await

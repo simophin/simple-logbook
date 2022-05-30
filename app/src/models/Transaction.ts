@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
-import {currencyType, localDateType, zonedDateTimeType} from "../api/codecs";
+import { currencyType, localDateType, zonedDateTimeType } from "../api/codecs";
 
 export const transactionType = t.type({
     id: codec.NonEmptyString,
@@ -11,6 +11,7 @@ export const transactionType = t.type({
     transDate: localDateType,
     updatedDate: zonedDateTimeType,
     attachments: t.array(codec.NonEmptyString),
+    tags: t.array(codec.NonEmptyString),
 });
 
 export const transactionArrayType = t.array(transactionType);

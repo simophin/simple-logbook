@@ -14,4 +14,5 @@ pub struct Transaction {
     pub trans_date: String,
     pub updated_date: DateTime<Utc>,
     pub attachments: Json<Vec<String>>,
+    pub tags: Json<Vec<String>>,
 }
