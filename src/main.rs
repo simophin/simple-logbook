@@ -43,7 +43,7 @@ async fn serve_react_assert(req: tide::Request<AppState>) -> tide::Result {
     Ok(tide::Response::builder(StatusCode::Ok)
         .content_type(mime.as_ref())
         .header("Cache-Control", "max-age=2678400")
-        .body(tide::Body::from(asset.as_ref()))
+        .body(tide::Body::from(asset.data.as_ref()))
         .build())
 }
 
