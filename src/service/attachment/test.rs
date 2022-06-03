@@ -40,6 +40,7 @@ async fn attachment_rw_works() {
             includes: Some(Json(vec![id.clone()])),
             accounts: None,
             req: Default::default(),
+            tags: None,
         },
     )
     .await
@@ -83,6 +84,8 @@ async fn list_by_account_works() {
         new_attachment(&app_state).await.0,
     ];
 
+    let tags = vec!["tag1".to_string(), "tag2".to_string()];
+
     use crate::service::transaction as tx;
     tx::save::execute(
         &app_state,
@@ -95,6 +98,7 @@ async fn list_by_account_works() {
             trans_date: "2020-01-01".to_string(),
             updated_date: DateTime::from(SystemTime::now()),
             attachments: Json(attachments.clone()),
+            tags: Json(tags),
         }],
     )
     .await
@@ -107,6 +111,7 @@ async fn list_by_account_works() {
             includes: None,
             accounts: Some(Json(vec!["account 1".to_string()])),
             with_data: false,
+            tags: None,
         },
     )
     .await
@@ -128,6 +133,7 @@ async fn list_by_account_works() {
             includes: None,
             accounts: Some(Json(vec!["account 2 ".to_string()])),
             with_data: false,
+            tags: None,
         },
     )
     .await

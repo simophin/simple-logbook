@@ -1,28 +1,21 @@
 import * as t from 'io-ts';
-import { transactionArrayType } from "../models/Transaction";
 import { ExtraRequestProps, request } from "./common";
 import config from "../config";
 import { commonListFilterType } from './commonList';
+import { tagArrayType } from '../models/Tag';
 
-const filterType = t.union(
-    [
-        t.partial({
-            accounts: t.array(t.string),
-            tags: t.array(t.string)
-        }),
-        commonListFilterType
-    ]);
+const filterType = commonListFilterType;
 
 export type Filter = t.TypeOf<typeof filterType>;
 
 const responseType = t.type({
     total: t.number,
-    data: transactionArrayType,
-});
+    data: tagArrayType,
+});;
 
-export function listTransaction(filter: Filter = {}, extraProps?: ExtraRequestProps) {
+export function listTag(filter: Filter = {}, extraProps?: ExtraRequestProps) {
     return request({
-        url: `${config.baseUrl}/transactions/list`,
+        url: `${config.baseUrl}/tags/list`,
         method: 'post',
         inputType: filterType,
         body: filter,

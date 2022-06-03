@@ -148,6 +148,7 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
             includes: Some(Json(vec![id])),
             accounts: None,
             with_data: true,
+            tags: None,
         },
     )
     .await?

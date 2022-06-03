@@ -6,11 +6,12 @@ mod error;
 pub mod invoice;
 pub mod login;
 pub mod report;
+pub mod tag;
 pub mod transaction;
 
-use itertools::Itertools;
 use chrono::NaiveDate;
 pub use error::Error;
+use itertools::Itertools;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
@@ -127,13 +128,13 @@ pub struct PaginatedResponse<T: serde::Serialize> {
     pub total: i64,
 }
 
-impl <T: serde::Serialize> PaginatedResponse<T> {
+impl<T: serde::Serialize> PaginatedResponse<T> {
     pub fn map<R: serde::Serialize>(self, f: impl Fn(T) -> R) -> PaginatedResponse<R> {
         let PaginatedResponse { data, total } = self;
         return PaginatedResponse {
             data: data.into_iter().map(f).collect_vec(),
             total,
-        }
+        };
     }
 }
 

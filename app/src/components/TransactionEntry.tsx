@@ -21,6 +21,7 @@ import { formatAsCurrency, numericRegExp } from "../utils/numeric";
 import useFormField, { checkFormValidity } from "../hooks/useFormField";
 import ValueFormControl from "./ValueFormControl";
 import { AttachmentSummary } from "../api/listAttachment";
+import TagSelect from "./TagSelect";
 
 type Props = {
     editing?: Transaction,
@@ -39,6 +40,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
     });
     const [date, setDate, dateError, validateDate] = useFormField((editing?.transDate ?? LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE), { required: true });
     const [attachments, setAttachments] = useState<AttachmentSummary['id'][]>(editing?.attachments ?? []);
+    const [tags, setTags] = useState<Transaction['tags']>(editing?.tags ?? []);
 
     const descRef = useRef<any>(null);
     const amountRef = useRef<any>(null);
@@ -79,6 +81,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
         setToAccount(isLeft(v) ? (v.left ?? '') : v.right.name);
     }, [setToAccount]);
 
+
     const [isSaving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | undefined>();
 
@@ -112,6 +115,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
             description: desc as NonEmptyString,
             updatedDate: ZonedDateTime.now(),
             attachments: attachments as NonEmptyString[],
+            tags,
         }, authProps).subscribe(
             () => {
                 setSaving(false);
@@ -128,6 +132,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
                     setTimeout(() =>
                         _.get(descRef.current?.getElementsByTagName('input'), 0)?.focus(),
                         100);
+                    setTags([]);
                 }
             },
             (e: Error) => {
@@ -217,6 +222,17 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
                                 isInvalid={!!dateError}
                                 type='date' />
                             <Form.Text>{dateError}</Form.Text>
+                        </Form.Group>
+                    </Row>
+
+                    <Row>
+                        <Form.Group as={Col}>
+                            <Form.Label>Tags</Form.Label>
+                            <TagSelect
+                                id='tx-tag-entry'
+                                onChanged={setTags}
+                                tags={tags} />
+
                         </Form.Group>
                     </Row>
 

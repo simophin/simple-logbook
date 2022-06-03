@@ -77,19 +77,19 @@ export function SeriesEdit({ value, onChange, addSeries, removable, removeSeries
                     onChange({ ...value, name: e.target.value as NonEmptyString })} />
             <Dropdown.Header>Show as</Dropdown.Header>
             <DropdownItem active={value.type === 'Income'}
-                onSelect={() => onChange({ ...value, type: 'Income' })}>
+                onClick={() => onChange({ ...value, type: 'Income' })}>
                 Income
             </DropdownItem>
             <DropdownItem active={value.type === 'Expense'}
-                onSelect={() => onChange({ ...value, type: 'Expense' })}>
+                onClick={() => onChange({ ...value, type: 'Expense' })}>
                 Expense
             </DropdownItem>
 
             <Dropdown.Divider />
 
-            <DropdownItem onSelect={addSeries}>Add a series</DropdownItem>
+            <DropdownItem onClick={addSeries}>Add a series</DropdownItem>
             {removable &&
-                <DropdownItem onSelect={() => removeSeries(value.id)}>Remove this series</DropdownItem>}
+                <DropdownItem onClick={() => removeSeries(value.id)}>Remove this series</DropdownItem>}
 
             <Dropdown.Divider />
             <Dropdown.Header>Color</Dropdown.Header>

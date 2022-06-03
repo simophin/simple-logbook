@@ -7,12 +7,15 @@ import { useMediaPredicate } from "react-media-hook";
 import { useDebounce } from "../hooks/useDebounce";
 import { useEffect, useState } from "react";
 import { LocalDate } from "@js-joda/core";
+import TagSelect from "./TagSelect";
+import { NonEmptyString } from "io-ts-types";
 
 export type Filter = {
     accounts?: string[],
     q?: string,
     from?: LocalDate,
     to?: LocalDate,
+    tags?: string[],
 };
 
 type Props = {
@@ -26,6 +29,7 @@ export default function MultiFilter({ onChanged }: Props) {
     const [accounts, setAccounts] = useState<string[]>([]);
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
+    const [tags, setTags] = useState<NonEmptyString[]>([]);
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
 
@@ -35,8 +39,9 @@ export default function MultiFilter({ onChanged }: Props) {
             from: from.length > 0 ? LocalDate.parse(from) : undefined,
             to: to.length > 0 ? LocalDate.parse(to) : undefined,
             q: debouncedSearchTerm.length === 0 ? undefined : debouncedSearchTerm,
+            tags: tags as string[],
         });
-    }, [debouncedSearchTerm, accounts, from, to, onChanged]);
+    }, [debouncedSearchTerm, accounts, from, to, tags, onChanged]);
 
     return <div style={flexContainer}>
         <span style={bigScreen ? { ...flexItem, flex: 2 } : flexFullLineItem}>
@@ -80,6 +85,13 @@ export default function MultiFilter({ onChanged }: Props) {
                     type='date' />
             </InputGroup>
 
+        </div>
+
+        <div style={{ ...flexFullLineItem }}>
+            <InputGroup size='sm' as='span'>
+                <InputGroup.Text>Tags</InputGroup.Text>
+                <TagSelect tags={tags} onChanged={setTags} allowNew={false} />
+            </InputGroup>
         </div>
     </div>
 }

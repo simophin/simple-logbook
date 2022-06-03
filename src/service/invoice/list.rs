@@ -1,3 +1,6 @@
+use derive_more::Deref;
+use serde::Deserialize;
+
 use crate::service::{CommonListRequest, Sort, SortOrder, WithOrder};
 use crate::sqlx_ext::Json;
 
@@ -7,9 +10,10 @@ const fn default_include_deleted() -> bool {
     return false;
 }
 
-#[derive(serde::Deserialize, Default)]
+#[derive(Deserialize, Default, Deref)]
 pub struct Input {
     #[serde(flatten)]
+    #[deref]
     req: CommonListRequest,
     includes: Option<Json<Vec<String>>>,
     #[serde(default = "default_include_deleted")]
@@ -42,8 +46,6 @@ impl WithOrder for Input {
         }
     }
 }
-
-crate::impl_deref!(Input, req, CommonListRequest);
 
 //language=sql
 const SQL: &str = r#"
