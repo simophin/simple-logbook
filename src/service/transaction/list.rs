@@ -50,7 +50,9 @@ where (?4 is null or trim(t.fromAccount) in (select value from json_each(?4)) or
   and (?1 is null or ?1 = '' or t.description like '%' || ?1 || '%')
   and (?2 is null or ?2 = '' or t.transDate >= ?2)
   and (?3 is null or ?3 = '' or t.transDate <= ?3)
-  and (?5 is null or t.id in (select transactionId from transaction_tags where tag = ?5 collate nocase))
+  and (?5 is null or ?5 = '[]' or
+     t.id in (select transactionId from transaction_tags where tag in (select value from json_each(?5)) collate nocase)
+    )
 "#;
 
 //language=sql
@@ -63,7 +65,9 @@ where (?4 is null or trim(t.fromAccount) in (select value from json_each(?4)) or
   and (?1 is null or ?1 = '' or t.description like '%' || ?1 || '%' collate nocase)
   and (?2 is null or ?2 = '' or t.transDate >= ?2)
   and (?3 is null or ?3 = '' or t.transDate <= ?3)
-  and (?5 is null or t.id in (select transactionId from transaction_tags where tag = ?5 collate nocase))
+  and (?5 is null or ?5 = '[]' or
+     t.id in (select transactionId from transaction_tags where tag in (select value from json_each(?5)) collate nocase)
+    )
 "#;
 
 crate::list_sql_paginated_impl!(
@@ -78,5 +82,5 @@ crate::list_sql_paginated_impl!(
     from,
     to,
     accounts,
-    tag
+    tags
 );

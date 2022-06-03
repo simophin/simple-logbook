@@ -21,13 +21,7 @@ import { formatAsCurrency, numericRegExp } from "../utils/numeric";
 import useFormField, { checkFormValidity } from "../hooks/useFormField";
 import ValueFormControl from "./ValueFormControl";
 import { AttachmentSummary } from "../api/listAttachment";
-import { AsyncTypeahead, Typeahead } from "react-bootstrap-typeahead";
-import { getLoadedValue, useObservable } from "../hooks/useObservable";
-import useObservableErrorReport from "../hooks/useObservableErrorReport";
-import { listTag } from "../api/listTag";
-import { string } from "fp-ts";
-import { Option } from "react-bootstrap-typeahead/types/types";
-import { Tag } from "../models/Tag";
+import TagSelect from "./TagSelect";
 
 type Props = {
     editing?: Transaction,
@@ -87,12 +81,6 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
         setToAccount(isLeft(v) ? (v.left ?? '') : v.right.name);
     }, [setToAccount]);
 
-    const [tagSearchQuery, setTagSearchQuery] = useState('');
-    const tagSearchResult = useObservable(() => {
-        return listTag({ q: tagSearchQuery.trim().length > 0 ? tagSearchQuery.trim() : undefined })
-            .pipe(map(({ data }) => data));
-    }, [authProps, tagSearchQuery]);
-    useObservableErrorReport(tagSearchResult);
 
     const [isSaving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | undefined>();
@@ -240,17 +228,11 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
                     <Row>
                         <Form.Group as={Col}>
                             <Form.Label>Tags</Form.Label>
-                            <AsyncTypeahead
+                            <TagSelect
                                 id='tx-tag-entry'
-                                isLoading={tagSearchResult.type === 'loading'}
-                                options={getLoadedValue(tagSearchResult)?.map(({ tag }) => tag)?.concat(tags) ?? []}
-                                onSearch={setTagSearchQuery}
-                                multiple
-                                allowNew
-                                selected={tags}
-                                onChange={(options) => setTags(options.map(o => (o as unknown as any).label))}
-                                size='sm'
-                            />
+                                onChanged={setTags}
+                                tags={tags} />
+
                         </Form.Group>
                     </Row>
 
