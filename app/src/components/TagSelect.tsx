@@ -1,4 +1,3 @@
-import { boolean } from "fp-ts";
 import { NonEmptyString } from "io-ts-types";
 import { useState } from "react";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";

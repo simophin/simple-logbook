@@ -40,6 +40,7 @@ async fn attachment_rw_works() {
             includes: Some(Json(vec![id.clone()])),
             accounts: None,
             req: Default::default(),
+            tags: None,
         },
     )
     .await
@@ -110,6 +111,7 @@ async fn list_by_account_works() {
             includes: None,
             accounts: Some(Json(vec!["account 1".to_string()])),
             with_data: false,
+            tags: None,
         },
     )
     .await
@@ -131,6 +133,7 @@ async fn list_by_account_works() {
             includes: None,
             accounts: Some(Json(vec!["account 2 ".to_string()])),
             with_data: false,
+            tags: None,
         },
     )
     .await
