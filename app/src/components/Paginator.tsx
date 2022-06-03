@@ -18,19 +18,19 @@ export default function Paginator({ onChange, totalItemCount }: Props) {
     }, [pageSize, currentPage, onChange]);
 
     const options = useMemo(() => pageSizeOptions.map(opt => {
-        return <option value={opt.toString()}>{opt}pp</option>
+        return <option value={opt.toString()} key={opt.toString()}>{opt}pp</option>
     }), []);
-    
-    return <div style={{...flexFullLineItem, ...flexContainer}}>
+
+    return <div style={{ ...flexFullLineItem, ...flexContainer }}>
         {totalItemCount > pageSize && <span style={flexItem}>
             <Pagination
-            itemClass="page-item"
-            linkClass="page-link"
-            activePage={currentPage + 1}
-            itemsCountPerPage={pageSize}
-            totalItemsCount={totalItemCount}
-            pageRangeDisplayed={5}
-            onChange={(v) => setCurrentPage(v - 1)}/>
+                itemClass="page-item"
+                linkClass="page-link"
+                activePage={currentPage + 1}
+                itemsCountPerPage={pageSize}
+                totalItemsCount={totalItemCount}
+                pageRangeDisplayed={5}
+                onChange={(v) => setCurrentPage(v - 1)} />
         </span>}
 
         <span style={flexItem}>

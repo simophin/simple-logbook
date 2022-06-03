@@ -29,7 +29,7 @@ impl WithOrder for Input {
 
     fn map_to_db(input: &str) -> Option<&'static str> {
         match input {
-            "name" => Some("name"),
+            "tag" => Some("tag"),
             "numTx" => Some("numTx"),
             _ => None,
         }
@@ -40,16 +40,15 @@ impl WithOrder for Input {
 #[sqlx(rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct Tag {
-    name: String,
+    tag: String,
     num_tx: i64,
 }
 
 //language=sql
 const COUNT_SQL: &str = r#"
-select count(tag)
+select count(distinct tag)
 from transaction_tags
 where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate nocase)
-group by tag
 "#;
 
 //language=sql

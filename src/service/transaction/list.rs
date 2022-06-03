@@ -12,7 +12,7 @@ pub struct Input {
     pub req: CommonListRequest,
 
     pub accounts: Option<Json<Vec<String>>>,
-    pub tag: Option<String>,
+    pub tags: Option<Json<Vec<String>>>,
 }
 
 const DEFAULT_SORTS: &[Sort] = &[

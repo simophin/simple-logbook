@@ -1,7 +1,7 @@
 import { convert, ZoneId } from '@js-joda/core';
 import { FoldUpIcon, PencilIcon, TrashIcon } from "@primer/octicons-react";
 import { Fragment, useCallback, useContext, useMemo, useState } from "react";
-import { Button, Table } from "react-bootstrap";
+import { Badge, Button, Table } from "react-bootstrap";
 import { Helmet } from "react-helmet";
 import { useMediaPredicate } from "react-media-hook";
 import { NEVER } from 'rxjs';
@@ -72,7 +72,10 @@ export default function TransactionListPage({ accounts: showAccounts = [] }: Pro
                     <Fragment key={`row-${r.id}`}>
                         <tr key={r.id}
                             onClick={() => toggleExpanded(r.id)}>
-                            <td>{r.description}</td>
+                            <td>
+                                {r.description}
+                                {r.tags.map((t) => <Badge bg="light">{t}</Badge>)}
+                            </td>
                             {bigScreen && <>
                                 <td>{r.fromAccount}</td>
                                 <td>{r.toAccount}</td>

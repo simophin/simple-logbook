@@ -1,5 +1,12 @@
 -- Add down migration script here
-drop trigger transactions_view_insert;
+drop view if exists transactions_view;
+
+create view transactions_view as
+select t.*,
+       (select json_group_array(ta.attachmentId)
+        from transaction_attachments ta
+        where ta.transactionId = t.id) as attachments
+from transactions t;
 
 create trigger transactions_view_insert
     instead of insert
@@ -18,3 +25,5 @@ begin
     from attachments a
              inner join json_each(NEW.attachments) j on j.value = a.id;
 end;
+
+drop table transaction_tags;

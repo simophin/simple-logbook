@@ -8,8 +8,17 @@ create table transaction_tags (
 create index transaction_tag_tid on transaction_tags(transactionId);
 create index transaction_tag_tag on transaction_tags(tag);
 
--- Update trigger to add transaction tag
-drop trigger transactions_view_insert;
+drop view transactions_view;
+
+create view transactions_view as
+select t.*,
+       (select json_group_array(ta.attachmentId)
+        from transaction_attachments ta
+        where ta.transactionId = t.id) as attachments,
+       (select json_group_array(tt.tag)
+        from transaction_tags tt
+        where tt.transactionId = t.id) as tags
+from transactions t;
 
 create trigger transactions_view_insert
     instead of insert
@@ -17,7 +26,7 @@ create trigger transactions_view_insert
 begin
     insert or
     replace
-    into transactions(id, description, fromAccount, toAccount, amount, transDate, updatedDate, tags)
+    into transactions(id, description, fromAccount, toAccount, amount, transDate, updatedDate)
     values (NEW.id, trim(NEW.description), trim(NEW.fromAccount), trim(NEW.toAccount), NEW.amount, NEW.transDate,
             NEW.updatedDate);
 
