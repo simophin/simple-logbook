@@ -90,7 +90,7 @@ export default function MultiFilter({ onChanged }: Props) {
         <div style={{ ...flexFullLineItem }}>
             <InputGroup size='sm' as='span'>
                 <InputGroup.Text>Tags</InputGroup.Text>
-                <TagSelect tags={tags} onChanged={setTags} />
+                <TagSelect tags={tags} onChanged={setTags} allowNew={false} />
             </InputGroup>
         </div>
     </div>

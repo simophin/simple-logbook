@@ -1,3 +1,4 @@
+import { boolean } from "fp-ts";
 import { NonEmptyString } from "io-ts-types";
 import { useState } from "react";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
@@ -11,9 +12,10 @@ type Props = {
     id?: string;
     tags: NonEmptyString[];
     onChanged: (tags: NonEmptyString[]) => unknown;
+    allowNew?: boolean;
 }
 
-export default function TagSelect({ id, tags, onChanged }: Props) {
+export default function TagSelect({ id, tags, onChanged, allowNew }: Props) {
     const authProps = useAuthProps();
     const [tagSearchQuery, setTagSearchQuery] = useState('');
     const tagSearchResult = useObservable(() => {
@@ -29,7 +31,7 @@ export default function TagSelect({ id, tags, onChanged }: Props) {
         options={options}
         onSearch={setTagSearchQuery}
         multiple
-        allowNew
+        allowNew={allowNew}
         selected={tags}
         onChange={(options) => {
             onChanged(options.map(o => {
