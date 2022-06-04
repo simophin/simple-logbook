@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use derive_more::Deref;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -14,7 +15,7 @@ pub struct Input {
 }
 
 const DEFAULT_SORTS: &[Sort] = &[
-    Sort::new("name", SortOrder::ASC),
+    Sort::new("tag", SortOrder::ASC),
     Sort::new("numTx", SortOrder::DESC),
 ];
 
@@ -32,6 +33,7 @@ impl WithOrder for Input {
             "tag" => Some("tag"),
             "numTx" => Some("numTx"),
             "total" => Some("total"),
+            "lastUpdated" => Some("lastUpdated"),
             _ => None,
         }
     }
@@ -44,6 +46,7 @@ pub struct Tag {
     tag: String,
     num_tx: i64,
     total: i64,
+    last_updated: DateTime<Utc>,
 }
 
 //language=sql
@@ -55,7 +58,7 @@ where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate no
 
 //language=sql
 const SQL: &str = r#"
-select tag, count(transactionId) as numTx, sum(amount) as total
+select tag, count(transactionId) as numTx, sum(amount) as total, max(t.updatedDate) as lastUpdated
 from transaction_tags
 inner join transactions t on t.id = transactionId
 where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate nocase)

@@ -11,6 +11,7 @@ import { getLoadedValue, useObservable } from "../hooks/useObservable";
 import useObservableErrorReport from "../hooks/useObservableErrorReport";
 import { AppStateContext } from "../state/AppStateContext";
 import { flexFullLineItem } from "../styles/common";
+import { formatAsLocaleLocalDate } from "../utils/dates";
 import { formatAsCurrency } from "../utils/numeric";
 
 
@@ -28,10 +29,11 @@ export default function TagListPage() {
     useObservableErrorReport(tags);
 
     const children = useMemo(() => {
-        return (getLoadedValue(tags)?.data ?? []).map(({ tag, numTx, total }) => <tr>
+        return (getLoadedValue(tags)?.data ?? []).map(({ tag, numTx, total, lastUpdated }) => <tr>
             <td><Link to={`/transactions?tag=${encodeURIComponent(tag)}`}>{tag}</Link></td>
             <td>{numTx}</td>
             <td>{formatAsCurrency(total)}</td>
+            <td>{formatAsLocaleLocalDate(lastUpdated)}</td>
         </tr>);
     }, [tags]);
 
@@ -61,11 +63,17 @@ export default function TagListPage() {
                                 onChanged={order => setSort(order ? { field: 'total', order } : undefined)}
                             />
                         </th>
+                        <th>
+                            <SortColumn label='Last updated'
+                                order={sort?.field === 'lastUpdated' ? sort.order : undefined}
+                                onChanged={order => setSort(order ? { field: 'lastUpdated', order } : undefined)}
+                            />
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     {tags.type === 'loading' &&
-                        <tr><td colSpan={3} align="center">Loading...</td></tr>}
+                        <tr><td colSpan={4} align="center">Loading...</td></tr>}
                     {children}
                 </tbody>
             </Table>
