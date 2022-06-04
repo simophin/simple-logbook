@@ -75,7 +75,9 @@ export default function TransactionListPage({ accounts: initialAccounts, tags: i
                             onClick={() => toggleExpanded(r.id)}>
                             <td>
                                 {r.description}&nbsp;
-                                {r.tags.map((t) => <Badge bg="primary">{t}</Badge>)}
+                                {r.tags.map((t) =>
+                                    <Badge bg="primary" key={`badge-${t}`}>{t}</Badge>
+                                )}
                             </td>
                             {bigScreen && <>
                                 <td>{r.fromAccount}</td>

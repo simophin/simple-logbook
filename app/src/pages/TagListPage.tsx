@@ -29,7 +29,7 @@ export default function TagListPage() {
     useObservableErrorReport(tags);
 
     const children = useMemo(() => {
-        return (getLoadedValue(tags)?.data ?? []).map(({ tag, numTx, total, lastUpdated }) => <tr>
+        return (getLoadedValue(tags)?.data ?? []).map(({ tag, numTx, total, lastUpdated }) => <tr key={`tag-${tag}`}>
             <td><Link to={`/transactions?tag=${encodeURIComponent(tag)}`}>{tag}</Link></td>
             <td>{numTx}</td>
             <td>{formatAsCurrency(total)}</td>
