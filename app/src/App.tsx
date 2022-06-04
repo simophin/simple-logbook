@@ -18,6 +18,7 @@ import TransactionNavDropdown from "./components/TransactionNavDropdown";
 import SettingDropdown from "./components/SettingDropdown";
 import { usePersistedState } from "./hooks/usePersistedState";
 import AttachmentListPage from "./pages/AttachmentListPage";
+import TagListPage from "./pages/TagListPage";
 
 
 function App() {
@@ -86,16 +87,26 @@ function App() {
                 {(props) => {
                     const query = qs.parse(props.location.search.substr(1), { parseArrays: true });
                     let accounts: string[] | undefined;
+                    let tags: string[] | undefined;
                     if (typeof query.account === 'string') {
                         accounts = [query.account];
                     } else if (_.isArray(query.accounts)) {
                         accounts = query.accounts as string[];
                     }
+
+                    if (typeof query.tag === 'string') {
+                        tags = [query.tag];
+                    } else if (_.isArray(query.tags)) {
+                        tags = query.tags as string[];
+                    }
+
                     return <TransactionListPage
+                        tags={tags}
                         accounts={accounts} />;
                 }}
 
             </Route>
+            <Route path="/tags"><TagListPage /></Route>
             <Route path="/"><TransactionListPage /></Route>
         </Switch>
 

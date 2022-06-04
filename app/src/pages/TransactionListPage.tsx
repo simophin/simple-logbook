@@ -28,14 +28,15 @@ type TransactionId = Transaction['id'];
 
 type Props = {
     accounts?: string[],
+    tags?: string[],
 };
 
-export default function TransactionListPage({ accounts: showAccounts = [] }: Props) {
+export default function TransactionListPage({ accounts: initialAccounts, tags: initialTags }: Props) {
     const [page, setPage] = useState<number>();
     const [pageSize, setPageSize] = useState<number>();
     const [sort, setSort] = useState<Sort>();
     const bigScreen = useMediaPredicate('(min-width: 800px)');
-    const [filter, setFilter] = useState<Filter>();
+    const [filter, setFilter] = useState<Filter>({ accounts: initialAccounts, tags: initialTags });
 
     const { transactionUpdatedTime, reportTransactionUpdated } = useContext(AppStateContext);
     const authProps = useAuthProps();
@@ -73,8 +74,8 @@ export default function TransactionListPage({ accounts: showAccounts = [] }: Pro
                         <tr key={r.id}
                             onClick={() => toggleExpanded(r.id)}>
                             <td>
-                                {r.description}
-                                {r.tags.map((t) => <Badge bg="light">{t}</Badge>)}
+                                {r.description}&nbsp;
+                                {r.tags.map((t) => <Badge bg="primary">{t}</Badge>)}
                             </td>
                             {bigScreen && <>
                                 <td>{r.fromAccount}</td>
@@ -132,7 +133,8 @@ export default function TransactionListPage({ accounts: showAccounts = [] }: Pro
         <Helmet><title>Transactions</title></Helmet>
 
         <div style={flexFullLineItem}>
-            <MultiFilter onChanged={setFilter} />
+            <MultiFilter onChanged={setFilter}
+                initialFilter={filter} />
         </div>
 
         {children.length > 0 && <div style={flexFullLineItem}>

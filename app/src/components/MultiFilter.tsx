@@ -19,17 +19,18 @@ export type Filter = {
 };
 
 type Props = {
+    initialFilter?: Filter,
     onChanged: (filter: Filter) => unknown,
 }
 
-export default function MultiFilter({ onChanged }: Props) {
+export default function MultiFilter({ onChanged, initialFilter }: Props) {
     const bigScreen = useMediaPredicate('(min-width: 800px)');
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [accounts, setAccounts] = useState<string[]>([]);
-    const [from, setFrom] = useState('');
-    const [to, setTo] = useState('');
-    const [tags, setTags] = useState<NonEmptyString[]>([]);
+    const [searchTerm, setSearchTerm] = useState(initialFilter?.q ?? '');
+    const [accounts, setAccounts] = useState<string[]>(initialFilter?.accounts ?? []);
+    const [from, setFrom] = useState(initialFilter?.from?.toString() ?? '');
+    const [to, setTo] = useState(initialFilter?.to?.toString() ?? '');
+    const [tags, setTags] = useState<NonEmptyString[]>((initialFilter?.tags ?? []) as NonEmptyString[]);
 
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
 

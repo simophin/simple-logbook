@@ -1,9 +1,11 @@
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
+import { currencyType } from '../api/codecs';
 
 export const tagType = t.type({
     tag: codec.NonEmptyString,
-    numTx: t.number
+    numTx: t.number,
+    total: currencyType,
 });
 
 export const tagArrayType = t.array(tagType);

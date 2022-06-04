@@ -31,6 +31,7 @@ impl WithOrder for Input {
         match input {
             "tag" => Some("tag"),
             "numTx" => Some("numTx"),
+            "total" => Some("total"),
             _ => None,
         }
     }
@@ -42,6 +43,7 @@ impl WithOrder for Input {
 pub struct Tag {
     tag: String,
     num_tx: i64,
+    total: i64,
 }
 
 //language=sql
@@ -53,8 +55,9 @@ where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate no
 
 //language=sql
 const SQL: &str = r#"
-select tag, count(transactionId) as numTx
+select tag, count(transactionId) as numTx, sum(amount) as total
 from transaction_tags
+inner join transactions t on t.id = transactionId
 where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate nocase)
 group by tag
 "#;
