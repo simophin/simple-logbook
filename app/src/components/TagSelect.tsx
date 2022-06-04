@@ -18,7 +18,7 @@ export default function TagSelect({ id, tags, onChanged, allowNew }: Props) {
     const authProps = useAuthProps();
     const [tagSearchQuery, setTagSearchQuery] = useState('');
     const tagSearchResult = useObservable(() => {
-        return listTag({ q: tagSearchQuery.trim().length > 0 ? tagSearchQuery.trim() : undefined })
+        return listTag({ q: tagSearchQuery.trim().length > 0 ? tagSearchQuery.trim() : undefined }, authProps)
             .pipe(map(({ data }) => data));
     }, [authProps, tagSearchQuery]);
     useObservableErrorReport(tagSearchResult);
