@@ -230,6 +230,7 @@ export default function TransactionEntry({ editing, onFinish, onClose }: Props) 
                             <Form.Label>Tags</Form.Label>
                             <TagSelect
                                 id='tx-tag-entry'
+                                allowNew
                                 onChanged={setTags}
                                 tags={tags} />
 
