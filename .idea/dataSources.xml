@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="test_db.sqlitedb" uuid="5a38d7c6-5571-4e94-aab4-dcedf07eb2ac">
+    <data-source source="LOCAL" name="logbook.sqlitedb" uuid="5a38d7c6-5571-4e94-aab4-dcedf07eb2ac">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$USER_HOME$/Documents/test_db.sqlitedb</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$USER_HOME$/Downloads/logbook.sqlitedb</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
       <driver-properties>
         <property name="journal_mode" value="DELETE" />

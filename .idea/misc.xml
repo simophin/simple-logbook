@@ -3,4 +3,27 @@
   <component name="ProjectRootManager">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
+  <component name="SwUserDefinedSpecifications">
+    <option name="specTypeByUrl">
+      <map />
+    </option>
+  </component>
+  <component name="UnattendedHostPersistenceState">
+    <option name="openedFilesInfos">
+      <list>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="1159" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/migrations/20220604223401_dynamic-chart.up.sql" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="0" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/service/report/mod.rs" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="337" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/service/report/sum.rs" />
+        </OpenedFileInfo>
+      </list>
+    </option>
+  </component>
 </project>
