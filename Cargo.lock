@@ -454,9 +454,9 @@ checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
 
 [[package]]
 name = "bytes"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
+checksum = "f0b3de4a0c5e67e16066a0715723abd91edc2f9001d09c46e1dca929351e130e"
 
 [[package]]
 name = "cache-padded"
@@ -1209,7 +1209,7 @@ version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff8670570af52249509a86f5e3e18a08c60b177071826898fde8997cf5f6bfbb"
 dependencies = [
- "bytes 1.1.0",
+ "bytes 1.2.0",
  "fnv",
  "itoa",
 ]
@@ -1545,7 +1545,7 @@ version = "2.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a30ba6d97eb198c5e8a35d67d5779d6680cca35652a60ee90fc23dc431d4fde8"
 dependencies = [
- "bytes 1.1.0",
+ "bytes 1.2.0",
  "encoding_rs",
  "futures-util",
  "http",
@@ -2279,7 +2279,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "bytes 1.1.0",
+ "bytes 1.2.0",
  "chrono",
  "derive_more",
  "dotenv",
@@ -2405,7 +2405,7 @@ dependencies = [
  "atoi",
  "bitflags",
  "byteorder",
- "bytes 1.1.0",
+ "bytes 1.2.0",
  "chrono",
  "crc",
  "crossbeam-queue",
