@@ -1,7 +1,7 @@
-import {act, render, screen} from "@testing-library/react";
-import {AppStateContext} from "../state/AppStateContext";
+import { act, render, screen } from "@testing-library/react";
+import { AppStateContext } from "../state/AppStateContext";
 import TransactionNavDropdown from "./TransactionNavDropdown";
-import {BrowserRouter} from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 
 describe('<TransactionNavDropDown />', function () {
     it('should have add transaction', async function () {
@@ -11,15 +11,15 @@ describe('<TransactionNavDropDown />', function () {
                 <AppStateContext.Provider value={{
                     reportTransactionUpdated,
                 } as unknown as any}>
-                    <TransactionNavDropdown/>
+                    <TransactionNavDropdown />
                 </AppStateContext.Provider>
             </BrowserRouter>
         );
         act(() => screen.getByText('Transaction').click());
 
         expect(screen.queryByText('New transaction')).toBeTruthy();
-        expect(screen.queryByText('Transaction list')).toBeTruthy();
-        expect(screen.queryByText('Account list')).toBeTruthy();
+        expect(screen.queryByText('Transactions')).toBeTruthy();
+        expect(screen.queryByText('Accounts')).toBeTruthy();
 
         act(() => screen.getByText('New transaction').click());
 
