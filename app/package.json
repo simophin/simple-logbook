@@ -25,7 +25,7 @@
     "@types/react-window": "^1.8.2",
     "@types/uuid": "^8.3.0",
     "axios": "^0.21.1",
-    "axios-mock-adapter": "^1.19.0",
+    "axios-mock-adapter": "^1.21.1",
     "bootstrap": "5.2.0",
     "currency.js": "^2.0.3",
     "fp-ts": "^2.10.3",
