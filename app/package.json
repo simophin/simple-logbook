@@ -5,7 +5,7 @@
   "homepage": "public",
   "dependencies": {
     "@js-joda/core": "^3.2.0",
-    "@primer/octicons-react": "^17.3.0",
+    "@primer/octicons-react": "^17.4.0",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^12.1.5",
     "@testing-library/user-event": "^13.1.9",
