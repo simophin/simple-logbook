@@ -1733,14 +1733,7 @@
     core-js-pure "^3.20.2"
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.10.2", "@babel/runtime@^7.12.1", "@babel/runtime@^7.12.13", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.16", "@babel/runtime@^7.13.8", "@babel/runtime@^7.14.6", "@babel/runtime@^7.16.3", "@babel/runtime@^7.17.2", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.2", "@babel/runtime@^7.6.3", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
-  version "7.17.9"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.17.9.tgz#d19fbf802d01a8cb6cf053a64e472d42c434ba72"
-  integrity sha512-lSiBBvodq29uShpWGNbgFdKYNiFDo5/HIYsaCEY9ff4sb10x9jizo2+pRrSyF4jKZCXqgzuqBOQKbUm90gQwJg==
-  dependencies:
-    regenerator-runtime "^0.13.4"
-
-"@babel/runtime@^7.11.2", "@babel/runtime@^7.18.9":
+"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.10.2", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.1", "@babel/runtime@^7.12.13", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.16", "@babel/runtime@^7.13.8", "@babel/runtime@^7.14.6", "@babel/runtime@^7.16.3", "@babel/runtime@^7.17.2", "@babel/runtime@^7.18.9", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.2", "@babel/runtime@^7.6.3", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
   version "7.18.9"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.9.tgz#b4fcfce55db3d2e5e080d2490f608a3b9f407f4a"
   integrity sha512-lkqXDcvlFT5rvEjiu6+QYO+1GXrEHRo2LOtS7E4GtX5ESIZOgepqsZBVIj6Pv+a6zqsya9VCgiK1KAK4BvJDAw==
@@ -8490,10 +8483,10 @@ react-autosuggest@^10.1.0:
     section-iterator "^2.0.0"
     shallow-equal "^1.2.1"
 
-react-bootstrap-typeahead@^6.0.0-alpha.12:
-  version "6.0.0-alpha.12"
-  resolved "https://registry.yarnpkg.com/react-bootstrap-typeahead/-/react-bootstrap-typeahead-6.0.0-alpha.12.tgz#645349a82f55b1a2f718ee9a88eeb2a136cbedc7"
-  integrity sha512-8ad+tIqlJaSCChj2ZhQxMerPNqT7M/wI7w/OcPLyuBNAyYSxzcH9CaAZkFM1gzvsKhwc8txQh0g85sFusNe9sg==
+react-bootstrap-typeahead@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/react-bootstrap-typeahead/-/react-bootstrap-typeahead-6.0.0.tgz#3b5601d30a4db2adcd3cf815fc36a0a176053f7d"
+  integrity sha512-0eTYwG8sYoY/jGO5Qxx1QMQyiVJlrSgo6xO77xxF93PqVLERgZEdbNMk+y/UX7/HTPcWN4tcCUqAEwVe1DVxog==
   dependencies:
     "@babel/runtime" "^7.14.6"
     "@popperjs/core" "^2.10.2"
@@ -8503,7 +8496,7 @@ react-bootstrap-typeahead@^6.0.0-alpha.12:
     invariant "^2.2.1"
     lodash.debounce "^4.0.8"
     prop-types "^15.5.8"
-    react-overlays "^5.1.0"
+    react-overlays "^5.2.0"
     react-popper "^2.2.5"
     scroll-into-view-if-needed "^2.2.20"
     warning "^4.0.1"
@@ -8642,10 +8635,10 @@ react-media-hook@^0.4.9:
   resolved "https://registry.yarnpkg.com/react-media-hook/-/react-media-hook-0.4.9.tgz#7e57092f5800c53787dc9e912ad09e749dfb7bc7"
   integrity sha512-FZr/2xA1+23vDJ1IZ794yLqMRRkBoCNOiJATdtTfB5GyVc5djf8FL2qEB/68pSkiNgHdHsmKknMSDr0sC4zBKQ==
 
-react-overlays@^5.1.0:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/react-overlays/-/react-overlays-5.1.2.tgz#dbbe8ac8c63133a36e057c317135eadeee9b783e"
-  integrity sha512-kLCq0ngBtuVnp0eMx8gISD9FaCkifUZoOdHReTJGfnDikvvOjZpi/OduTgXEf6rGYm24WJbHFJFDaKD+ylQ03g==
+react-overlays@^5.2.0:
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/react-overlays/-/react-overlays-5.2.0.tgz#e7ebfdfdfbebd9d23cafd0bc2cac1d08abf1535b"
+  integrity sha512-dKZR/w6qeAsW0z0aIlwq/5H/M6o5T4RSlPnqIKqYVJ++rjoPSFcVggPhDWno8awZQsuMMtkjuksTbE8vOY0s9g==
   dependencies:
     "@babel/runtime" "^7.13.8"
     "@popperjs/core" "^2.8.6"
