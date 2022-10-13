@@ -13,6 +13,7 @@ pub struct Input {
 
     pub accounts: Option<Json<Vec<String>>>,
     pub tags: Option<Json<Vec<String>>>,
+    pub account_groups: Option<Json<Vec<String>>>,
 }
 
 const DEFAULT_SORTS: &[Sort] = &[
@@ -46,13 +47,24 @@ const SQL: &str = r#"
 select t.*, (select json_group_array(attachmentId) from transaction_attachments where transactionId = t.id) as attachments,
     (select json_group_array(tag) from transaction_tags where transactionId = t.id) as tags
 from transactions as t
-where (?4 is null or trim(t.fromAccount) in (select value from json_each(?4)) or
-       trim(t.toAccount) in (select value from json_each(?4)))
+where (
+    (select count(*) == 0 from json_each(?4))
+    or trim(t.fromAccount) in (select value from json_each(?4)) collate nocase
+    or trim(t.toAccount) in (select value from json_each(?4)) collate nocase
+    or (select count(*) > 0 from json_each(?6))
+    and trim(t.fromAccount) 
+        in (select ag.accountName from json_each(?6) g inner join account_groups ag on ag.groupName = g.value)
+        collate nocase
+    or trim(t.toAccount) 
+        in (select ag.accountName from json_each(?6) g inner join account_groups ag on ag.groupName = g.value)
+        collate nocase
+  )
   and (?1 is null or ?1 = '' or t.description like '%' || ?1 || '%' collate nocase)
   and (?2 is null or ?2 = '' or t.transDate >= ?2)
   and (?3 is null or ?3 = '' or t.transDate <= ?3)
-  and (?5 is null or ?5 = '[]' or
-     t.id in (select transactionId from transaction_tags where tag in (select value from json_each(?5)) collate nocase)
+  and (
+    (select count(*) == 0 from json_each(?5))
+    or t.id in (select transactionId from transaction_tags where tag in (select value from json_each(?5)) collate nocase)
     )
 "#;
 
@@ -67,5 +79,6 @@ crate::list_sql_paginated_impl!(
     from,
     to,
     accounts,
-    tags
+    tags,
+    account_groups
 );
