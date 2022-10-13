@@ -62,27 +62,11 @@ where (
     (?5 or deleted = false)
 "#;
 
-//language=sql
-const COUNT_SQL: &str = r#"
-select count(iv.id) from invoices_view iv
-where (
-    ?1 is null or 
-    client like '%' || ?1 || '%' collate nocase or
-    clientDetails like '%' || ?1 || '%' collate nocase or
-    companyName like '%' || ?1 || '%' collate nocase or
-    notes like '%' || ?1 || '%' collate nocase) and
-    (?2 is null or date >= ?2) and
-    (?3 is null or date <= ?3) and 
-    (?4 is null or iv.id in (select value from json_each(?4))) and
-    (?5 or deleted = false)
-"#;
-
 crate::list_sql_paginated_impl!(
     Input,
     Invoice,
     query_as,
     SQL,
-    COUNT_SQL,
     offset,
     limit,
     q,

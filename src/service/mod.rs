@@ -177,7 +177,7 @@ macro_rules! list_sql_with_sort_impl {
 
 #[macro_export]
 macro_rules! list_sql_paginated_impl {
-    ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr, $count_sql:expr,
+    ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr,
     $offset:ident, $limit:ident $(,$binding:ident)*) => {
         #[allow(unused_mut, unused_variables)]
         pub async fn execute(
@@ -187,18 +187,17 @@ macro_rules! list_sql_paginated_impl {
             use crate::service::WithOrder;
             let mut sql: String = $sql.to_string();
             req.gen_order_by(&mut sql);
-            sql.push_str(" LIMIT ");
-            sql.push_str(&req.$offset.to_string());
-            sql.push_str(",");
-            sql.push_str(&req.$limit.to_string());
+            let sql = sql;
 
             let mut tx = state.conn.begin().await?;
-            let mut e = sqlx::$query_op(&sql);
+            let paginated_sql = format!("{sql} LIMIT {}, {}", &req.$offset, &req.$limit);
+            let mut e = sqlx::$query_op(&paginated_sql);
             $(
                 e = e.bind(&req.$binding);
             )*
             let data = e.fetch_all(&mut tx).await?;
-            let mut e = sqlx::query_scalar($count_sql);
+            let count_sql = format!("WITH cte AS ({sql}) SELECT COUNT(*) FROM cte");
+            let mut e = sqlx::query_scalar(&count_sql);
             $(
                 e = e.bind(&req.$binding);
             )*

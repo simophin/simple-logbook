@@ -50,13 +50,6 @@ pub struct Tag {
 }
 
 //language=sql
-const COUNT_SQL: &str = r#"
-select count(distinct tag)
-from transaction_tags
-where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate nocase)
-"#;
-
-//language=sql
 const SQL: &str = r#"
 select tag, count(transactionId) as numTx, sum(amount) as total, max(t.updatedDate) as lastUpdated
 from transaction_tags
@@ -65,4 +58,4 @@ where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate no
 group by tag
 "#;
 
-crate::list_sql_paginated_impl!(Input, Tag, query_as, SQL, COUNT_SQL, offset, limit, q);
+crate::list_sql_paginated_impl!(Input, Tag, query_as, SQL, offset, limit, q);

@@ -97,34 +97,10 @@ where
         )
 "#;
 
-    //language=sql
-    const COUNT_SQL: &str = r#"
-with account_attachments(account, attachmentId) as (
-    select a.name, ta.attachmentId from accounts a 
-    inner join account_transactions tx on tx.account = a.name
-    inner join transaction_attachments ta on ta.transactionId = tx.id
-)
-select count(id) from attachments
-where 
-      (?2 is null or name like '%' || trim(?2) || '%' collate nocase) and
-      (?3 is null or created >= ?3) and 
-      (?4 is null or created <= ?4) and
-      (?5 is null or id in (select value from json_each(?5))) and
-      (?6 is null or ?6 = '[]' or id in (select attachmentId from account_attachments where account collate nocase in (select trim(value) from json_each(?6)))) and
-      (?7 is null or ?7 = '[]' or
-        id in (
-                select ta.attachmentId from transaction_attachments ta
-                inner join transactions t on t.id = ta.transactionId
-                inner join transaction_tags tt on tt.transactionId = t.id
-                where tt.tag in (select value from json_each(?7)) collate nocase
-            )
-        )
-"#;
-
     use super::{Attachment, Input};
     crate::list_sql_paginated_impl!(
-        Input, Attachment, query_as, SQL, COUNT_SQL, offset, limit, with_data, q, from, to,
-        includes, accounts, tags
+        Input, Attachment, query_as, SQL, offset, limit, with_data, q, from, to, includes,
+        accounts, tags
     );
 }
 
