@@ -30,7 +30,7 @@ from daily_sum ds
 where 
       (?1 is null or ds.transDate >= ?1) and
       (?2 is null or ds.transDate <= ?2) and
-      ds.account in (select value from json_each(?3))
+      ds.account in (select trim(value) from json_each(?3)) collate nocase
 group by time_point
 order by time_point
 "#;
