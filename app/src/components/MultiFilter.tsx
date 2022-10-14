@@ -12,6 +12,7 @@ import { NonEmptyString } from "io-ts-types";
 
 export type Filter = {
     accounts?: string[],
+    accountGroups?: string[],
     q?: string,
     from?: LocalDate,
     to?: LocalDate,
@@ -28,6 +29,7 @@ export default function MultiFilter({ onChanged, initialFilter }: Props) {
 
     const [searchTerm, setSearchTerm] = useState(initialFilter?.q ?? '');
     const [accounts, setAccounts] = useState<string[]>(initialFilter?.accounts ?? []);
+    const [accountGroups, setAccountGroups] = useState<string[]>(initialFilter?.accountGroups ?? []);
     const [from, setFrom] = useState(initialFilter?.from?.toString() ?? '');
     const [to, setTo] = useState(initialFilter?.to?.toString() ?? '');
     const [tags, setTags] = useState<NonEmptyString[]>((initialFilter?.tags ?? []) as NonEmptyString[]);
@@ -37,12 +39,13 @@ export default function MultiFilter({ onChanged, initialFilter }: Props) {
     useEffect(() => {
         onChanged({
             accounts: accounts.length === 0 ? undefined : accounts,
+            accountGroups: accountGroups.length === 0 ? undefined : accountGroups,
             from: from.length > 0 ? LocalDate.parse(from) : undefined,
             to: to.length > 0 ? LocalDate.parse(to) : undefined,
             q: debouncedSearchTerm.length === 0 ? undefined : debouncedSearchTerm,
             tags: tags as string[],
         });
-    }, [debouncedSearchTerm, accounts, from, to, tags, onChanged]);
+    }, [debouncedSearchTerm, accounts, from, to, tags, accountGroups, onChanged]);
 
     return <div style={flexContainer}>
         <span style={bigScreen ? { ...flexItem, flex: 2 } : flexFullLineItem}>
@@ -65,7 +68,10 @@ export default function MultiFilter({ onChanged, initialFilter }: Props) {
                 <AccountSelect
                     placeholder='Accounts'
                     selected={accounts}
-                    onChange={setAccounts} />
+                    onChange={setAccounts}
+                    selectedGroups={accountGroups}
+                    onGroupsChange={setAccountGroups}
+                />
             </InputGroup>
         </span>
 

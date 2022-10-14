@@ -101,6 +101,8 @@ export function SeriesEdit({ value, onChange, addSeries, removable, removeSeries
         </DropdownButton>
         <AccountSelect
             placeholder='Select account(s)'
+            selectedGroups={[]}
+            onGroupsChange={() => { }}
             onChange={(accounts) => onChange({ ...value, accounts: accounts as NonEmptyString[] })}
             selected={value.accounts} />
         <InputGroup.Checkbox checked={value.visible}

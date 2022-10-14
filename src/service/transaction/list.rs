@@ -6,6 +6,7 @@ use crate::service::{CommonListRequest, Sort, SortOrder, WithOrder};
 use crate::sqlx_ext::Json;
 
 #[derive(Deserialize, Default, Deref)]
+#[serde(rename_all = "camelCase")]
 pub struct Input {
     #[serde(flatten)]
     #[deref]

@@ -32,6 +32,7 @@ export default function TagSelect({ id, tags, onChanged, allowNew }: Props) {
         multiple
         allowNew={allowNew}
         selected={tags}
+        minLength={0}
         onChange={(options) => {
             onChanged(options.map(o => {
                 if (typeof o === 'string') {

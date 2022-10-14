@@ -8,6 +8,7 @@ const filterType = t.union(
     [
         t.partial({
             accounts: t.array(t.string),
+            accountGroups: t.array(t.string),
             tags: t.array(t.string)
         }),
         commonListFilterType
