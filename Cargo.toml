@@ -31,3 +31,6 @@ surf = {version = "2", default-features = false, features = ["h1-client-rustls"]
 tide = "0"
 tree_magic = "0"
 uuid = {version = "1", features = ["v4"]}
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3

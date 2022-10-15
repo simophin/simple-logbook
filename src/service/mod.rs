@@ -5,6 +5,7 @@ pub mod config;
 mod error;
 pub mod invoice;
 pub mod login;
+mod query;
 pub mod report;
 pub mod tag;
 pub mod transaction;
@@ -13,7 +14,7 @@ use chrono::NaiveDate;
 pub use error::Error;
 use itertools::Itertools;
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::fmt::Display;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -45,13 +46,13 @@ impl SortOrder {
 }
 
 #[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct Sort {
-    pub field: Cow<'static, str>,
+pub struct Sort<'a> {
+    pub field: Cow<'a, str>,
     pub order: SortOrder,
 }
 
-impl Sort {
-    pub const fn new(f: &'static str, order: SortOrder) -> Self {
+impl<'a> Sort<'a> {
+    pub const fn new(f: &'a str, order: SortOrder) -> Self {
         return Sort {
             field: Cow::Borrowed(f),
             order,
@@ -70,7 +71,7 @@ pub struct CommonListRequest {
     pub q: Option<String>,
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
-    pub sorts: Option<Vec<Sort>>,
+    pub sorts: Option<Vec<Sort<'static>>>,
 }
 
 impl Default for CommonListRequest {
@@ -87,49 +88,60 @@ impl Default for CommonListRequest {
 }
 
 pub trait WithOrder {
-    fn get_sorts(&self) -> &Option<Vec<Sort>>;
-    fn get_default_sorts() -> &'static [Sort];
-    fn map_to_db(input: &str) -> Option<&'static str>;
+    fn get_sorts(&self) -> &[Sort<'_>];
+    fn get_default_sorts(&self) -> &[Sort<'_>];
+    fn map_to_db(input: &str) -> Option<&str>;
 
-    fn gen_order_by(&self, out: &mut String) {
-        let mut fields = HashSet::new();
-        let mut written_to_out = false;
-        let start_index = out.len();
-        for (field, order) in match self.get_sorts() {
-            Some(v) if !v.is_empty() => v.iter(),
-            _ => Self::get_default_sorts().iter(),
+    fn gen_sql(&self) -> OrderDisplay
+    where
+        Self: Sized,
+    {
+        OrderDisplay(match self.get_sorts() {
+            v if v.is_empty() => self.get_default_sorts(),
+            v => v,
+        })
+    }
+}
+
+pub struct OrderDisplay<'a>(&'a [Sort<'a>]);
+
+impl<'a> Display for OrderDisplay<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0.is_empty() {
+            return Ok(());
         }
-        .filter(|sort| fields.insert(sort.field.as_ref()))
-        .filter_map(
-            |Sort { field, order }| match Self::map_to_db(field.as_ref()) {
-                Some(v) => Some((v, order.to_sql())),
-                None => None,
-            },
-        ) {
-            if written_to_out {
-                out.push_str(",");
+
+        f.write_str("order by ")?;
+        let mut generated_fields = Vec::with_capacity(self.0.len());
+        for sort in self.0 {
+            match generated_fields.binary_search(&sort.field.as_ref()) {
+                Ok(_) => {
+                    log::warn!("Sort {sort:?} already generated");
+                    continue;
+                }
+                Err(index) => {
+                    generated_fields.insert(index, sort.field.as_ref());
+                }
+            };
+
+            if generated_fields.len() > 1 {
+                f.write_str(", ")?;
             }
 
-            out.push_str(field);
-            out.push_str(" ");
-            out.push_str(order);
-            written_to_out = true
+            f.write_fmt(format_args!("{} {}", sort.field, sort.order.to_sql()))?;
         }
-
-        if written_to_out {
-            out.insert_str(start_index, " ORDER BY ");
-        }
+        Ok(())
     }
 }
 
 #[derive(serde::Serialize, Debug, Clone, Eq, PartialEq)]
-pub struct PaginatedResponse<T: serde::Serialize> {
+pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub total: i64,
 }
 
-impl<T: serde::Serialize> PaginatedResponse<T> {
-    pub fn map<R: serde::Serialize>(self, f: impl Fn(T) -> R) -> PaginatedResponse<R> {
+impl<T> PaginatedResponse<T> {
+    pub fn map<R>(self, f: impl Fn(T) -> R) -> PaginatedResponse<R> {
         let PaginatedResponse { data, total } = self;
         return PaginatedResponse {
             data: data.into_iter().map(f).collect_vec(),
@@ -164,13 +176,67 @@ macro_rules! list_sql_with_sort_impl {
             req: $inputType,
         ) -> crate::service::Result<Vec<$outputType>> {
             use crate::service::WithOrder;
-            let mut sql: String = $sql.to_string();
-            req.gen_order_by(&mut sql);
+            let sql = format!("{} {}", $sql, req.gen_sql());
             let mut e = sqlx::$query_op(&sql);
             $(
                 e = e.bind(req.$binding);
             )*
             Ok(e.fetch_all(&state.conn).await?)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! sql_paginated_impl {
+    (
+        inputType = $inputType:ident,
+        outputType = $outputType:ident,
+        sql = $sql:literal,
+        bindings = [$($bvalue:ident,)*],
+        offset = $offset:ident,
+        limit = $limit:ident,
+        outputTypeListField = $outputTypeListField:ident,
+        aggregateSelect = $aggregateSelect:literal,
+    ) => {
+        #[allow(unused_mut, unused_variables)]
+        pub async fn execute(
+            state: &crate::state::AppState,
+            req: $inputType,
+        ) -> crate::service::Result<$outputType> {
+            let mut tx = state.conn.begin().await?;
+            let mut q = sqlx::query_as::<_, $outputType>(concat!(
+                "with cte as ( ",
+                $sql,
+                " ) ",
+                "select ",
+                $aggregateSelect,
+                " from cte"
+            ));
+            $(
+                q = q.bind(&req.$bvalue)
+            )*;
+
+            let mut o = q.fetch_one(&mut tx).await?;
+
+            let list_sql = format!(
+                concat!(
+                    "with cte as (",
+                    $sql,
+                    ") select * from cte {} limit {}, {}"
+                ),
+                crate::service::WithOrder::gen_sql(&req),
+                req.$offset,
+                req.$limit
+            );
+
+            let mut q = sqlx::query_as(&list_sql);
+            $(
+                q = q.bind(&req.$bvalue)
+            )*;
+
+            o.$outputTypeListField = q.fetch_all(&mut tx).await?;
+
+            Ok(o)
         }
     };
 }
@@ -185,18 +251,20 @@ macro_rules! list_sql_paginated_impl {
             req: $inputType,
         ) -> crate::service::Result<crate::service::PaginatedResponse<$outputType>> {
             use crate::service::WithOrder;
-            let mut sql: String = $sql.to_string();
-            req.gen_order_by(&mut sql);
-            let sql = sql;
 
             let mut tx = state.conn.begin().await?;
-            let paginated_sql = format!("{sql} LIMIT {}, {}", &req.$offset, &req.$limit);
-            let mut e = sqlx::$query_op(&paginated_sql);
+            let sql = format!("WITH cte as ({}) SELECT * FROM cte {} LIMIT {}, {}",
+                $sql,
+                req.gen_sql(),
+                &req.$offset,
+                &req.$limit
+            );
+            let mut e = sqlx::$query_op(&sql);
             $(
                 e = e.bind(&req.$binding);
             )*
             let data = e.fetch_all(&mut tx).await?;
-            let count_sql = format!("WITH cte AS ({sql}) SELECT COUNT(*) FROM cte");
+            let count_sql = format!("WITH cte AS ({}) SELECT COUNT(*) FROM cte", $sql);
             let mut e = sqlx::query_scalar(&count_sql);
             $(
                 e = e.bind(&req.$binding);
