@@ -79,22 +79,36 @@ with account_attachments(account, attachmentId) as (
     inner join account_transactions tx on tx.account = a.name
     inner join transaction_attachments ta on ta.transactionId = tx.id
 )
-select id, mimeType, name, created, lastUpdated,
-       iif(?1, dataHash, null) as dataHash, iif(?1, data, null) as data from attachments
+select id, 
+    mimeType, 
+    name, 
+    created, 
+    lastUpdated,
+    iif(?1, dataHash, null) as dataHash, 
+    iif(?1, data, null) as data from attachments
 where 
-      (?2 is null or name like '%' || trim(?2) || '%' collate nocase) and
-      (?3 is null or created >= ?3) and 
-      (?4 is null or created <= ?4) and
-      (?5 is null or id in (select value from json_each(?5))) and
-      (?6 is null or ?6 = '[]' or id in (select attachmentId from account_attachments where account collate nocase in (select trim(value) from json_each(?6)))) and
-      (?7 is null or ?7 = '[]' or
-        id in (
-                select ta.attachmentId from transaction_attachments ta
-                inner join transactions t on t.id = ta.transactionId
-                inner join transaction_tags tt on tt.transactionId = t.id
-                where tt.tag in (select value from json_each(?7)) collate nocase
-            )
+    (?2 is null or name like '%' || trim(?2) || '%' collate nocase)
+    and (?3 is null or created >= ?3)
+    and (?4 is null or created <= ?4)
+    and (?5 is null or id in (select trim(value) from json_each(?5)))
+    and (
+        ?6 is null 
+        or json_array_length(?6) == 0
+        or id in (
+            select attachmentId from account_attachments where account in 
+                (select trim(value) from json_each(?6))) collate nocase 
+    )
+    )
+    and (
+        ?7 is null 
+        or json_array_length(?7) == 0 
+        or id in (
+            select ta.attachmentId from transaction_attachments ta
+            inner join transactions t on t.id = ta.transactionId
+            inner join transaction_tags tt on tt.transactionId = t.id
+            where tt.tag in (select trim(value) from json_each(?7)) collate nocase
         )
+    )
 "#;
 
     use crate::{

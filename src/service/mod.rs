@@ -13,7 +13,9 @@ pub mod transaction;
 use chrono::NaiveDate;
 pub use error::Error;
 use itertools::Itertools;
+use sqlx::sqlite::SqliteQueryResult;
 use std::borrow::Cow;
+use std::convert::TryInto;
 use std::fmt::Display;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -157,118 +159,16 @@ impl<T> PaginatedResponse<T> {
     }
 }
 
-#[macro_export]
-macro_rules! list_sql_impl {
-    ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr $(,$binding:ident)*) => {
-        #[allow(unused_mut, unused_variables)]
-        pub async fn execute(
-            state: &crate::state::AppState,
-            req: $inputType,
-        ) -> crate::service::Result<Vec<$outputType>> {
-            let mut e = sqlx::$query_op($sql);
-            $(
-                e = e.bind(req.$binding);
-            )*
-            Ok(e.fetch_all(&state.conn).await?)
-        }
-    };
+#[derive(serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GenericUpdateResponse {
+    pub num_affected: usize,
 }
 
-#[macro_export]
-macro_rules! list_sql_with_sort_impl {
-    ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr $(,$binding:ident)*) => {
-        #[allow(unused_mut, unused_variables)]
-        pub async fn execute(
-            state: &crate::state::AppState,
-            req: $inputType,
-        ) -> crate::service::Result<Vec<$outputType>> {
-            use crate::service::WithOrder;
-            let sql = format!("{} {}", $sql, req.gen_sql());
-            let mut e = sqlx::$query_op(&sql);
-            $(
-                e = e.bind(req.$binding);
-            )*
-            Ok(e.fetch_all(&state.conn).await?)
+impl From<SqliteQueryResult> for GenericUpdateResponse {
+    fn from(r: SqliteQueryResult) -> Self {
+        Self {
+            num_affected: r.rows_affected().try_into().unwrap_or_default(),
         }
-    };
-}
-
-#[macro_export]
-macro_rules! list_sql_paginated_impl {
-    ($inputType:ident, $outputType:ident, $query_op:ident, $sql:expr,
-    $offset:ident, $limit:ident $(,$binding:ident)*) => {
-        #[allow(unused_mut, unused_variables)]
-        pub async fn execute(
-            state: &crate::state::AppState,
-            req: $inputType,
-        ) -> crate::service::Result<crate::service::PaginatedResponse<$outputType>> {
-            use crate::service::WithOrder;
-
-            let mut tx = state.conn.begin().await?;
-            let sql = format!("WITH cte as ({}) SELECT * FROM cte {} LIMIT {}, {}",
-                $sql,
-                req.gen_sql(),
-                &req.$offset,
-                &req.$limit
-            );
-            let mut e = sqlx::$query_op(&sql);
-            $(
-                e = e.bind(&req.$binding);
-            )*
-            let data = e.fetch_all(&mut tx).await?;
-            let count_sql = format!("WITH cte AS ({}) SELECT COUNT(*) FROM cte", $sql);
-            let mut e = sqlx::query_scalar(&count_sql);
-            $(
-                e = e.bind(&req.$binding);
-            )*
-            let total = e.fetch_one(&mut tx).await?;
-            Ok(crate::service::PaginatedResponse {
-                data, total
-            })
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! execute_sql_impl {
-    ($inputType:ident, $sql:expr $(,$binding:ident)*) => {
-        pub async fn execute(
-            state: &crate::state::AppState,
-            req: $inputType,
-        ) -> crate::service::Result<serde_json::Value> {
-            let mut e = sqlx::query($sql);
-            $(
-                e = e.bind(&req.$binding);
-            )*
-            let num = e.execute(&state.conn).await?.rows_affected();
-            Ok(serde_json::json!({
-                "numAffected": num
-            }))
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! execute_sql_from_list_impl {
-    ($inputType:ident, $sql:expr $(,$binding:ident)*) => {
-        pub async fn execute(
-            state: &crate::state::AppState,
-            req: Vec<$inputType>,
-        ) -> crate::service::Result<serde_json::Value> {
-            let mut num = 0;
-            let mut tx = state.conn.begin().await?;
-            for b in req {
-                let mut e = sqlx::query($sql);
-                $(
-                    e = e.bind(b.$binding);
-                )*
-                num += e.execute(&mut tx).await?.rows_affected();
-            }
-
-            let _ = tx.commit().await?;
-            Ok(serde_json::json!({
-                "numAffected": num
-            }))
-        }
-    };
+    }
 }

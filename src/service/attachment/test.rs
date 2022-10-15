@@ -70,7 +70,7 @@ async fn attachment_rw_works() {
     let output = cleanup::execute(&app_state, cleanup::Input { keep_days: 0 })
         .await
         .expect("Delete");
-    assert_eq!(output.get("numAffected").unwrap().as_i64(), Some(1));
+    assert_eq!(output.num_affected, 1);
 }
 
 #[async_std::test]

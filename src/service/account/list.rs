@@ -1,4 +1,7 @@
-use crate::service::{Sort, SortOrder, WithOrder};
+use crate::{
+    service::{Result, Sort, SortOrder, WithOrder},
+    state::AppState,
+};
 use chrono::NaiveDate;
 
 use crate::sqlx_ext::Json;
@@ -46,4 +49,12 @@ where (?1 is null or trim(?1) = '' or name like '%' || trim(?1) || '%' collate n
   and (?2 is null or name in (select value from json_each(?2)) collate nocase)
 "#;
 
-crate::list_sql_with_sort_impl!(Input, Account, query_as, SQL, q, includes);
+pub async fn execute(state: &AppState, req: Input) -> Result<Vec<Account>> {
+    let sql = format!("with cte as({SQL}) select * from cte {}", req.gen_sql());
+    let Input { q, includes, .. } = req;
+    Ok(sqlx::query_as(&sql)
+        .bind(q)
+        .bind(includes)
+        .fetch_all(&state.conn)
+        .await?)
+}
