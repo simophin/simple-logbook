@@ -4,6 +4,8 @@ use crate::service::Error;
 use crate::AppState;
 
 mod sql {
+    use crate::state::AppState;
+
     use super::super::list::Attachment;
 
     //language=sql
@@ -17,7 +19,15 @@ where id = ?1
         pub id: String,
     }
 
-    crate::list_sql_impl!(Input, Attachment, query_as, SQL, id);
+    pub async fn execute(
+        state: &AppState,
+        Input { id }: Input,
+    ) -> sqlx::Result<Option<Attachment>> {
+        sqlx::query_as(SQL)
+            .bind(id)
+            .fetch_optional(&state.conn)
+            .await
+    }
 }
 
 pub async fn execute(

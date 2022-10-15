@@ -97,11 +97,35 @@ where
         )
 "#;
 
+    use crate::{
+        bind_sqlite_args,
+        service::{query::create_paginated_query, PaginatedResponse, Result},
+        state::AppState,
+    };
+
     use super::{Attachment, Input};
-    crate::list_sql_paginated_impl!(
-        Input, Attachment, query_as, SQL, offset, limit, with_data, q, from, to, includes,
-        accounts, tags
-    );
+
+    pub async fn execute(state: &AppState, input: Input) -> Result<PaginatedResponse<Attachment>> {
+        let (data, (total,)) = create_paginated_query(
+            &state.conn,
+            SQL,
+            bind_sqlite_args!(
+                input.with_data,
+                &input.q,
+                &input.from,
+                &input.to,
+                &input.includes,
+                &input.accounts,
+                &input.tags
+            ),
+            input.limit,
+            input.offset,
+            Some(&input),
+            "COUNT(*)",
+        )
+        .await?;
+        Ok(PaginatedResponse { data, total })
+    }
 }
 
 use crate::service::login::creds::{CredentialsConfig, Signed};

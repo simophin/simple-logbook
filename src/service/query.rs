@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{convert::TryInto, fmt::Display};
 
 use anyhow::Context;
 use sqlx::{
@@ -26,8 +26,8 @@ pub async fn create_paginated_query<Item, Aggregates>(
     c: &SqlitePool,
     sql: &str,
     args: SqliteArguments<'_>,
-    limit: Option<usize>,
-    offset: Option<usize>,
+    limit: impl TryInto<usize>,
+    offset: impl TryInto<usize>,
     order: Option<&impl WithOrder>,
     aggregate_select: &str,
 ) -> anyhow::Result<(Vec<Item>, Aggregates)>
@@ -39,7 +39,10 @@ where
 
     // Query the list
     let items: Vec<Item> = {
-        let limit_offset = LimitOffset { limit, offset };
+        let limit_offset = LimitOffset {
+            limit: limit.try_into().ok(),
+            offset: offset.try_into().ok(),
+        };
         let sql = match order {
             Some(o) => format!(
                 "WITH cte AS ({sql}) SELECT * from cte {order} {limit_offset}",

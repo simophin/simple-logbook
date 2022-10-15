@@ -3,7 +3,13 @@ use derive_more::Deref;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::service::{Sort, SortOrder, WithOrder};
+use crate::{
+    bind_sqlite_args,
+    service::{
+        query::create_paginated_query, PaginatedResponse, Result, Sort, SortOrder, WithOrder,
+    },
+    state::AppState,
+};
 
 use super::super::CommonListRequest;
 
@@ -55,4 +61,16 @@ where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate no
 group by tag
 "#;
 
-crate::list_sql_paginated_impl!(Input, Tag, query_as, SQL, offset, limit, q);
+pub async fn execute(state: &AppState, req: Input) -> Result<PaginatedResponse<Tag>> {
+    let (data, (total,)) = create_paginated_query(
+        &state.conn,
+        SQL,
+        bind_sqlite_args!(&req.q),
+        req.limit,
+        req.offset,
+        Some(&req),
+        "COUNT(*)",
+    )
+    .await?;
+    Ok(PaginatedResponse { data, total })
+}

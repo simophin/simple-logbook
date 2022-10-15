@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use serde::{Deserialize, Serialize};
 
 use super::model::Transaction;
@@ -89,7 +87,7 @@ const SQL: &'static str = r#"
 "#;
 
 pub async fn execute(state: &AppState, input: Input) -> super::super::Result<Output> {
-    let (data, (total, amount_total)) = create_paginated_query::<Transaction, (i64, i64)>(
+    let (data, (total, amount_total)) = create_paginated_query(
         &state.conn,
         SQL,
         bind_sqlite_args!(
@@ -100,8 +98,8 @@ pub async fn execute(state: &AppState, input: Input) -> super::super::Result<Out
             &input.tags,
             &input.account_groups
         ),
-        input.req.limit.try_into().ok(),
-        input.req.offset.try_into().ok(),
+        input.req.limit,
+        input.req.offset,
         Some(&input),
         "COUNT(*), SUM(amount)",
     )
