@@ -3,6 +3,7 @@ import { transactionArrayType } from "../models/Transaction";
 import { ExtraRequestProps, request } from "./common";
 import config from "../config";
 import { commonListFilterType } from './commonList';
+import { currencyType } from './codecs';
 
 const filterType = t.union(
     [
@@ -19,6 +20,7 @@ export type Filter = t.TypeOf<typeof filterType>;
 const responseType = t.type({
     total: t.number,
     data: transactionArrayType,
+    amountTotal: currencyType,
 });
 
 export function listTransaction(filter: Filter = {}, extraProps?: ExtraRequestProps) {
