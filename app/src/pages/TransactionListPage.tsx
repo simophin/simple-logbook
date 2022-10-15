@@ -1,7 +1,7 @@
 import { convert, ZoneId } from '@js-joda/core';
 import { FoldUpIcon, PencilIcon, TrashIcon } from "@primer/octicons-react";
 import { Fragment, useCallback, useContext, useMemo, useState } from "react";
-import { Badge, Button, Table } from "react-bootstrap";
+import { Alert, Badge, Button, Table } from "react-bootstrap";
 import { Helmet } from "react-helmet";
 import { useMediaPredicate } from "react-media-hook";
 import { NEVER } from 'rxjs';
@@ -131,6 +131,8 @@ export default function TransactionListPage({ accounts: initialAccounts, tags: i
 
     const [editState, setEditState] = useState<EditState<Transaction>>();
 
+    const loadedValue = getLoadedValue(rows);
+
     return <div style={flexContainer}>
         <Helmet><title>Transactions</title></Helmet>
 
@@ -138,6 +140,19 @@ export default function TransactionListPage({ accounts: initialAccounts, tags: i
             <MultiFilter onChanged={setFilter}
                 initialFilter={filter} />
         </div>
+
+
+        <div style={flexFullLineItem}>
+            <Alert variant='info'>
+                <p><b>Number of transactions: </b>{loadedValue ? loadedValue.total : 'N/A'}</p>
+                <p><b>Total amount: </b>{loadedValue ? formatAsCurrency(loadedValue.amountTotal) : 'N/A'}</p>
+                {loadedValue && loadedValue.total > 0 &&
+                    <p><b>Average amount: </b>{formatAsCurrency(loadedValue.amountTotal.divide(loadedValue.total))}</p>
+                }
+
+            </Alert>
+        </div>
+
 
         {children.length > 0 && <div style={flexFullLineItem}>
             <Table bordered hover size='sm'>

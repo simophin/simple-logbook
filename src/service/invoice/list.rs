@@ -28,20 +28,23 @@ const DEFAULT_SORTS: &[Sort] = &[
 ];
 
 impl WithOrder for Input {
-    fn get_sorts(&self) -> &Option<Vec<Sort>> {
-        &self.sorts
+    fn get_sorts(&self) -> &[Sort<'_>] {
+        self.req
+            .sorts
+            .as_ref()
+            .map(|v| v.as_ref())
+            .unwrap_or_default()
     }
 
-    fn get_default_sorts() -> &'static [Sort] {
+    fn get_default_sorts(&self) -> &[Sort<'_>] {
         DEFAULT_SORTS
     }
 
-    fn map_to_db(input: &str) -> Option<&'static str> {
+    fn map_to_db(input: &str) -> Option<&str> {
         match input {
             "created" => Some("date"),
             "due" => Some("dueDate"),
-            "client" => Some("client"),
-            "companyName" => Some("companyName"),
+            "client" | "companyName" => Some(input),
             _ => None,
         }
     }

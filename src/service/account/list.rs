@@ -16,27 +16,23 @@ pub struct Account {
 pub struct Input {
     q: Option<String>,
     includes: Option<Json<Vec<String>>>,
-    sorts: Option<Vec<Sort>>,
+    sorts: Option<Vec<Sort<'static>>>,
 }
 
-impl Input {
-    const DEFAULT_SORTS: &'static [Sort] = &[Sort::new("lastTransDate", SortOrder::DESC)];
-}
+const DEFAULT_SORTS: &'static [Sort] = &[Sort::new("lastTransDate", SortOrder::DESC)];
 
 impl WithOrder for Input {
-    fn get_sorts(&self) -> &Option<Vec<Sort>> {
-        &self.sorts
+    fn get_sorts(&self) -> &[Sort<'_>] {
+        self.sorts.as_ref().map(|v| v.as_ref()).unwrap_or_default()
     }
 
-    fn get_default_sorts() -> &'static [Sort] {
-        Input::DEFAULT_SORTS
+    fn get_default_sorts(&self) -> &[Sort<'_>] {
+        DEFAULT_SORTS
     }
 
-    fn map_to_db(input: &str) -> Option<&'static str> {
+    fn map_to_db(input: &str) -> Option<&str> {
         match input {
-            "name" => Some("name"),
-            "balance" => Some("balance"),
-            "lastTransDate" => Some("lastTransDate"),
+            "name" | "balance" | "lastTransDate" => Some(input),
             _ => None,
         }
     }
