@@ -1,17 +1,42 @@
+use std::borrow::Cow;
+
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use super::model::Transaction;
 use crate::bind_sqlite_args;
+use crate::service;
 use crate::service::query::create_paginated_query;
-use crate::service::{CommonListRequest, Sort, SortOrder, WithOrder};
+use crate::service::SortOrder;
+use crate::service::ToSQL;
 use crate::sqlx_ext::Json;
 use crate::state::AppState;
+
+#[derive(Deserialize, Clone, Copy, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum SortField {
+    FromAccount,
+    ToAccount,
+    Amount,
+    Created,
+    Updated,
+}
+
+pub type Sort = service::Sort<SortField>;
 
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Input {
-    #[serde(flatten)]
-    pub req: CommonListRequest,
+    pub q: Option<String>,
+    pub from: Option<NaiveDate>,
+    pub to: Option<NaiveDate>,
+    #[serde(default = "default_limit")]
+    pub limit: i64,
+
+    #[serde(default)]
+    pub offset: i64,
+    #[serde(default = "default_sorts")]
+    pub sorts: Cow<'static, [Sort]>,
 
     pub accounts: Option<Json<Vec<String>>>,
     pub tags: Option<Json<Vec<String>>>,
@@ -19,31 +44,27 @@ pub struct Input {
 }
 
 const DEFAULT_SORTS: &[Sort] = &[
-    Sort::new("created", SortOrder::DESC),
-    Sort::new("updated", SortOrder::DESC),
+    Sort::new(SortField::Created, SortOrder::DESC),
+    Sort::new(SortField::Updated, SortOrder::DESC),
 ];
 
-impl WithOrder for Input {
-    fn get_sorts(&self) -> &[Sort<'_>] {
-        self.req
-            .sorts
-            .as_ref()
-            .map(|v| v.as_ref())
-            .unwrap_or_default()
-    }
+const fn default_limit() -> i64 {
+    50
+}
 
-    fn get_default_sorts(&self) -> &[Sort<'_>] {
-        DEFAULT_SORTS
-    }
+const fn default_sorts() -> Cow<'static, [Sort]> {
+    Cow::Borrowed(DEFAULT_SORTS)
+}
 
-    fn map_to_db(input: &str) -> Option<&str> {
-        match input {
-            "fromAccount" | "toAccount" | "amount" => Some(input),
-            "created" => Some("transDate"),
-            "updated" => Some("updatedDate"),
-
-            _ => None,
-        }
+impl ToSQL for SortField {
+    fn to_sql(&self) -> Option<&str> {
+        Some(match self {
+            SortField::FromAccount => "fromAccount",
+            SortField::ToAccount => "toAccount",
+            SortField::Amount => "amount",
+            SortField::Created => "transDate",
+            SortField::Updated => "updatedDate",
+        })
     }
 }
 
@@ -91,16 +112,16 @@ pub async fn execute(state: &AppState, input: Input) -> super::super::Result<Out
         &state.conn,
         SQL,
         bind_sqlite_args!(
-            &input.req.q,
-            &input.req.from,
-            &input.req.to,
+            &input.q,
+            &input.from,
+            &input.to,
             &input.accounts,
             &input.tags,
             &input.account_groups
         ),
-        input.req.limit,
-        input.req.offset,
-        Some(&input),
+        input.limit,
+        input.offset,
+        &input.sorts,
         "COUNT(*), SUM(amount)",
     )
     .await?;

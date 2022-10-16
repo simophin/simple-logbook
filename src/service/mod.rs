@@ -3,147 +3,85 @@ pub mod account_group;
 pub mod attachment;
 pub mod config;
 mod error;
-// pub mod invoice;
 pub mod login;
 mod query;
 pub mod report;
 pub mod tag;
 pub mod transaction;
 
-use chrono::NaiveDate;
 pub use error::Error;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use sqlx::sqlite::SqliteQueryResult;
-use std::borrow::Cow;
-use std::convert::TryInto;
-use std::fmt::Display;
+use std::{convert::TryInto, fmt::Display, marker::PhantomData};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub const fn default_limit() -> i64 {
-    50
-}
-
-pub const fn default_offset() -> i64 {
-    0
-}
-
-pub const fn no_limit() -> i64 {
-    -1
-}
-
-#[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq, Copy)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Copy)]
 pub enum SortOrder {
     ASC,
     DESC,
 }
 
-impl SortOrder {
-    pub const fn to_sql(self) -> &'static str {
-        match self {
-            SortOrder::ASC => "asc",
-            SortOrder::DESC => "desc",
-        }
-    }
+pub trait ToSQL {
+    fn to_sql(&self) -> Option<&str>;
 }
 
-#[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct Sort<'a> {
-    pub field: Cow<'a, str>,
-    pub order: SortOrder,
+pub fn display_sorts_sql<F: ToSQL>(sorts: impl AsRef<[Sort<F>]>) -> impl Display {
+    SortsSQLDisplay(sorts, PhantomData)
 }
 
-impl<'a> Sort<'a> {
-    pub const fn new(f: &'a str, order: SortOrder) -> Self {
-        return Sort {
-            field: Cow::Borrowed(f),
-            order,
-        };
-    }
-}
+struct SortsSQLDisplay<F, T: AsRef<[Sort<F>]>>(T, PhantomData<F>);
 
-#[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct CommonListRequest {
-    #[serde(default = "default_offset")]
-    pub offset: i64,
-
-    #[serde(default = "default_limit")]
-    pub limit: i64,
-
-    pub q: Option<String>,
-    pub from: Option<NaiveDate>,
-    pub to: Option<NaiveDate>,
-    pub sorts: Option<Vec<Sort<'static>>>,
-}
-
-impl Default for CommonListRequest {
-    fn default() -> Self {
-        CommonListRequest {
-            offset: default_offset(),
-            limit: default_limit(),
-            q: None,
-            from: None,
-            to: None,
-            sorts: None,
-        }
-    }
-}
-
-pub trait WithOrder {
-    fn get_sorts(&self) -> &[Sort<'_>];
-    fn get_default_sorts(&self) -> &[Sort<'_>];
-    fn map_to_db(input: &str) -> Option<&str>;
-
-    fn gen_sql(&self) -> OrderDisplay<Self>
-    where
-        Self: Sized,
-    {
-        OrderDisplay(self)
-    }
-}
-
-pub struct OrderDisplay<'a, T>(&'a T);
-
-impl<'a, T: WithOrder> Display for OrderDisplay<'a, T> {
+impl<F, T> Display for SortsSQLDisplay<F, T>
+where
+    T: AsRef<[Sort<F>]>,
+    F: ToSQL,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let sorts = match self.0.get_sorts() {
-            v if v.is_empty() => self.0.get_default_sorts(),
-            v => v,
-        };
-        if sorts.is_empty() {
-            return Ok(());
-        }
+        let mut generated_fields = Vec::with_capacity(self.0.as_ref().len());
 
-        f.write_str("order by ")?;
-        let mut generated_fields = Vec::with_capacity(sorts.len());
-
-        for sort in sorts {
-            let db_field = match T::map_to_db(sort.field.as_ref()) {
+        for Sort { field, order } in self.0.as_ref() {
+            let field = match field.to_sql() {
                 Some(v) => v,
                 None => continue,
             };
 
-            match generated_fields.binary_search(&db_field) {
+            match generated_fields.binary_search(&field) {
                 Ok(_) => {
-                    log::warn!("Sort {sort:?} already generated");
+                    log::warn!("Field {field:?} already generated");
                     continue;
                 }
                 Err(index) => {
-                    generated_fields.insert(index, db_field);
+                    generated_fields.insert(index, field);
                 }
             };
 
             if generated_fields.len() > 1 {
                 f.write_str(", ")?;
+            } else {
+                f.write_str("order by ")?;
             }
 
-            f.write_fmt(format_args!("{} {}", db_field, sort.order.to_sql()))?;
+            f.write_fmt(format_args!("{} {}", field, order.to_sqlite()))?;
         }
         Ok(())
     }
 }
 
-#[derive(serde::Serialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct Sort<F> {
+    pub field: F,
+    pub order: SortOrder,
+}
+
+impl<F> Sort<F> {
+    pub const fn new(field: F, order: SortOrder) -> Self {
+        Self { field, order }
+    }
+}
+
+#[derive(Serialize, Debug, Clone, Eq, PartialEq)]
 pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub total: i64,

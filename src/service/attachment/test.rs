@@ -38,9 +38,7 @@ async fn attachment_rw_works() {
         list::Input {
             with_data: true,
             includes: Some(Json(vec![id.clone()])),
-            accounts: None,
-            req: Default::default(),
-            tags: None,
+            ..Default::default()
         },
     )
     .await
@@ -107,11 +105,8 @@ async fn list_by_account_works() {
     let PaginatedResponse { total, data } = list::execute(
         &app_state,
         list::Input {
-            req: Default::default(),
-            includes: None,
             accounts: Some(Json(vec!["account 1".to_string()])),
-            with_data: false,
-            tags: None,
+            ..Default::default()
         },
     )
     .await
@@ -129,11 +124,8 @@ async fn list_by_account_works() {
     let PaginatedResponse { total, data } = list::execute(
         &app_state,
         list::Input {
-            req: Default::default(),
-            includes: None,
             accounts: Some(Json(vec!["account 2 ".to_string()])),
-            with_data: false,
-            tags: None,
+            ..Default::default()
         },
     )
     .await
