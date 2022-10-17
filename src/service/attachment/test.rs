@@ -38,9 +38,7 @@ async fn attachment_rw_works() {
         list::Input {
             with_data: true,
             includes: Some(Json(vec![id.clone()])),
-            accounts: None,
-            req: Default::default(),
-            tags: None,
+            ..Default::default()
         },
     )
     .await
@@ -70,12 +68,13 @@ async fn attachment_rw_works() {
     let output = cleanup::execute(&app_state, cleanup::Input { keep_days: 0 })
         .await
         .expect("Delete");
-    assert_eq!(output.get("numAffected").unwrap().as_i64(), Some(1));
+    assert_eq!(output.num_affected, 1);
 }
 
 #[async_std::test]
 async fn list_by_account_works() {
     use super::*;
+    
 
     let app_state = AppState::new_test().await;
     let attachments = vec![
@@ -107,11 +106,8 @@ async fn list_by_account_works() {
     let PaginatedResponse { total, data } = list::execute(
         &app_state,
         list::Input {
-            req: Default::default(),
-            includes: None,
             accounts: Some(Json(vec!["account 1".to_string()])),
-            with_data: false,
-            tags: None,
+            ..Default::default()
         },
     )
     .await
@@ -129,11 +125,8 @@ async fn list_by_account_works() {
     let PaginatedResponse { total, data } = list::execute(
         &app_state,
         list::Input {
-            req: Default::default(),
-            includes: None,
             accounts: Some(Json(vec!["account 2 ".to_string()])),
-            with_data: false,
-            tags: None,
+            ..Default::default()
         },
     )
     .await

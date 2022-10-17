@@ -1,4 +1,4 @@
-use crate::sqlx_ext::Json;
+use crate::{sqlx_ext::Json, state::AppState, service::Result};
 use chrono::NaiveDate;
 
 #[derive(serde::Deserialize)]
@@ -15,8 +15,7 @@ pub struct DataRow {
     pub date: NaiveDate,
 }
 
-//language=sql
-const SQL: &str = r#"
+const SQL: &'static str = r#"
 with recursive 
     input_accounts(name) as (select trim(value) from json_each(?3)),
     daily(date, total, i) as (
@@ -44,4 +43,12 @@ select balanceDate date, balance
 from balance
 "#;
 
-crate::list_sql_impl!(Input, DataRow, query_as, SQL, from, to, accounts);
+pub async fn execute(state: &AppState, Input { from, to, accounts }: Input) -> Result<Vec<DataRow>> {
+    Ok(sqlx::query_as(SQL)
+        .bind(from)
+        .bind(to)
+        .bind(accounts)
+        .fetch_all(&state.conn)
+        .await?
+    )
+}

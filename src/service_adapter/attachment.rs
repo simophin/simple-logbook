@@ -144,11 +144,9 @@ pub async fn get(req: tide::Request<AppState>) -> tide::Result {
     } = execute_sql(
         req.state(),
         Input {
-            req: Default::default(),
             includes: Some(Json(vec![id])),
-            accounts: None,
             with_data: true,
-            tags: None,
+            ..Default::default()
         },
     )
     .await?

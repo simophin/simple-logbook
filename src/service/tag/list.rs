@@ -1,38 +1,59 @@
+use std::borrow::Cow;
+
 use chrono::{DateTime, Utc};
-use derive_more::Deref;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::service::{Sort, SortOrder, WithOrder};
+use crate::{
+    bind_sqlite_args,
+    service::{self, query::create_paginated_query, PaginatedResponse, Result, SortOrder, ToSQL},
+    state::AppState,
+};
 
-use super::super::CommonListRequest;
+#[derive(Deserialize, Clone, Copy, Debug)]
+#[serde(rename_all = "camelCase")]
+enum SortField {
+    Tag,
+    NumTx,
+    Total,
+    LastUpdated,
+}
 
-#[derive(Deserialize, Default, Deref)]
+type Sort = service::Sort<SortField>;
+
+#[derive(Deserialize, Default)]
 pub struct Input {
-    #[serde(flatten)]
-    #[deref]
-    pub req: CommonListRequest,
+    #[serde(default = "default_sorts")]
+    sorts: Cow<'static, [Sort]>,
+
+    #[serde(default = "default_limit")]
+    limit: i64,
+    #[serde(default)]
+    offset: i64,
+    q: Option<String>,
 }
 
 const DEFAULT_SORTS: &[Sort] = &[
-    Sort::new("tag", SortOrder::ASC),
-    Sort::new("numTx", SortOrder::DESC),
+    Sort::new(SortField::Tag, SortOrder::ASC),
+    Sort::new(SortField::NumTx, SortOrder::DESC),
 ];
 
-impl WithOrder for Input {
-    fn get_sorts(&self) -> &[Sort<'_>] {
-        self.sorts.as_ref().map(|v| v.as_ref()).unwrap_or_default()
-    }
+const fn default_sorts() -> Cow<'static, [Sort]> {
+    return Cow::Borrowed(DEFAULT_SORTS);
+}
 
-    fn get_default_sorts(&self) -> &[Sort<'_>] {
-        DEFAULT_SORTS
-    }
+const fn default_limit() -> i64 {
+    50
+}
 
-    fn map_to_db(input: &str) -> Option<&str> {
-        match input {
-            "tag" | "numTx" | "total" | "lastUpdated" => Some(input),
-            _ => None,
-        }
+impl ToSQL for SortField {
+    fn to_sql(&self) -> Option<&str> {
+        Some(match self {
+            SortField::Tag => "tag",
+            SortField::NumTx => "numTx",
+            SortField::Total => "total",
+            SortField::LastUpdated => "lastUpdated",
+        })
     }
 }
 
@@ -55,4 +76,24 @@ where (?1 is null or trim(?1) = '' or tag like '%' || trim(?1) || '%' collate no
 group by tag
 "#;
 
-crate::list_sql_paginated_impl!(Input, Tag, query_as, SQL, offset, limit, q);
+pub async fn execute(
+    state: &AppState,
+    Input {
+        sorts,
+        limit,
+        offset,
+        q,
+    }: Input,
+) -> Result<PaginatedResponse<Tag>> {
+    let (data, (total,)) = create_paginated_query(
+        &state.conn,
+        SQL,
+        bind_sqlite_args!(q),
+        limit,
+        offset,
+        sorts,
+        "COUNT(*)",
+    )
+    .await?;
+    Ok(PaginatedResponse { data, total })
+}

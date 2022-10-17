@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{convert::TryInto, fmt::Display};
 
 use anyhow::Context;
 use sqlx::{
@@ -7,7 +7,7 @@ use sqlx::{
     FromRow, SqlitePool,
 };
 
-use super::WithOrder;
+use super::{display_sorts_sql, Sort, SortOrder, ToSQL};
 
 #[macro_export]
 macro_rules! bind_sqlite_args {
@@ -22,31 +22,41 @@ macro_rules! bind_sqlite_args {
     };
 }
 
-pub async fn create_paginated_query<Item, Aggregates>(
+impl SortOrder {
+    pub const fn to_sqlite(self) -> &'static str {
+        match self {
+            SortOrder::ASC => "asc",
+            SortOrder::DESC => "desc",
+        }
+    }
+}
+
+pub async fn create_paginated_query<F, Item, Aggregates>(
     c: &SqlitePool,
     sql: &str,
     args: SqliteArguments<'_>,
-    limit: Option<usize>,
-    offset: Option<usize>,
-    order: Option<&impl WithOrder>,
+    limit: impl TryInto<usize>,
+    offset: impl TryInto<usize>,
+    sorts: impl AsRef<[Sort<F>]>,
     aggregate_select: &str,
 ) -> anyhow::Result<(Vec<Item>, Aggregates)>
 where
     Item: Send + for<'q> FromRow<'q, SqliteRow> + Unpin + 'static,
     Aggregates: Send + Unpin + for<'q> FromRow<'q, SqliteRow> + 'static,
+    F: ToSQL,
 {
     let mut tx = c.begin().await?;
 
     // Query the list
     let items: Vec<Item> = {
-        let limit_offset = LimitOffset { limit, offset };
-        let sql = match order {
-            Some(o) => format!(
-                "WITH cte AS ({sql}) SELECT * from cte {order} {limit_offset}",
-                order = o.gen_sql()
-            ),
-            None => format!("with cte as ({sql}) select * from cte {limit_offset}"),
+        let limit_offset = LimitOffset {
+            limit: limit.try_into().ok(),
+            offset: offset.try_into().ok(),
         };
+        let sql = format!(
+            "WITH cte AS ({sql}) SELECT * from cte {order} {limit_offset}",
+            order = display_sorts_sql(sorts)
+        );
 
         query_as_with(&sql, args.clone())
             .fetch_all(&mut tx)

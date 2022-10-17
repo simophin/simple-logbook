@@ -14,6 +14,7 @@ impl AppState {
             .run(&conn)
             .await
             .expect("Migration to run successfully");
+
         AppState { conn, port: 4000 }
     }
 }
