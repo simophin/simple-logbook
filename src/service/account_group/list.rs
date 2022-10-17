@@ -1,8 +1,11 @@
+use serde::Deserialize;
+
 use crate::{service::Result, state::AppState};
 
 use super::models::AccountGroup;
 
-pub type Input = ();
+#[derive(Deserialize, Default)]
+pub struct Input {}
 
 pub async fn execute(state: &AppState, _: Input) -> Result<Vec<AccountGroup>> {
     Ok(sqlx::query_as("select * from account_groups_view")
