@@ -18,6 +18,7 @@ pub async fn execute(
 ) -> Result<GenericUpdateResponse> {
     let mut num_affected: usize = 0;
     let mut tx = state.conn.begin().await?;
+
     for Transaction {
         id,
         description,

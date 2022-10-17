@@ -24,7 +24,7 @@ pub enum SortField {
 
 pub type Sort = service::Sort<SortField>;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Input {
     pub q: Option<String>,
@@ -54,6 +54,22 @@ const fn default_limit() -> i64 {
 
 const fn default_sorts() -> Cow<'static, [Sort]> {
     Cow::Borrowed(DEFAULT_SORTS)
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Self {
+            q: Default::default(),
+            from: Default::default(),
+            to: Default::default(),
+            limit: default_limit(),
+            offset: Default::default(),
+            sorts: default_sorts(),
+            accounts: Default::default(),
+            tags: Default::default(),
+            account_groups: Default::default(),
+        }
+    }
 }
 
 impl ToSQL for SortField {

@@ -117,7 +117,8 @@ select id,
     created, 
     lastUpdated,
     iif(?1, dataHash, null) as dataHash, 
-    iif(?1, data, null) as data from attachments
+    iif(?1, data, null) as data 
+from attachments
 where 
     (?2 is null or name like '%' || trim(?2) || '%' collate nocase)
     and (?3 is null or created >= ?3)
@@ -127,9 +128,9 @@ where
         ?6 is null 
         or json_array_length(?6) == 0
         or id in (
-            select attachmentId from account_attachments where account in 
-                (select trim(value) from json_each(?6))) collate nocase 
-    )
+            select aa.attachmentId from account_attachments aa
+            where aa.account collate nocase in (select trim(value) from json_each(?6))
+        )
     )
     and (
         ?7 is null 
@@ -138,7 +139,7 @@ where
             select ta.attachmentId from transaction_attachments ta
             inner join transactions t on t.id = ta.transactionId
             inner join transaction_tags tt on tt.transactionId = t.id
-            where tt.tag in (select trim(value) from json_each(?7)) collate nocase
+            where tt.tag collate nocase in (select trim(value) from json_each(?7))
         )
     )
 "#;
