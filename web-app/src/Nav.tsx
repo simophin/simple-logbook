@@ -122,7 +122,7 @@ function DropDown(props: DropDownProps) {
         </NavButton>
 
         <Show when={show()}>
-            <div class='absolute rounded-sm top-10 bg-gray-100 dark:bg-slate-700 dark:text-white p-2'>
+            <div class='absolute rounded-sm top-10 bg-gray-100 dark:bg-slate-700 dark:text-white p-2 flex flex-col gap-1'>
                 {props.children(dismiss)}
             </div>
         </Show>
