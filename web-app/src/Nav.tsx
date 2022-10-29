@@ -1,6 +1,6 @@
 import { Icon } from "solid-heroicons";
 import { chevronDown, chevronUp, plusCircle, listBullet, wrench as settings } from "solid-heroicons/solid-mini";
-import { Component, createSignal, Show, JSX, createMemo, For } from "solid-js"
+import { Component, createSignal, Show, JSX, createMemo, For, splitProps } from "solid-js"
 import { A, AnchorProps } from "@solidjs/router";
 
 type Props = {
@@ -13,11 +13,11 @@ type Props = {
 }
 
 export default function Nav(props: Props) {
-    const activeLinkClass = 'text-sky-700 dark:text-white';
+    const activeLinkClass = 'font-bold';
 
-    return <nav class="w-full fixed p-1 bg-gray-100 dark:bg-slate-700 items-baseline flex">
+    return <nav class="w-full fixed p-1 bg-primary text-onPrimary items-baseline flex">
         <span class='w-4' />
-        <label class="font-serif text-xl dark:text-white p-1">Logbook</label>
+        <label class="font-serif text-xl p-1">Logbook</label>
         <span class='w-4' />
 
         <DropDown text='Records' icon={chevronDown}>
@@ -59,7 +59,7 @@ export default function Nav(props: Props) {
                 </For>
 
                 <Show when={props.charts?.length !== 0}>
-                    <hr class="dark:border-slate-400" />
+                    <hr class="border-outlineVariant" />
                 </Show>
 
                 <MenuItem onclick={dismiss}
@@ -82,23 +82,27 @@ export default function Nav(props: Props) {
     </nav>
 }
 
-type ButtonProps<T> = ({
-    as?: Component<T>,
+type ButtonProps<P> = {
+    as?: Component<P>,
     class?: string,
-} & T);
+    children?: JSX.Element | JSX.Element[],
+} & P;
 
-function NavButton<P extends {}>(props: ButtonProps<P>) {
-    const As = props.as ?? ((p) => <span {...p} />);
-    return <As {...props}
-        role='button'
-        class={`${props.class ?? ''} dark:hover:text-white text-sm dark:text-zinc-300 hover:text-sky-700 p-2 inline-flex items-center gap-2`}
-    />;
+function NavButton<P>(props: ButtonProps<P>) {
+    const [as, rest] = splitProps(props, ["as", "class", "children"]);
+
+    const As: Component<any> = as.as ?? ((p) => <span {...p} role='button' />);
+    return <As {...rest}
+        class={`${as.class ?? ''} hover:bg-secondaryContainer hover:text-onSecondaryContainer text-sm p-2 inline-flex items-center gap-2`}>
+        {as.children}
+    </As>
 }
 
-function MenuItem<P extends {}>(props: ButtonProps<P>) {
-    const As = props.as ?? ((p) => <button {...p} />);
-    return <As {...props}
-        class={`${props.class ?? ''} p-2 w-full gap-2 rounded-sm text-sm hover:bg-gray-200 dark:hover:bg-slate-500 text-start inline-flex items-center`}
+function MenuItem<P>(props: ButtonProps<P>) {
+    const [as, rest] = splitProps(props, ["as", "class"]);
+    const As: Component<any> = as.as ?? ((p) => <button {...p} />);
+    return <As {...rest}
+        class={`${as.class ?? ''} p-2 w-full gap-2 rounded-sm text-sm text-start inline-flex items-center hover:text-onSecondaryContainer hover:bg-secondaryContainer`}
     />
 }
 
@@ -110,7 +114,6 @@ type DropDownProps = {
 
 function DropDown(props: DropDownProps) {
     const [show, setShow] = createSignal(false);
-    const dismiss = () => setShow(false);
 
     return <span
         onMouseEnter={() => setShow(true)}
@@ -122,8 +125,8 @@ function DropDown(props: DropDownProps) {
         </NavButton>
 
         <Show when={show()}>
-            <div class='absolute rounded-sm top-10 bg-gray-100 dark:bg-slate-700 dark:text-white p-2 flex flex-col gap-1'>
-                {props.children(dismiss)}
+            <div class='absolute rounded-sm top-10 p-2 flex flex-col gap-1 bg-primary'>
+                {props.children(() => setShow(false))}
             </div>
         </Show>
     </span>;
