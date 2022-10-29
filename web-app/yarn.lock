@@ -349,6 +349,11 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@solidjs/router@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@solidjs/router/-/router-0.5.0.tgz#b324c64f79d94c2b55011c2c8eea0a76771754fc"
+  integrity sha512-rNR07l21tWWDVmCbaapggB89rEX7jlM2XChpTLqEGEnj46LzVZ8zgvjcF6NNKScByAlLpoQUkVIjB2KHpcMi+w==
+
 acorn-node@^1.8.2:
   version "1.8.2"
   resolved "https://registry.yarnpkg.com/acorn-node/-/acorn-node-1.8.2.tgz#114c95d64539e53dede23de8b9d96df7c7ae2af8"
@@ -1001,6 +1006,13 @@ semver@^6.3.0:
   version "6.3.0"
   resolved "https://registry.yarnpkg.com/semver/-/semver-6.3.0.tgz#ee0a64c8af5e8ceea67687b133761e1becbd1d3d"
   integrity sha512-b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==
+
+solid-heroicons@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/solid-heroicons/-/solid-heroicons-3.1.0.tgz#1881cec8728825007ba9a3fb6ab95aea42c1e231"
+  integrity sha512-cOw5cxS3zgcoOChyvobvHZmHSCinnkkpsiyEiMW+irltb/6iwKq123CUD/W70astfwBvVopnixCQIF19JUzzMA==
+  dependencies:
+    solid-js "^1.5.1"
 
 solid-js@^1.5.1:
   version "1.6.0"
