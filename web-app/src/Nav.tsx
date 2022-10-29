@@ -1,59 +1,82 @@
 import { Icon } from "solid-heroicons";
-import { chevronDown, chevronUp, plusCircle, listBullet } from "solid-heroicons/solid-mini";
-import { Component, createSignal, Show, JSX, createMemo } from "solid-js"
+import { chevronDown, chevronUp, plusCircle, listBullet, wrench as settings } from "solid-heroicons/solid-mini";
+import { Component, createSignal, Show, JSX, createMemo, For } from "solid-js"
 import { A, AnchorProps } from "@solidjs/router";
 
 type Props = {
     onAddRecordClicked: () => unknown,
+    charts?: Array<{
+        icon?: string,
+        title: string,
+        id: string,
+    }>,
 }
 
 export default function Nav(props: Props) {
-    const [showRecordSub, setShowRecordSub] = createSignal(false);
+    const activeLinkClass = 'text-sky-700 dark:text-white';
 
-    function hideRecordSub(e?: unknown) {
-        setShowRecordSub(false);
-    }
+    return <nav class="w-full fixed p-1 bg-gray-100 dark:bg-slate-700 items-baseline flex">
+        <span class='w-4' />
+        <label class="font-serif text-xl dark:text-white p-1">Logbook</label>
+        <span class='w-4' />
 
-    return <nav class="w-full fixed p-1 bg-gray-100 dark:bg-slate-700 items-center flex">
-        <span class='w-3' />
-        <label class="font-serif dark:text-white p-2">Logbook</label>
-        <span class='w-3' />
-        <span
-            onMouseEnter={() => setShowRecordSub(true)}
-            onMouseLeave={hideRecordSub}>
+        <DropDown text='Records' icon={chevronDown}>
+            {dismiss => <>
+                <MenuItem onclick={() => {
+                    props.onAddRecordClicked()
+                    dismiss()
+                }}>
+                    <SmallIcon path={plusCircle} />
+                    New record
+                </MenuItem>
 
-            <NavButton>
-                Records
-                <SmallIcon path={chevronDown} />
-            </NavButton>
-
-            <Show when={showRecordSub()}>
-                <DropDownMenu>
-                    <Button onclick={() => {
-                        props.onAddRecordClicked()
-                        hideRecordSub();
-                    }}>
-                        <SmallIcon path={plusCircle} />
-                        New
-                    </Button>
-
-                    <Button onclick={hideRecordSub} as={A} href="/records" activeClass='text-sky-700'>
-                        <SmallIcon path={listBullet} />
-                        View all
-                    </Button>
-                </DropDownMenu>
-            </Show>
-        </span>
+                <MenuItem onclick={dismiss}
+                    as={A}
+                    href="/records"
+                    activeClass={activeLinkClass}>
+                    <SmallIcon path={listBullet} />
+                    View all
+                </MenuItem>
+            </>}
+        </DropDown>
 
         <NavButton
             as={A}
-            activeClass='text-sky-700'
+            activeClass={activeLinkClass}
             href='/accounts'>
             Accounts
         </NavButton>
 
-        <NavButton>
+        <DropDown text='Charts' icon={chevronDown}>
+            {dismiss => <>
+                <For each={props.charts}>
+                    {(item) => <MenuItem onclick={dismiss}
+                        as={A}
+                        href={`/chart/${item.id}`}
+                        activeClass={activeLinkClass}>
+                        {item.title}
+                    </MenuItem>}
+                </For>
 
+                <Show when={props.charts?.length !== 0}>
+                    <hr class="dark:border-slate-400" />
+                </Show>
+
+                <MenuItem onclick={dismiss}
+                    as={A}
+                    href="/charts/new"
+                    activeClass={activeLinkClass}>
+                    <SmallIcon path={plusCircle} />
+                    New chart
+                </MenuItem>
+            </>}
+        </DropDown>
+
+        <span class="flex-grow" />
+
+        <NavButton as={A} href="/settings">
+            <SmallIcon path={settings} />
+            Settings
         </NavButton>
 
     </nav>
@@ -68,26 +91,44 @@ function NavButton<P extends {}>(props: ButtonProps<P>) {
     const As = props.as ?? ((p) => <span {...p} />);
     return <As {...props}
         role='button'
-        class={`${props.class ?? ''} dark:hover:text-white text-sm dark:text-zinc-300 hover:text-sky-700 p-2 inline-flex items-center`}
+        class={`${props.class ?? ''} dark:hover:text-white text-sm dark:text-zinc-300 hover:text-sky-700 p-2 inline-flex items-center gap-2`}
     />;
 }
 
-function Button<P extends {}>(props: ButtonProps<P>) {
+function MenuItem<P extends {}>(props: ButtonProps<P>) {
     const As = props.as ?? ((p) => <button {...p} />);
     return <As {...props}
-        class={`${props.class ?? ''} p-1 w-full gap-2 rounded-sm text-sm hover:bg-gray-200 dark:hover:bg-slate-500 text-start inline-flex items-center`}
+        class={`${props.class ?? ''} p-2 w-full gap-2 rounded-sm text-sm hover:bg-gray-200 dark:hover:bg-slate-500 text-start inline-flex items-center`}
     />
 }
 
-function DropDown(props: {}) {
+type DropDownProps = {
+    text: string,
+    icon: { path: JSX.Element },
+    children: (dismiss: () => unknown) => JSX.Element,
+};
 
+function DropDown(props: DropDownProps) {
+    const [show, setShow] = createSignal(false);
+    const dismiss = () => setShow(false);
+
+    return <span
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}>
+
+        <NavButton>
+            {props.text}
+            <SmallIcon path={props.icon} />
+        </NavButton>
+
+        <Show when={show()}>
+            <div class='absolute rounded-sm top-10 bg-gray-100 dark:bg-slate-700 dark:text-white p-2'>
+                {props.children(dismiss)}
+            </div>
+        </Show>
+    </span>;
 }
 
-function DropDownMenu(props: JSX.HTMLAttributes<HTMLDivElement>) {
-    return <div {...props}
-        class={`${props.class} absolute rounded-sm top-10 bg-gray-100 dark:bg-slate-400 dark:text-white p-2`}
-    />;
-}
 
 function SmallIcon(props: { path: { path: JSX.Element } }) {
     return <Icon path={props.path} class='w-4 h-4' />
