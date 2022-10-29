@@ -15,10 +15,10 @@ type Props = {
 export default function Nav(props: Props) {
     const activeLinkClass = 'font-bold';
 
-    return <nav class="w-full fixed p-1 bg-primary text-onPrimary items-baseline flex">
-        <span class='w-4' />
+    return <nav class="w-full fixed p-1 bg-primary text-onPrimary items-baseline flex gap-2">
+        <span class='w-2' />
         <label class="font-serif text-xl p-1">Logbook</label>
-        <span class='w-4' />
+        <span class='w-2' />
 
         <DropDown text='Records' icon={chevronDown}>
             {dismiss => <>
@@ -93,7 +93,7 @@ function NavButton<P>(props: ButtonProps<P>) {
 
     const As: Component<any> = as.as ?? ((p) => <span {...p} role='button' />);
     return <As {...rest}
-        class={`${as.class ?? ''} hover:bg-secondaryContainer hover:text-onSecondaryContainer text-sm p-2 inline-flex items-center gap-2`}>
+        class={`${as.class ?? ''} hover:rounded-sm hover:bg-secondaryContainer hover:text-onSecondaryContainer text-sm p-1 inline-flex items-center gap-1 transition-colors`}>
         {as.children}
     </As>
 }

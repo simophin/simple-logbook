@@ -9,7 +9,7 @@ const App: Component = () => {
   const dark = createMediaQuery("(prefers-color-scheme: dark)");
 
   return (
-    <Themed primaryColor='#a4bebd' dark={dark()}>
+    <Themed primaryColor='#3AAF85' dark={dark()}>
       <AuthContainer needsAuth={false}>
         <Nav
           charts={[{ title: "Chart 1", id: "1" }]}
