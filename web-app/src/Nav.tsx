@@ -18,7 +18,7 @@ export default function Nav(props: Props) {
     const activeLinkClass = 'font-bold';
     const darkMode = useContext(DarkModeContext);
 
-    return <nav class="w-full fixed p-1 bg-primary text-onPrimary items-center flex gap-2">
+    return <nav class="w-full p-1 bg-primary text-onPrimary items-center flex gap-2">
         <span class='w-2' />
         <label class="font-serif text-xl p-1">Logbook</label>
         <span class='w-2' />
