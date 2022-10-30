@@ -22,8 +22,8 @@ export default function AuthContainer(props: Props) {
                     }}
                     class="p-4 bg-surface text-onSurface border border-outline rounded-lg flex flex-col gap-3"
                 >
-                    <h2 class="text-xl font-semibold">Log in</h2>
-                    <input name="password" class="p-2 text-medium w-50 border border-outlineVariant" type="password"
+                    <h2 class="text-xl font-medium">Log in</h2>
+                    <input name="password" class="input-filled w-50" type="password"
                         value={pw()}
                         onchange={e => setPw(e.currentTarget.value)}
                         placeholder="Password" autofocus />

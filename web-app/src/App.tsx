@@ -20,7 +20,7 @@ export default function App() {
             onToggleDarkTheme={() => {
               setForceDarkTheme((forcedDarkTHeme) => {
                 const system = systemDarkTheme();
-                const newTheme = (forcedDarkTHeme || system) === 'dark' ? 'light' : 'dark'; 
+                const newTheme = (forcedDarkTHeme || system) === 'dark' ? 'light' : 'dark';
                 console.log(`newTheme = ${newTheme}, systemTheme = ${system}`);
                 if (system === newTheme) {
                   return undefined;

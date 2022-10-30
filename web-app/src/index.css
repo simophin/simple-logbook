@@ -6,4 +6,9 @@
     .btn-primary-filled {
         @apply bg-primary text-onPrimary p-1 hover:text-onSecondaryContainer hover:bg-secondaryContainer hover:rounded-sm text-sm flex items-center gap-1 transition-colors
     }
+
+
+    .input-filled {
+        @apply bg-surfaceVariant text-onSurfaceVariant p-2 font-medium border border-outline rounded-sm
+    }
 }
