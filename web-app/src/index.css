@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .btn-primary-filled {
+        @apply bg-primary text-onPrimary p-1 hover:text-onSecondaryContainer hover:bg-secondaryContainer hover:rounded-sm text-sm flex items-center gap-1 transition-colors
+    }
+}

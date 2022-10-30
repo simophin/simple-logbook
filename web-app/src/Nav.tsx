@@ -93,7 +93,7 @@ function NavButton<P>(props: ButtonProps<P>) {
 
     const As: Component<any> = as.as ?? ((p) => <span {...p} role='button' />);
     return <As {...rest}
-        class={`${as.class ?? ''} hover:rounded-sm hover:bg-secondaryContainer hover:text-onSecondaryContainer text-sm p-1 inline-flex items-center gap-1 transition-colors`}>
+        class={`${as.class ?? ''} btn-primary-filled`}>
         {as.children}
     </As>
 }
