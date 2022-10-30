@@ -1,7 +1,7 @@
 import { createMediaQuery } from '@solid-primitives/media';
 import { createEffect, createMemo, createSignal } from 'solid-js';
 import AuthContainer from './components/AuthContainer';
-import { DarkMode, DarkModeContext, toggleDarkMode } from './components/DarkModeContext';
+import { DarkMode, DarkModeContext } from './components/DarkModeContext';
 import Themed from './components/Themed';
 
 import Nav from './Nav';
@@ -18,9 +18,9 @@ export default function App() {
         <AuthContainer needsAuth={false}>
           <Nav
             onToggleDarkTheme={() => {
-              setForceDarkTheme((theme) => {
-                const newTheme = toggleDarkMode(theme ?? 'light');
+              setForceDarkTheme((forcedDarkTHeme) => {
                 const system = systemDarkTheme();
+                const newTheme = (forcedDarkTHeme || system) === 'dark' ? 'light' : 'dark'; 
                 console.log(`newTheme = ${newTheme}, systemTheme = ${system}`);
                 if (system === newTheme) {
                   return undefined;
