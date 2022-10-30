@@ -1,22 +1,37 @@
 import { createMediaQuery } from '@solid-primitives/media';
-import type { Component } from 'solid-js';
+import { createEffect, createMemo, createSignal } from 'solid-js';
 import AuthContainer from './components/AuthContainer';
+import { DarkMode, DarkModeContext, toggleDarkMode } from './components/DarkModeContext';
 import Themed from './components/Themed';
 
 import Nav from './Nav';
 
-const App: Component = () => {
-  const dark = createMediaQuery("(prefers-color-scheme: dark)");
+export default function App() {
+  const systemIsDark = createMediaQuery("(prefers-color-scheme: dark)");
+  const systemDarkTheme = createMemo<DarkMode>(() => systemIsDark() ? 'dark' : 'light');
+  const [forceDarkTheme, setForceDarkTheme] = createSignal<DarkMode>();
+  const darkMode = () => forceDarkTheme() || systemDarkTheme();
 
   return (
-    <Themed primaryColor='#3AAF85' dark={dark()}>
-      <AuthContainer needsAuth={false}>
-        <Nav
-          charts={[{ title: "Chart 1", id: "1" }]}
-          onAddRecordClicked={() => { }} />
-      </AuthContainer>
-    </Themed>
+    <DarkModeContext.Provider value={darkMode}>
+      <Themed primaryColor='#3AAF85' applyBodyBackground>
+        <AuthContainer needsAuth={false}>
+          <Nav
+            onToggleDarkTheme={() => {
+              setForceDarkTheme((theme) => {
+                const newTheme = toggleDarkMode(theme ?? 'light');
+                const system = systemDarkTheme();
+                console.log(`newTheme = ${newTheme}, systemTheme = ${system}`);
+                if (system === newTheme) {
+                  return undefined;
+                }
+                return newTheme;
+              });
+            }}
+            charts={[{ title: "Chart 1", id: "1" }]}
+            onAddRecordClicked={() => { }} />
+        </AuthContainer>
+      </Themed>
+    </DarkModeContext.Provider>
   );
 };
-
-export default App;

@@ -1,7 +1,8 @@
+import { A } from "@solidjs/router";
 import { Icon } from "solid-heroicons";
-import { chevronDown, chevronUp, plusCircle, listBullet, wrench as settings } from "solid-heroicons/solid-mini";
-import { Component, createSignal, Show, JSX, createMemo, For, splitProps } from "solid-js"
-import { A, AnchorProps } from "@solidjs/router";
+import { chevronDown, listBullet, plusCircle, wrench as settings } from "solid-heroicons/solid-mini";
+import { createSignal, For, JSX, Show, useContext } from "solid-js";
+import { DarkModeContext } from "./components/DarkModeContext";
 
 type Props = {
     onAddRecordClicked: () => unknown,
@@ -10,101 +11,86 @@ type Props = {
         title: string,
         id: string,
     }>,
+    onToggleDarkTheme: () => unknown,
 }
 
 export default function Nav(props: Props) {
     const activeLinkClass = 'font-bold';
+    const darkMode = useContext(DarkModeContext);
 
-    return <nav class="w-full fixed p-1 bg-primary text-onPrimary items-baseline flex gap-2">
+    return <nav class="w-full fixed p-1 bg-primary text-onPrimary items-center flex gap-2">
         <span class='w-2' />
         <label class="font-serif text-xl p-1">Logbook</label>
         <span class='w-2' />
 
         <DropDown text='Records' icon={chevronDown}>
             {dismiss => <>
-                <MenuItem onclick={() => {
-                    props.onAddRecordClicked()
-                    dismiss()
-                }}>
+                <button
+                    class="btn-primary-filled"
+                    onclick={() => {
+                        props.onAddRecordClicked()
+                        dismiss()
+                    }}>
                     <SmallIcon path={plusCircle} />
                     New record
-                </MenuItem>
+                </button>
 
-                <MenuItem onclick={dismiss}
-                    as={A}
+                <A onclick={dismiss}
                     href="/records"
+                    class="btn-primary-filled"
                     activeClass={activeLinkClass}>
                     <SmallIcon path={listBullet} />
                     View all
-                </MenuItem>
+                </A>
             </>}
         </DropDown>
 
-        <NavButton
-            as={A}
+        <A
             activeClass={activeLinkClass}
+            class="btn-primary-filled"
             href='/accounts'>
             Accounts
-        </NavButton>
+        </A>
 
         <DropDown text='Charts' icon={chevronDown}>
             {dismiss => <>
                 <For each={props.charts}>
-                    {(item) => <MenuItem onclick={dismiss}
-                        as={A}
+                    {(item) => <A onclick={dismiss}
                         href={`/chart/${item.id}`}
+                        class="btn-primary-filled"
                         activeClass={activeLinkClass}>
                         {item.title}
-                    </MenuItem>}
+                    </A>}
                 </For>
 
                 <Show when={props.charts?.length !== 0}>
                     <hr class="border-outlineVariant" />
                 </Show>
 
-                <MenuItem onclick={dismiss}
-                    as={A}
+                <A onclick={dismiss}
+                    class="btn-primary-filled"
                     href="/charts/new"
                     activeClass={activeLinkClass}>
                     <SmallIcon path={plusCircle} />
                     New chart
-                </MenuItem>
+                </A>
             </>}
         </DropDown>
 
         <span class="flex-grow" />
 
-        <NavButton as={A} href="/settings">
+        <input type="checkbox" checked={darkMode() === 'dark'} onchange={(e) => {
+            props.onToggleDarkTheme();
+        }} />
+
+        <A href="/settings" activeClass={activeLinkClass} class='btn-primary-filled'>
             <SmallIcon path={settings} />
             Settings
-        </NavButton>
+        </A>
 
     </nav>
 }
 
-type ButtonProps<P> = {
-    as?: Component<P>,
-    class?: string,
-    children?: JSX.Element | JSX.Element[],
-} & P;
-
-function NavButton<P>(props: ButtonProps<P>) {
-    const [as, rest] = splitProps(props, ["as", "class", "children"]);
-
-    const As: Component<any> = as.as ?? ((p) => <span {...p} role='button' />);
-    return <As {...rest}
-        class={`${as.class ?? ''} btn-primary-filled`}>
-        {as.children}
-    </As>
-}
-
-function MenuItem<P>(props: ButtonProps<P>) {
-    const [as, rest] = splitProps(props, ["as", "class"]);
-    const As: Component<any> = as.as ?? ((p) => <button {...p} />);
-    return <As {...rest}
-        class={`${as.class ?? ''} p-2 w-full gap-2 rounded-sm text-sm text-start inline-flex items-center hover:text-onSecondaryContainer hover:bg-secondaryContainer`}
-    />
-}
 
 type DropDownProps = {
     text: string,
@@ -119,13 +105,13 @@ function DropDown(props: DropDownProps) {
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}>
 
-        <NavButton>
+        <button class='btn-primary-filled'>
             {props.text}
             <SmallIcon path={props.icon} />
-        </NavButton>
+        </button>
 
         <Show when={show()}>
-            <div class='absolute rounded-sm top-10 p-2 flex flex-col gap-1 bg-primary'>
+            <div class='absolute rounded-sm top-9 p-2 flex flex-col gap-2 bg-primary'>
                 {props.children(() => setShow(false))}
             </div>
         </Show>
