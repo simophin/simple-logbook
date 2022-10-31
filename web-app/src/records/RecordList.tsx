@@ -6,9 +6,8 @@ type Props = {
 
 
 export default function RecordList(props: Props) {
-    return <LazyList>
-        <LazyList.Item>
-            <h1>Title</h1>
-        </LazyList.Item>
-    </LazyList>
+    return <LazyList builder={({ item, items }) => {
+        item(() => <div>First element</div>);
+        items(100, (i) => <div>Element {i}</div>);
+    }} />
 }

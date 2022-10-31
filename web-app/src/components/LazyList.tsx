@@ -1,4 +1,4 @@
-import { createMemo, JSX } from "solid-js";
+import { createMemo, JSX, onMount } from "solid-js";
 
 
 type SingleItemProps = {
@@ -13,8 +13,10 @@ type MultipleItemProps = {
 }
 
 type BuilderProps = {
-    item: (props: SingleItemProps) => unknown,
-    items: (props: MultipleItemProps) => unknown,
+    item: (factory: () => JSX.Element, key?: any) => unknown,
+    items: (count: number,
+        factory: (index: number) => JSX.Element,
+        key?: (index: number) => any) => unknown,
 }
 
 type Props = {
@@ -22,17 +24,22 @@ type Props = {
 };
 
 export default function LazyList(props: Props) {
-    createMemo(() => {
+    let ele: HTMLDivElement = <div></div> as HTMLDivElement;
+
+    const items = createMemo(() => {
         const items: Array<SingleItemProps | MultipleItemProps> = [];
 
         props.builder({
-            item: (props) => items.push(props),
-            items: (props) => items.push(props),
+            item: (factory, key) => items.push({ factory, key }),
+            items: (count, factory, key) => items.push({ count, factory, key }),
         });
 
-        
+        return items;
     });
 
+    onMount(() => {
+        console.log(`bounding of element:`, ele.getBoundingClientRect());
+    });
 
-    return <>Hello, world</>;
+    return ele;
 }
