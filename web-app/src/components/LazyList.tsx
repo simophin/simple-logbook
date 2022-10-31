@@ -1,29 +1,38 @@
-import { JSX } from "solid-js";
+import { createMemo, JSX } from "solid-js";
 
-type MultipleProps = {
+
+type SingleItemProps = {
+    key?: any,
+    factory: () => JSX.Element,
+}
+
+type MultipleItemProps = {
     count: number,
-    key: (index: number) => any,
-    children: (index: number) => JSX.Element,
+    factory: (index: number) => JSX.Element,
+    key?: (index: number) => any,
 }
 
-type SingleProps = {
-    children: () => JSX.Element | JSX.Element[],
+type BuilderProps = {
+    item: (props: SingleItemProps) => unknown,
+    items: (props: MultipleItemProps) => unknown,
 }
-
-type ItemDesc = SingleProps | MultipleProps;
 
 type Props = {
-    children: ItemDesc[],
+    builder: (bp: BuilderProps) => unknown,
 };
 
 export default function LazyList(props: Props) {
+    createMemo(() => {
+        const items: Array<SingleItemProps | MultipleItemProps> = [];
+
+        props.builder({
+            item: (props) => items.push(props),
+            items: (props) => items.push(props),
+        });
+
+        
+    });
+
+
     return <>Hello, world</>;
-}
-
-LazyList.Item = function (props: SingleProps): ItemDesc {
-    return props;
-}
-
-LazyList.Items = function (props: MultipleProps): ItemDesc {
-    return props;
 }
