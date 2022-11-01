@@ -33,11 +33,11 @@ export default function App() {
             charts={[{ title: "Chart 1", id: "1" }]}
             onAddRecordClicked={() => { }} />
 
-            <div class="w-full bg-background text-onBackground flex-grow">
-              <Routes>
-                <Route path='/records' component={RecordList} />
-              </Routes>
-            </div>
+          <div class="w-full bg-background text-onBackground flex flex-grow overflow-y-hidden">
+            <Routes>
+              <Route path='/records' component={RecordList} />
+            </Routes>
+          </div>
         </AuthContainer>
       </Themed>
     </DarkModeContext.Provider>
