@@ -45,16 +45,7 @@ export default function LazyList(props: Props) {
 
     // Calculate what's in the content box
     createEffect(() => {
-        console.log(
-            'Scroll position:', scrollTop(),
-            ', visibleHeight:', viewportHeight(),
-            ', contentBox:', contentBoxRect()
-        );
 
-        contentBox.innerHTML = '';
-        for (let index = 0; index < 1000; index++) {
-            contentBox.appendChild(<div>{index}</div> as Node);
-        }
     });
 
     return root;
@@ -76,80 +67,92 @@ function observeEvent(node: HTMLElement, type: keyof HTMLElementEventMap): Obser
     });
 }
 
-function* iterateGroupItem(
-    item: GroupItemProps,
-    startOffset?: number,
-    reverse?: boolean
-) {
-    if (typeof startOffset === 'number') {
-        if (startOffset >= item.count || startOffset < 0) throw 'Out of range';
-    } else {
-        startOffset = item.count - 1;
-    }
 
-    if (reverse === true) {
-        for (let i = startOffset; i >= 0; i--) {
-            yield { key: item.key?.(i), factory: () => item.factory(i) }
-        }
-    } else {
-        for (let i = startOffset, size = item.count; i < size; i++) {
-            yield { key: item.key?.(i), factory: () => item.factory(i) }
+function findStartItem(
+    items: Array<SingleItemProps | GroupItemProps>,
+    startKey: any,
+) {
+    let itemIndex = 0, indexInTotal = 0;
+    for (let n = items.length; itemIndex < n; itemIndex++) {
+        const item = items[itemIndex];
+        if ('count' in item) {
+            for (let i = 0, size = item.count; i < size; i++) {
+                const itemKey = item.key?.(i) ?? indexInTotal;
+                if (startKey === itemKey) {
+                    return {
+                        itemIndex,
+                        offsetInGroup: i,
+                        indexInTotal,
+                    };
+                }
+                indexInTotal++;
+            }
+        } else {
+            const itemKey = item.key ?? indexInTotal;
+            if (startKey === itemKey) {
+                return {
+                    itemIndex,
+                    indexInTotal,
+                };
+            }
+            indexInTotal++;
         }
     }
 }
 
 function* iterateItems(
     items: Array<SingleItemProps | GroupItemProps>,
-    startKey?: any,
-    reverse?: boolean
+    params: { startKey: any, reverse?: boolean } | undefined,
 ): Generator<{ key: any, factory: () => JSX.Element }> {
-    if (reverse == true) {
-
-    } else {
-
+    if (items.length === 0) {
+        return;
     }
 
+    const start = typeof params !== 'undefined' ? findStartItem(items, params.startKey) : undefined;
+    const reverse = params?.reverse;
 
-    let offset = 0;
-    if (reverse === true) {
-        for (let i = items.length - 1; i >= 0; i--) {
+    let offsetInTotal = start?.indexInTotal ?? 0;
+    if (reverse === true && start) {
+        for (let i = start.itemIndex; i >= 0; i--) {
             const item = items[i];
             if ('count' in item) {
-                for (let j = item.count - 1; j >= 0; j--) {
+                for (let j = start.offsetInGroup ?? item.count - 1; j >= 0; j--) {
                     yield {
-                        key: item.key?.(j),
+                        key: item.key?.(j) ?? offsetInTotal,
                         factory: () => item.factory(j),
-                        offset,
                     };
-                    offset++;
+                    offsetInTotal--;
                 }
+                start.offsetInGroup = undefined;
             } else {
                 yield {
-                    key: item.key,
+                    key: item.key ?? offsetInTotal,
                     factory: item.factory,
-                    offset,
                 };
-                offset++;
+                offsetInTotal--;
             }
         }
-    } else {
-        for (const item of items) {
+    } else if (reverse !== true) {
+        for (let i = start?.itemIndex ?? 0, n = items.length; i < n; i++) {
+            const item = items[i];
             if ('count' in item) {
-                for (let i = 0, n = item.count; i < n; i++) {
+                for (let j = start?.offsetInGroup ?? 0, size = item.count; j < size; j++) {
                     yield {
-                        key: item.key?.(i),
-                        factory: () => item.factory(i),
-                        offset,
+                        key: item.key?.(j) ?? offsetInTotal,
+                        factory: () => item.factory(j),
                     };
-                    offset++;
+                    offsetInTotal++;
+                }
+
+                if (start) {
+                    start.offsetInGroup = undefined;
                 }
             } else {
                 yield {
-                    key: item.key,
+                    key: item.key ?? offsetInTotal,
                     factory: item.factory,
-                    offset,
                 };
-                offset++;
+                offsetInTotal++;
             }
         }
     }
