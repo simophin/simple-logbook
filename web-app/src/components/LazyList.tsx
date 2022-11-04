@@ -3,21 +3,21 @@ import { createEffect, createMemo, from, createSignal, JSX, onCleanup, onMount, 
 
 
 type SingleItemProps = {
-    key?: any,
+    key?: string,
     factory: () => JSX.Element,
 }
 
 type GroupItemProps = {
     count: number,
     factory: (index: number) => JSX.Element,
-    key?: (index: number) => any,
+    key?: (index: number) => string,
 }
 
 type BuilderProps = {
-    item: (factory: () => JSX.Element, key?: any) => unknown,
+    item: (factory: () => JSX.Element, key?: string) => unknown,
     items: (count: number,
         factory: (index: number) => JSX.Element,
-        key?: (index: number) => any) => unknown,
+        key?: (index: number) => string) => unknown,
 }
 
 type Props = {
@@ -25,11 +25,14 @@ type Props = {
 };
 
 export default function LazyList(props: Props) {
-    const root = <div class="flex-grow overflow-y-scroll"><div class="relative" /></div> as HTMLElement;
-    const contentBox = root.firstChild as HTMLElement;
+    const root = <div class="flex-grow overflow-y-scroll">
+        <div><div class="relative"></div></div>
+    </div> as HTMLElement;
+    const virtualBox = root.firstChild as HTMLElement;
+    const contentBox = virtualBox.firstChild as HTMLElement;
 
-    const viewportHeight = from(observeResize(root).pipe(map(({ height }) => height)));
-    const contentBoxRect = from(observeResize(contentBox));
+    // const viewportHeight = from(observeResize(root).pipe(map(({ height }) => height)));
+    // const contentBoxRect = from(observeResize(contentBox));
     const scrollTop = from(observeEvent(root, 'scroll').pipe(map(() => root.scrollTop)));
 
     const items = createMemo(() => {
@@ -45,7 +48,34 @@ export default function LazyList(props: Props) {
 
     // Calculate what's in the content box
     createEffect(() => {
+        const scrollY = scrollTop();
 
+        const firstVisibleChild = findFirstVisible(root, contentBox.children);
+        if (firstVisibleChild) {
+            const contentTop = calcOffsetY(virtualBox, firstVisibleChild.child);
+            contentBox.style.top = contentTop + 'px';
+            while (contentBox.firstChild !== firstVisibleChild.child) {
+                contentBox.removeChild(contentBox.firstChild!);
+            }
+        }
+
+        const viewportHeight = root.getBoundingClientRect().height;
+        if (contentBox.offsetHeight < viewportHeight * 3) {
+            const startKey = (contentBox.lastChild as HTMLElement)?.dataset?.key;
+            console.log('startKey =', startKey);
+            for (const item of iterateItems(items(), startKey ? { startKey } : undefined)) {
+                if (item.key !== startKey) {
+                    console.log('Append node with key', item.key);
+                    const node = item.factory() as HTMLElement;
+                    node.dataset.key = item.key;
+                    contentBox.appendChild(node);
+
+                    if (contentBox.offsetHeight >= viewportHeight * 3) {
+                        break;
+                    }
+                }
+            }
+        }
     });
 
     return root;
@@ -118,7 +148,7 @@ function* iterateItems(
             if ('count' in item) {
                 for (let j = start.offsetInGroup ?? item.count - 1; j >= 0; j--) {
                     yield {
-                        key: item.key?.(j) ?? offsetInTotal,
+                        key: item.key?.(j) ?? offsetInTotal.toString(),
                         factory: () => item.factory(j),
                     };
                     offsetInTotal--;
@@ -126,7 +156,7 @@ function* iterateItems(
                 start.offsetInGroup = undefined;
             } else {
                 yield {
-                    key: item.key ?? offsetInTotal,
+                    key: item.key ?? offsetInTotal.toString(),
                     factory: item.factory,
                 };
                 offsetInTotal--;
@@ -138,7 +168,7 @@ function* iterateItems(
             if ('count' in item) {
                 for (let j = start?.offsetInGroup ?? 0, size = item.count; j < size; j++) {
                     yield {
-                        key: item.key?.(j) ?? offsetInTotal,
+                        key: item.key?.(j) ?? offsetInTotal.toString(),
                         factory: () => item.factory(j),
                     };
                     offsetInTotal++;
@@ -149,11 +179,40 @@ function* iterateItems(
                 }
             } else {
                 yield {
-                    key: item.key ?? offsetInTotal,
+                    key: item.key ?? offsetInTotal.toString(),
                     factory: item.factory,
                 };
                 offsetInTotal++;
             }
         }
     }
+}
+
+function findFirstVisible(target: HTMLElement, elementsToSearch: Iterable<Element>): {
+    child: Element,
+    offsetY: number,
+} | undefined {
+    const ourBounds = target.getBoundingClientRect();
+    for (const ele of elementsToSearch) {
+        const childRect = ele.getBoundingClientRect()
+        if (intersects(childRect, ourBounds)) {
+            return {
+                child: ele,
+                offsetY: childRect.top - ourBounds.top,
+            }
+        }
+    }
+}
+
+// target - y
+function calcOffsetY(base: Element, target: Element) {
+    return target.getBoundingClientRect().top - base.getBoundingClientRect().top
+}
+
+function intersects(r1: DOMRectReadOnly, r2: DOMRectReadOnly) {
+    const completelyOutside = r1.right < r2.left ||
+        r1.left > r2.right ||
+        r1.top > r2.bottom ||
+        r1.bottom < r2.top;
+    return !completelyOutside;
 }
