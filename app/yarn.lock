@@ -5846,7 +5846,7 @@ jest-docblock@^27.5.1:
   dependencies:
     detect-newline "^3.0.0"
 
-jest-each@*:
+jest-each@*, jest-each@^29.3.1:
   version "29.3.1"
   resolved "https://registry.yarnpkg.com/jest-each/-/jest-each-29.3.1.tgz#bc375c8734f1bb96625d83d1ca03ef508379e132"
   integrity sha512-qrZH7PmFB9rEzCSl00BWjZYuS1BSOH8lLuC0azQE9lQrAx3PWGKHTDudQiOSwIy5dGAJh7KA0ScYlCP7JxvFYA==
@@ -5867,17 +5867,6 @@ jest-each@^27.5.1:
     jest-get-type "^27.5.1"
     jest-util "^27.5.1"
     pretty-format "^27.5.1"
-
-jest-each@^28.1.3:
-  version "28.1.3"
-  resolved "https://registry.yarnpkg.com/jest-each/-/jest-each-28.1.3.tgz#bdd1516edbe2b1f3569cfdad9acd543040028f81"
-  integrity sha512-arT1z4sg2yABU5uogObVPvSlSMQlDA48owx07BDPAiasW0yYpYHYOo4HHLz9q0BVzDVU4hILFjzJw0So9aCL/g==
-  dependencies:
-    "@jest/types" "^28.1.3"
-    chalk "^4.0.0"
-    jest-get-type "^28.0.2"
-    jest-util "^28.1.3"
-    pretty-format "^28.1.3"
 
 jest-environment-jsdom@^27.5.1:
   version "27.5.1"
