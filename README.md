@@ -66,7 +66,7 @@ limitations under the License.
 
 ### ImageMagick license
 
-Copyright 2021 Fanchao Liu
+Copyright @ 1999 ImageMagick Studio LLC
 
 Licensed under the ImageMagick License (the "License"); you may not use
 this file except in compliance with the License.  You may obtain a copy
