@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
+use sqlx::query_as;
 
-use crate::sqlx_ext::Json;
+use crate::{service::Result, sqlx_ext::Json, state::AppState};
 
 #[derive(serde::Deserialize)]
 pub struct Input {
@@ -35,4 +36,20 @@ group by time_point
 order by time_point
 "#;
 
-crate::list_sql_impl!(Input, DataPoint, query_as, SQL, from, to, accounts, freq);
+pub async fn execute(
+    state: &AppState,
+    Input {
+        from,
+        to,
+        freq,
+        accounts,
+    }: Input,
+) -> Result<Vec<DataPoint>> {
+    Ok(query_as(SQL)
+        .bind(from)
+        .bind(to)
+        .bind(freq)
+        .bind(accounts)
+        .fetch_all(&state.conn)
+        .await?)
+}

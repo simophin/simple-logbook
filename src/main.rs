@@ -134,17 +134,17 @@ async fn main() {
     endpoint!(app, post, "/api/reports/balance", report::balance);
 
     // invoice related
-    endpoint!(app, post, "/api/invoices", invoice::save);
-    endpoint!(app, delete, "/api/invoices", invoice::delete);
-    endpoint!(app, post, "/api/invoices/list", invoice::list);
-    endpoint!(app, post, "/api/invoices/items", invoice::save_item);
-    endpoint!(app, post, "/api/invoices/items/list", invoice::list_item);
-    endpoint!(
-        app,
-        post,
-        "/api/invoices/items/categories/search",
-        invoice::search_cat
-    );
+    // endpoint!(app, post, "/api/invoices", invoice::save);
+    // endpoint!(app, delete, "/api/invoices", invoice::delete);
+    // endpoint!(app, post, "/api/invoices/list", invoice::list);
+    // endpoint!(app, post, "/api/invoices/items", invoice::save_item);
+    // endpoint!(app, post, "/api/invoices/items/list", invoice::list_item);
+    // endpoint!(
+    //     app,
+    //     post,
+    //     "/api/invoices/items/categories/search",
+    //     invoice::search_cat
+    // );
 
     // config related
     endpoint_get!(app, "/api/config", config::client::get);
