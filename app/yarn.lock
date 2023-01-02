@@ -1529,10 +1529,10 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
-"@js-joda/core@^5.4.2":
-  version "5.4.2"
-  resolved "https://registry.yarnpkg.com/@js-joda/core/-/core-5.4.2.tgz#fedb8b4b98cf0750daf5802fa2a661edbf83892b"
-  integrity sha512-QIDIZ9a0NfDStgD47VaTgwiPjlw1p4QPLwjOB/9+/DqIztoQopPNNAd+HdtQMHgE+ibP3dJacd8/TVL/A1RaaA==
+"@js-joda/core@^5.5.1":
+  version "5.5.1"
+  resolved "https://registry.yarnpkg.com/@js-joda/core/-/core-5.5.1.tgz#3ff98a432c315494fb7a62ff5a2e408260c9c095"
+  integrity sha512-oTFmkyv5MhgkHdZhoe5lwRoKW0t4njPvK3g7ODvK/prkoC5bwylKcyQJMsmjvgHBXoy4u5iLnB5yQ7AljouHAA==
 
 "@leichtgewicht/ip-codec@^2.0.1":
   version "2.0.4"
