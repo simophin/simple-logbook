@@ -1,6 +1,6 @@
 import { Nav, Navbar, NavDropdown } from "react-bootstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Route, Switch, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { LinkContainer } from 'react-router-bootstrap';
 import TransactionListPage from "./pages/TransactionListPage";
 import 'react-bootstrap-typeahead/css/Typeahead.css';
@@ -78,40 +78,39 @@ function App() {
         </Navbar>}
 
 
-        <Switch>
-            <Route path="/charts/income_expense" exact><IncomeExpenseChart /></Route>
-            <Route path="/charts/balance" exact><BalanceChart /></Route>
-            <Route path="/accounts"><AccountListPage /></Route>
-            <Route path="/attachments"><AttachmentListPage /></Route>
-            <Route path="/transactions">
-                {(props) => {
-                    const query = qs.parse(props.location.search.substr(1), { parseArrays: true });
-                    let accounts: string[] | undefined;
-                    let tags: string[] | undefined;
-                    if (typeof query.account === 'string') {
-                        accounts = [query.account];
-                    } else if (_.isArray(query.accounts)) {
-                        accounts = query.accounts as string[];
-                    }
-
-                    if (typeof query.tag === 'string') {
-                        tags = [query.tag];
-                    } else if (_.isArray(query.tags)) {
-                        tags = query.tags as string[];
-                    }
-
-                    return <TransactionListPage
-                        tags={tags}
-                        accounts={accounts} />;
-                }}
-
-            </Route>
-            <Route path="/tags"><TagListPage /></Route>
-            <Route path="/"><TransactionListPage /></Route>
-        </Switch>
+        <Routes>
+            <Route path="/charts/income_expense" element={<IncomeExpenseChart />} />
+            <Route path="/charts/balance" element={<BalanceChart />} />
+            <Route path="/accounts" element={<AccountListPage />} />
+            <Route path="/attachments" element={<AttachmentListPage />} />
+            <Route path="/transactions" element={<TransactionListPageWithArgs />} />
+            <Route path="/tags" element={<TagListPage />} />
+            <Route path="/" element={<TransactionListPage />} />
+        </Routes>
 
         <Authenticator />
     </AppStateContext.Provider>
+}
+
+function TransactionListPageWithArgs() {
+    const query = qs.parse(window.location.search.substr(1), { parseArrays: true });
+    let accounts: string[] | undefined;
+    let tags: string[] | undefined;
+    if (typeof query.account === 'string') {
+        accounts = [query.account];
+    } else if (_.isArray(query.accounts)) {
+        accounts = query.accounts as string[];
+    }
+
+    if (typeof query.tag === 'string') {
+        tags = [query.tag];
+    } else if (_.isArray(query.tags)) {
+        tags = query.tags as string[];
+    }
+
+    return <TransactionListPage
+        tags={tags}
+        accounts={accounts} />;
 }
 
 export default App;
