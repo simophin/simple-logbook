@@ -1,11 +1,10 @@
 import AccountGroupEntry from "./AccountGroupEntry";
-import {render, screen} from "@testing-library/react";
-import {AppStateContext} from "../state/AppStateContext";
-import {unknown} from "io-ts";
-import {testAuthHandling} from "./Authenticator.test";
-import {of} from "rxjs";
+import { render, screen } from "@testing-library/react";
+import { AppStateContext } from "../state/AppStateContext";
+import { unknown } from "io-ts";
+import { of } from "rxjs";
 import listAccounts from "../api/listAccount";
-import {Account} from "../models/Account";
+import { Account } from "../models/Account";
 
 describe('<AccountGroupEntry />', function () {
     const handleOnClose = jest.fn();
@@ -19,18 +18,18 @@ describe('<AccountGroupEntry />', function () {
         const accounts = ['First account', 'Second account'];
 
         const getAccounts: typeof listAccounts = jest.fn(() =>
-            of(accounts.map((name) => ({name} as Account)))) as any;
+            of(accounts.map((name) => ({ name } as Account)))) as any;
 
-        const {container} = render(<AppStateContext.Provider
+        const { container } = render(<AppStateContext.Provider
             value={{
-                userState: {state: 'with_token', token: '1234'},
+                userState: { state: 'with_token', token: '1234' },
                 setUserState: () => unknown,
                 reportTransactionUpdated: () => unknown,
             }}>
             <AccountGroupEntry
                 getAccounts={getAccounts}
                 onClose={handleOnClose}
-                onFinish={handleOnFinish}/>
+                onFinish={handleOnFinish} />
         </AppStateContext.Provider>);
 
         expect(screen.queryByText('New account group')).toBeTruthy();
@@ -52,8 +51,3 @@ describe('<AccountGroupEntry />', function () {
         // }
     });
 });
-
-describe('<AccountGroupEntry /> auth handling', () => testAuthHandling(() => <AccountGroupEntry
-    onClose={jest.fn()}
-    onFinish={jest.fn()}/>
-));

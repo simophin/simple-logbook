@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { firstValueFrom } from "rxjs";
 import { map } from "rxjs/operators";
 import listAttachments, { AttachmentSummary } from "../api/listAttachment";
 import uploadAttachment from "../api/uploadAttachment";
@@ -48,7 +49,7 @@ export default function AttachmentSelect({ value, onChange, readonly }: Props) {
         if (!onChange) {
             return;
         }
-        
+
         const files = fileRef.current?.files;
         if (!files) {
             return;
@@ -56,7 +57,7 @@ export default function AttachmentSelect({ value, onChange, readonly }: Props) {
 
         setUploading(true);
         try {
-            const result = await Promise.all(_.map(files, (f) => uploadAttachment(f, authProps).toPromise()));
+            const result = await Promise.all(_.map(files, (f) => firstValueFrom(uploadAttachment(f, authProps))));
             let newValues = [...value];
             for (const { id } of result) {
                 if (newValues.indexOf(id) < 0) {
