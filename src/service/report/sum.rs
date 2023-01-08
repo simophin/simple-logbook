@@ -48,8 +48,8 @@ pub async fn execute(
     Ok(query_as(SQL)
         .bind(from)
         .bind(to)
-        .bind(freq)
         .bind(accounts)
+        .bind(freq)
         .fetch_all(&state.conn)
         .await?)
 }
