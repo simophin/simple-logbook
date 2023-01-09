@@ -1532,10 +1532,10 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
-"@js-joda/core@^5.5.1":
-  version "5.5.1"
-  resolved "https://registry.yarnpkg.com/@js-joda/core/-/core-5.5.1.tgz#3ff98a432c315494fb7a62ff5a2e408260c9c095"
-  integrity sha512-oTFmkyv5MhgkHdZhoe5lwRoKW0t4njPvK3g7ODvK/prkoC5bwylKcyQJMsmjvgHBXoy4u5iLnB5yQ7AljouHAA==
+"@js-joda/core@^5.5.2":
+  version "5.5.2"
+  resolved "https://registry.yarnpkg.com/@js-joda/core/-/core-5.5.2.tgz#3d7953004d70adf6a0a4140a78c948de758284e0"
+  integrity sha512-retLUN4TwCJ0QJDi9OCJwYVaXAz93NeOkEtEQL98M2bykBOxmURlP0YlfsuE46kItOOVZIWRYC3KsSLhQ1R2Qw==
 
 "@leichtgewicht/ip-codec@^2.0.1":
   version "2.0.4"
