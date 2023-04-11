@@ -7881,10 +7881,10 @@ react-autosuggest@^10.1.0:
     section-iterator "^2.0.0"
     shallow-equal "^1.2.1"
 
-react-bootstrap-typeahead@^6.0.0-alpha.12:
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/react-bootstrap-typeahead/-/react-bootstrap-typeahead-6.0.0.tgz#3b5601d30a4db2adcd3cf815fc36a0a176053f7d"
-  integrity sha512-0eTYwG8sYoY/jGO5Qxx1QMQyiVJlrSgo6xO77xxF93PqVLERgZEdbNMk+y/UX7/HTPcWN4tcCUqAEwVe1DVxog==
+react-bootstrap-typeahead@^6.1.2:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/react-bootstrap-typeahead/-/react-bootstrap-typeahead-6.1.2.tgz#75d96d289d173075c56bb3270296c2ca4632dae6"
+  integrity sha512-waIWRQ4CUZld69iL+EFiuL/2B+N4LecaAKcRTMQey0NDOM7Sxmtl+iELFzGltt2/DK6yvrxEUCbZI8pTztPFXA==
   dependencies:
     "@babel/runtime" "^7.14.6"
     "@popperjs/core" "^2.10.2"
