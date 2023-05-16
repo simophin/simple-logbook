@@ -20,7 +20,7 @@
     "lodash": "^4.17.21",
     "monocle-ts": "^2.3.9",
     "newtype-ts": "^0.3.4",
-    "qs": "^6.11.0",
+    "qs": "^6.11.2",
     "react": "^18.2.0",
     "react-autosuggest": "^10.1.0",
     "react-bootstrap": "^2.7.2",
