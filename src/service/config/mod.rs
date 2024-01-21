@@ -51,7 +51,7 @@ where
     let value = sqlx::query_as("SELECT value FROM configs WHERE name = ? AND id = ?")
         .bind(key)
         .bind(id)
-        .fetch_optional(&mut tx)
+        .fetch_optional(&mut *tx)
         .await?
         .map(|(v,): (String,)| v);
 
@@ -66,7 +66,7 @@ where
                     .bind(key)
                     .bind(id)
                     .bind(&value)
-                    .execute(&mut tx)
+                    .execute(&mut *tx)
                     .await?;
             tx.commit().await?;
         }
@@ -75,7 +75,7 @@ where
             let _ = sqlx::query("DELETE FROM configs WHERE name = ? AND id = ?")
                 .bind(key)
                 .bind(id)
-                .execute(&mut tx)
+                .execute(&mut *tx)
                 .await?;
             tx.commit().await?;
         }

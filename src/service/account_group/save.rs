@@ -19,7 +19,7 @@ pub async fn execute(state: &AppState, groups: Vec<AccountGroup>) -> Result<Gene
         )
         .bind(group_name)
         .bind(accounts)
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?
         .rows_affected();
     }

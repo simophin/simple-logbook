@@ -29,7 +29,7 @@ pub async fn execute(
     let row: Option<(String, Vec<u8>)> =
         sqlx::query_as("SELECT id, data FROM attachments WHERE dataHash = ?")
             .bind(hash_code.as_ref())
-            .fetch_optional(&mut tx)
+            .fetch_optional(&mut *tx)
             .await?;
 
     match row {
@@ -54,7 +54,7 @@ pub async fn execute(
     .bind(name.as_ref())
     .bind(hash_code.as_ref())
     .bind(data)
-    .execute(&mut tx)
+    .execute(&mut *tx)
     .await?;
 
     tx.commit().await?;

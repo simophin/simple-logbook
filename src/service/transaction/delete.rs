@@ -15,7 +15,7 @@ pub async fn execute(state: &AppState, input: Input) -> crate::service::Result<O
     for id in input {
         success += sqlx::query("DELETE FROM transactions WHERE id = ?")
             .bind(id)
-            .execute(&mut tx)
+            .execute(&mut *tx)
             .await?
             .rows_affected() as usize;
     }

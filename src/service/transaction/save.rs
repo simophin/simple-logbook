@@ -41,7 +41,7 @@ pub async fn execute(
             .bind(updated_date)
             .bind(attachments)
             .bind(tags)
-            .execute(&mut tx)
+            .execute(&mut *tx)
             .await?
             .rows_affected() as usize;
     }

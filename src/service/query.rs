@@ -59,7 +59,7 @@ where
         );
 
         query_as_with(&sql, args.clone())
-            .fetch_all(&mut tx)
+            .fetch_all(&mut *tx)
             .await
             .context("Querying list")?
     };
@@ -68,7 +68,7 @@ where
     let aggregates = {
         let sql = format!("with cte as ({sql}) select {aggregate_select} from cte");
         query_as_with::<_, Aggregates, _>(&sql, args)
-            .fetch_one(&mut tx)
+            .fetch_one(&mut *tx)
             .await
             .context("Querying aggregate")?
     };
