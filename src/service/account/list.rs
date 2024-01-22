@@ -5,6 +5,7 @@ use crate::{
     service::{display_sorts_sql, Result, SortOrder, ToSQL},
     state::AppState,
 };
+use axum::extract::{self, State};
 use chrono::NaiveDate;
 
 use crate::sqlx_ext::Json;
@@ -63,16 +64,21 @@ where (?1 is null or trim(?1) = '' or name like '%' || trim(?1) || '%' collate n
   and (?2 is null or name collate nocase in (select value from json_each(?2)))
 "#;
 
-pub async fn execute(state: &AppState, req: Input) -> Result<Vec<Account>> {
-    let Input { q, includes, sorts } = req;
+pub async fn execute(
+    state: State<AppState>,
+    req: extract::Query<Input>,
+) -> Result<extract::Json<Vec<Account>>> {
+    let Input { q, includes, sorts } = req.0;
     let sql = format!(
         "with cte as({SQL}) select * from cte {order}",
         order = display_sorts_sql(sorts)
     );
 
-    Ok(sqlx::query_as(&sql)
-        .bind(q)
-        .bind(includes)
-        .fetch_all(&state.conn)
-        .await?)
+    Ok(extract::Json::from(
+        sqlx::query_as(&sql)
+            .bind(q)
+            .bind(includes)
+            .fetch_all(&state.conn)
+            .await?,
+    ))
 }

@@ -1,35 +1,38 @@
+use axum::extract::{Request, State};
+use axum::http::{Method, StatusCode};
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
+
 use crate::service::login::creds::Signed;
+use crate::service::login::verify;
 use crate::state::AppState;
-use async_trait::async_trait;
 use std::borrow::Cow;
-use tide::http::Method;
-use tide::{Middleware, Next, Request, Response, StatusCode};
+use std::sync::Arc;
 
-pub struct Verifier;
+pub async fn execute(state: State<AppState>, request: Request, next: Next) -> Response {
+    if !request.uri().path().starts_with("/api")
+        || request.uri().path().starts_with("/api/sign")
+        || request.method() == Method::OPTIONS
+    {
+        return next.run(request).await;
+    }
 
-#[async_trait]
-impl Middleware<AppState> for Verifier {
-    async fn handle(&self, req: Request<AppState>, next: Next<'_, AppState>) -> tide::Result {
-        use crate::service::login::verify;
-        if !req.url().path().starts_with("/api")
-            || req.url().path().starts_with("/api/sign")
-            || req.method() == Method::Options
-        {
-            return Ok(next.run(req).await);
-        }
+    let token = request
+        .headers()
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split("Bearer ").skip(1).next())
+        .map(|v| Signed(Cow::from(v)))
+        .unwrap_or_default();
 
-        let token = req
-            .header("Authorization")
-            .and_then(|v| v.last().as_str().split("Bearer ").skip(1).next())
-            .map(|v| Signed(Cow::from(v)))
-            .unwrap_or_default();
+    let verified = match verify::query(&state.0, verify::Input { token }).await {
+        Ok(v) => v,
+        Err(e) => return e.into_response(),
+    };
 
-        let verified = verify::query(req.state(), verify::Input { token }).await?;
-
-        if verified {
-            Ok(next.run(req).await)
-        } else {
-            Ok(Response::from(StatusCode::Unauthorized))
-        }
+    if verified {
+        next.run(request).await
+    } else {
+        (StatusCode::UNAUTHORIZED, "Unauthorized").into_response()
     }
 }

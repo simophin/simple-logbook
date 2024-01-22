@@ -90,7 +90,7 @@ mod tests {
     use super::*;
     use crate::state::AppState;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn config_rw_works() {
         let AppState { conn, .. } = AppState::new_test().await;
 

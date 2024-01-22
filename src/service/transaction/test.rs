@@ -47,7 +47,7 @@ fn normalise_transaction_list(mut v: Vec<Transaction>) -> Vec<Transaction> {
     v.into_iter().map(normalise_transaction).collect_vec()
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn transaction_works() {
     let state = AppState::new_test().await;
 

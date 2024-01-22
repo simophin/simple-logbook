@@ -3,7 +3,7 @@ use crate::service::login::creds::Signed;
 use crate::state::AppState;
 use std::borrow::Cow;
 
-#[async_std::test]
+#[tokio::test]
 async fn login_works() {
     let state = AppState::new_test().await;
 

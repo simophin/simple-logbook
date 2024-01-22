@@ -3,7 +3,7 @@ use crate::state::AppState;
 
 use super::*;
 
-#[async_std::test]
+#[tokio::test]
 async fn account_group_rw_works() {
     let state = AppState::new_test().await;
     save::execute(

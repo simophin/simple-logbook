@@ -26,7 +26,7 @@ pub async fn new_attachment(s: &AppState) -> (String, Bytes) {
     (id, data)
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn attachment_rw_works() {
     use super::*;
 
@@ -71,10 +71,9 @@ async fn attachment_rw_works() {
     assert_eq!(output.num_affected, 1);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn list_by_account_works() {
     use super::*;
-    
 
     let app_state = AppState::new_test().await;
     let attachments = vec![

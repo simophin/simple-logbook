@@ -54,7 +54,7 @@ mod tests {
     use super::*;
     use crate::state::AppState;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn client_config_works() {
         let state = AppState::new_test().await;
         assert_eq!(

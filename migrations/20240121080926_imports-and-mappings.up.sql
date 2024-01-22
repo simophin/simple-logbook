@@ -17,5 +17,8 @@ create index import_transactions_transaction_id_idx on import_transactions(trans
 
 
 create table mappings (
-    
+    mapping_type text not null check (mapping_type in ('account')),
+    source text not null,
+    dest text not null,
+    primary key (mapping_type, source)
 );
