@@ -1,14 +1,13 @@
-use serde::Deserialize;
+use axum::extract;
 
 use crate::{service::Result, state::AppState};
 
 use super::models::AccountGroup;
 
-#[derive(Deserialize, Default)]
-pub struct Input {}
-
-pub async fn execute(state: &AppState, _: Input) -> Result<Vec<AccountGroup>> {
-    Ok(sqlx::query_as("select * from account_groups_view")
-        .fetch_all(&state.conn)
-        .await?)
+pub async fn execute(state: extract::State<AppState>) -> Result<extract::Json<Vec<AccountGroup>>> {
+    Ok(extract::Json::from(
+        sqlx::query_as("select * from account_groups_view")
+            .fetch_all(&state.conn)
+            .await?,
+    ))
 }

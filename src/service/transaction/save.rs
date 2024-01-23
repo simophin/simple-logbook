@@ -3,6 +3,8 @@ use crate::{
     state::AppState,
 };
 
+use axum::extract::{Json, State};
+
 use super::model::Transaction;
 
 //language=sql
@@ -13,9 +15,9 @@ values (?, ?, ?, ?, ?, ?, ?, ?, ?)
 "#;
 
 pub async fn execute(
-    state: &AppState,
-    transactions: Vec<Transaction>,
-) -> Result<GenericUpdateResponse> {
+    state: State<AppState>,
+    Json(transactions): Json<Vec<Transaction>>,
+) -> Result<Json<GenericUpdateResponse>> {
     let mut num_affected: usize = 0;
     let mut tx = state.conn.begin().await?;
 
@@ -47,5 +49,5 @@ pub async fn execute(
     }
 
     tx.commit().await?;
-    Ok(GenericUpdateResponse { num_affected })
+    Ok(GenericUpdateResponse { num_affected }.into())
 }

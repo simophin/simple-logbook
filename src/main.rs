@@ -5,7 +5,7 @@ use axum::extract::{Request, State};
 use axum::http::{Method, StatusCode};
 use axum::middleware::from_fn_with_state;
 use axum::response::Response;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 use rust_embed::RustEmbed;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
@@ -56,7 +56,7 @@ async fn serve_static_asset(
 #[tokio::main]
 async fn main() {
     let _ = dotenvy::dotenv();
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     let port = u16::from_str(
         std::env::var("PORT")
@@ -97,12 +97,17 @@ async fn main() {
         ])
         .allow_origin(cors::Any);
 
-    let api_routes = Router::new().nest("/account", service::account::router());
-
     let app = Router::new()
-        .nest("/api", api_routes)
+        .nest("/", service::account::router())
+        .nest("/", service::account_group::router())
+        .nest("/", service::login::router())
+        .nest("/", service::config::router())
+        .nest("/", service::report::router())
+        .nest("/", service::tag::router())
+        .nest("/", service::transaction::router())
         .route("/public", get(serve_static_asset))
         .route("/", get(serve_static_asset))
+        .layer(TraceLayer::new_for_http())
         .layer(cors)
         .route_layer(from_fn_with_state(
             state.clone(),

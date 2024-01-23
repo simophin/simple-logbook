@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use crate::service::login::creds::Signed;
+use axum::{extract::State, Json};
 use serde_derive::*;
 
 use crate::state::AppState;
@@ -20,12 +21,12 @@ pub struct Output {
 }
 
 pub async fn execute(
-    state: &AppState,
-    Input {
+    state: State<AppState>,
+    Json(Input {
         old_password,
         new_password,
-    }: Input,
-) -> Result<Output> {
+    }): Json<Input>,
+) -> Result<Json<Output>> {
     use super::creds::*;
     use crate::service::config;
     let credentials = config::update(
@@ -69,5 +70,6 @@ pub async fn execute(
                 ))
             })
             .unwrap_or_default(),
-    })
+    }
+    .into())
 }

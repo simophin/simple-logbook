@@ -5,5 +5,5 @@ use crate::state::AppState;
 mod list;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/", get(list::execute))
+    Router::new().route("/api/accounts", get(list::execute))
 }

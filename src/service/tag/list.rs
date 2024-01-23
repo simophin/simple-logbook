@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use axum::{extract::State, Json};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -77,14 +78,14 @@ group by tag
 "#;
 
 pub async fn execute(
-    state: &AppState,
-    Input {
+    state: State<AppState>,
+    Json(Input {
         sorts,
         limit,
         offset,
         q,
-    }: Input,
-) -> Result<PaginatedResponse<Tag>> {
+    }): Json<Input>,
+) -> Result<Json<PaginatedResponse<Tag>>> {
     let (data, (total,)) = create_paginated_query(
         &state.conn,
         SQL,
@@ -95,5 +96,5 @@ pub async fn execute(
         "COUNT(*)",
     )
     .await?;
-    Ok(PaginatedResponse { data, total })
+    Ok(PaginatedResponse { data, total }.into())
 }

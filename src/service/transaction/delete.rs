@@ -1,4 +1,5 @@
 use crate::state::AppState;
+use axum::{extract::State, Json};
 use serde_derive::*;
 
 pub type Input = Vec<String>;
@@ -9,7 +10,10 @@ pub struct Output {
     num_deleted: usize,
 }
 
-pub async fn execute(state: &AppState, input: Input) -> crate::service::Result<Output> {
+pub async fn execute(
+    state: State<AppState>,
+    Json(input): Json<Input>,
+) -> crate::service::Result<Json<Output>> {
     let mut tx = state.conn.begin().await?;
     let mut success = 0;
     for id in input {
@@ -23,5 +27,6 @@ pub async fn execute(state: &AppState, input: Input) -> crate::service::Result<O
 
     Ok(Output {
         num_deleted: success,
-    })
+    }
+    .into())
 }
