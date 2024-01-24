@@ -1,3 +1,5 @@
+use axum::extract::State;
+use axum::Json;
 use serde_derive::*;
 
 use super::creds::*;
@@ -15,8 +17,11 @@ pub struct Output {
     token: Signed<'static>,
 }
 
-pub async fn execute(state: &AppState, Input { password }: Input) -> Result<Output> {
-    CredentialsConfig::from_app(state)
+pub async fn execute(
+    state: State<AppState>,
+    Json(Input { password }): Json<Input>,
+) -> Result<Json<Output>> {
+    CredentialsConfig::from_app(&state)
         .await
         .and_then(|c| {
             c.verify_password(&password).map(|_| Output {
@@ -24,4 +29,5 @@ pub async fn execute(state: &AppState, Input { password }: Input) -> Result<Outp
             })
         })
         .ok_or(Error::InvalidCredentials)
+        .map(|o| o.into())
 }

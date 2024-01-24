@@ -1,4 +1,5 @@
-use crate::{sqlx_ext::Json, state::AppState, service::Result};
+use crate::{service::Result, sqlx_ext::Json, state::AppState};
+use axum::extract;
 use chrono::NaiveDate;
 
 #[derive(serde::Deserialize)]
@@ -43,12 +44,15 @@ select balanceDate date, balance
 from balance
 "#;
 
-pub async fn execute(state: &AppState, Input { from, to, accounts }: Input) -> Result<Vec<DataRow>> {
+pub async fn execute(
+    state: extract::State<AppState>,
+    extract::Json(Input { from, to, accounts }): extract::Json<Input>,
+) -> Result<extract::Json<Vec<DataRow>>> {
     Ok(sqlx::query_as(SQL)
         .bind(from)
         .bind(to)
         .bind(accounts)
         .fetch_all(&state.conn)
         .await?
-    )
+        .into())
 }

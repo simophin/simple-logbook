@@ -8,6 +8,7 @@ mod query;
 pub mod report;
 pub mod tag;
 pub mod transaction;
+pub mod import;
 
 pub use error::Error;
 use itertools::Itertools;

@@ -1,3 +1,5 @@
+use axum::{extract::State, Json};
+
 use crate::{
     service::{GenericUpdateResponse, Result},
     state::AppState,
@@ -5,7 +7,10 @@ use crate::{
 
 use super::models::AccountGroup;
 
-pub async fn execute(state: &AppState, groups: Vec<AccountGroup>) -> Result<GenericUpdateResponse> {
+pub async fn execute(
+    state: State<AppState>,
+    Json(groups): Json<Vec<AccountGroup>>,
+) -> Result<Json<GenericUpdateResponse>> {
     let mut tx = state.conn.begin().await?;
     let mut num_affected: u64 = 0;
 
@@ -25,7 +30,7 @@ pub async fn execute(state: &AppState, groups: Vec<AccountGroup>) -> Result<Gene
     }
 
     tx.commit().await?;
-    Ok(GenericUpdateResponse {
+    Ok(Json::from(GenericUpdateResponse {
         num_affected: num_affected as usize,
-    })
+    }))
 }

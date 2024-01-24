@@ -9,8 +9,9 @@ use crate::service;
 use crate::service::query::create_paginated_query;
 use crate::service::SortOrder;
 use crate::service::ToSQL;
-use crate::sqlx_ext::Json;
 use crate::state::AppState;
+
+use axum::extract::{Json, State};
 
 #[derive(Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -38,9 +39,9 @@ pub struct Input {
     #[serde(default = "default_sorts")]
     pub sorts: Cow<'static, [Sort]>,
 
-    pub accounts: Option<Json<Vec<String>>>,
-    pub tags: Option<Json<Vec<String>>>,
-    pub account_groups: Option<Json<Vec<String>>>,
+    pub accounts: Option<crate::sqlx_ext::Json<Vec<String>>>,
+    pub tags: Option<crate::sqlx_ext::Json<Vec<String>>>,
+    pub account_groups: Option<crate::sqlx_ext::Json<Vec<String>>>,
 }
 
 const DEFAULT_SORTS: &[Sort] = &[
@@ -123,7 +124,10 @@ const SQL: &'static str = r#"
     and (?3 is null or ?3 = '' or t.transDate <= ?3)
 "#;
 
-pub async fn execute(state: &AppState, input: Input) -> super::super::Result<Output> {
+pub async fn execute(
+    state: State<AppState>,
+    Json(input): Json<Input>,
+) -> super::super::Result<Json<Output>> {
     let (data, (total, amount_total)) = create_paginated_query(
         &state.conn,
         SQL,
@@ -146,5 +150,6 @@ pub async fn execute(state: &AppState, input: Input) -> super::super::Result<Out
         data,
         total,
         amount_total,
-    })
+    }
+    .into())
 }

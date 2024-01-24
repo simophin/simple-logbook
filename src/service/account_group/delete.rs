@@ -1,3 +1,5 @@
+use axum::extract;
+
 use crate::{
     service::{GenericUpdateResponse, Result},
     sqlx_ext::Json,
@@ -12,11 +14,14 @@ pub struct Input {
 
 pub type Output = GenericUpdateResponse;
 
-pub async fn execute(state: &AppState, Input { group_names }: Input) -> Result<Output> {
-    let result = sqlx::query(
+pub async fn execute(
+    state: extract::State<AppState>,
+    extract::Query(Input { group_names }): extract::Query<Input>,
+) -> Result<extract::Json<Output>> {
+    let output: Output = sqlx::query(
         "delete from account_groups where groupName in (select trim(value) from json_each(?)) collate nocase"
     )
     .bind(group_names)
-    .execute(&state.conn).await?;
-    Ok(result.into())
+    .execute(&state.conn).await?.into();
+    Ok(extract::Json::from(output))
 }

@@ -3,6 +3,8 @@ use crate::{
     state::AppState,
 };
 
+use axum::extract::{Json, State};
+
 pub const fn default_keep_days() -> i64 {
     7
 }
@@ -24,12 +26,14 @@ where id in (select r.id
 "#;
 
 pub async fn execute(
-    state: &AppState,
-    Input { keep_days }: Input,
-) -> Result<GenericUpdateResponse> {
-    Ok(sqlx::query(SQL)
+    state: State<AppState>,
+    Json(Input { keep_days }): Json<Input>,
+) -> Result<Json<GenericUpdateResponse>> {
+    let res: GenericUpdateResponse = sqlx::query(SQL)
         .bind(keep_days)
         .execute(&state.conn)
         .await?
-        .into())
+        .into();
+
+    Ok(res.into())
 }

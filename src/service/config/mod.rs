@@ -3,8 +3,11 @@ pub mod client;
 use std::borrow::Cow;
 use std::borrow::Cow::Owned;
 
+use axum::Router;
 use serde::de::DeserializeOwned;
 use sqlx::SqlitePool;
+
+use crate::state::AppState;
 
 pub async fn get(key: &str, id: Option<&str>, conn: &SqlitePool) -> anyhow::Result<Option<String>> {
     let id = id.unwrap_or("");
@@ -85,12 +88,21 @@ where
     Ok(r)
 }
 
+pub fn router() -> Router<AppState> {
+    Router::new().nest(
+        "/api/configs",
+        Router::new()
+            .route("/", axum::routing::get(client::get::execute))
+            .route("/", axum::routing::post(client::save::execute)),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::state::AppState;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn config_rw_works() {
         let AppState { conn, .. } = AppState::new_test().await;
 

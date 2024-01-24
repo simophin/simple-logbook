@@ -1,75 +1,59 @@
-use std::convert::TryFrom;
+use std::net::IpAddr;
 use std::str::FromStr;
 
-#[cfg(not(debug_assertions))]
-use rust_embed::*;
+use axum::extract::Request;
+use axum::http::{Method, StatusCode};
+use axum::middleware::from_fn_with_state;
+use axum::response::Response;
+use axum::routing::get;
+use axum::Router;
+use rust_embed::RustEmbed;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
-use tide::http::headers::HeaderValue;
-use tide::log::LevelFilter;
-use tide::security::CorsMiddleware;
+use tokio::net::TcpListener;
+use tower_http::cors::{self, Any, CorsLayer};
+use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
 
 mod middleware;
 #[macro_use]
 pub mod service;
-#[macro_use]
-mod service_adapter;
+// #[macro_use]
+// mod service_adapter;
 mod sqlx_ext;
 mod state;
 #[macro_use]
 mod utils;
 
-#[cfg(not(debug_assertions))]
 #[derive(RustEmbed)]
 #[folder = "app/build"]
 #[prefix = "public/"]
 struct Asset;
 
-#[cfg(not(debug_assertions))]
-async fn serve_react_assert(req: tide::Request<AppState>) -> tide::Result {
-    use tide::StatusCode;
-    let path = match req.url().path() {
+async fn serve_static_asset(req: Request) -> Result<Response, (StatusCode, &'static str)> {
+    let path = match req.uri().path() {
         p if p.eq_ignore_ascii_case("/") || !p.starts_with("/public") => "public/index.html",
         p if p.starts_with("/") => &p[1..],
         p => p,
     };
 
-    let asset = Asset::get(path)
-        .ok_or_else(|| tide::Error::from_str(StatusCode::NotFound, "Unable to find given path"))?;
+    let asset =
+        Asset::get(path).ok_or_else(|| (StatusCode::NOT_FOUND, "Unable to find given path"))?;
+
     let mime = mime_guess::from_path(path).first_or_octet_stream();
 
-    Ok(tide::Response::builder(StatusCode::Ok)
-        .content_type(mime.as_ref())
+    Ok(Response::builder()
+        .header("Content-Type", mime.as_ref())
         .header("Cache-Control", "max-age=2678400")
-        .body(tide::Body::from(asset.data.as_ref()))
-        .build())
+        .body(asset.data.into())
+        .unwrap())
 }
 
-#[cfg(debug_assertions)]
-async fn serve_react_assert(req: tide::Request<AppState>) -> tide::Result {
-    let mut url = req.url().clone();
-    url.set_host(Some("127.0.0.1"))?;
-    let _ = url.set_port(Some(3000));
-    let mut builder = surf::RequestBuilder::new(req.method(), url);
-    for (name, value) in req.iter() {
-        builder = builder.header(name, value);
-    }
-
-    let mut surf_res = builder.await?;
-    let mut res = tide::Response::new(surf_res.status());
-    for (name, value) in surf_res.iter() {
-        res.insert_header(name, value);
-    }
-    res.set_body(surf_res.take_body());
-    Ok(res)
-}
-
-#[async_std::main]
+#[tokio::main]
 async fn main() {
-    #[cfg(debug_assertions)]
-    let _ = dotenv::dotenv().ok();
+    let _ = dotenvy::dotenv();
+    tracing_subscriber::fmt::init();
 
     let port = u16::from_str(
         std::env::var("PORT")
@@ -94,85 +78,123 @@ async fn main() {
         &database_url
     ));
 
-    tide::log::with_level(LevelFilter::Info);
-
     if std::env::var("DATABASE_RUN_MIGRATION") != Ok("false".to_string()) {
         sqlx::migrate!().run(&conn).await.expect("Migration to run");
     }
 
-    let mut app = tide::with_state(AppState { conn, port });
+    let state = AppState { conn, port };
 
-    app.with(
-        CorsMiddleware::new()
-            .allow_methods(HeaderValue::try_from("GET, DELETE, POST, PUT, OPTIONS").unwrap()),
-    );
-    app.with(middleware::token_verify::Verifier {});
+    let cors = CorsLayer::new()
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::DELETE,
+            Method::PUT,
+            Method::OPTIONS,
+        ])
+        .allow_headers(Any)
+        .allow_origin(cors::Any);
 
-    use service::*;
+    let app = Router::new()
+        .nest("/", service::account::router())
+        .nest("/", service::account_group::router())
+        .nest("/", service::login::router())
+        .nest("/", service::config::router())
+        .nest("/", service::report::router())
+        .nest("/", service::tag::router())
+        .nest("/", service::transaction::router())
+        .nest("/", service::attachment::router())
+        .route("/public", get(serve_static_asset))
+        .route("/", get(serve_static_asset))
+        .layer(TraceLayer::new_for_http())
+        .layer(cors)
+        .route_layer(from_fn_with_state(
+            state.clone(),
+            middleware::token_verify::execute,
+        ))
+        .with_state(state);
 
-    // authentication
-    endpoint!(app, post, "/api/changePassword", login::update);
-    endpoint!(app, post, "/api/sign", login::sign);
-    endpoint!(app, post, "/api/refreshToken", login::refresh);
+    let bind_ip: IpAddr = std::env::var("HOST")
+        .unwrap_or("127.0.0.1".to_string())
+        .parse()
+        .expect("Parsing IP address");
 
-    // transactions
-    endpoint!(app, post, "/api/transactions", transaction::save);
-    endpoint!(app, post, "/api/transactions/list", transaction::list);
-    endpoint!(app, delete, "/api/transactions", transaction::delete);
-    endpoint!(app, post, "/api/accounts/list", account::list);
+    let listener = TcpListener::bind((bind_ip, port))
+        .await
+        .expect("To bind on socket");
 
-    // tags
-    endpoint!(app, post, "/api/tags/list", tag::list);
+    log::info!("Listening on {bind_ip}:{port}");
 
-    // account group
-    endpoint_get!(app, "/api/accountGroups", account_group::list);
-    endpoint!(app, delete, "/api/accountGroups", account_group::delete);
-    endpoint!(app, post, "/api/accountGroups", account_group::save);
+    axum::serve(listener, app)
+        .await
+        .expect("To run axum server");
+    // app.with(middleware::token_verify::Verifier {});
 
-    // reports
-    endpoint!(app, post, "/api/reports/sum", report::sum);
-    endpoint!(app, post, "/api/reports/balance", report::balance);
+    // use service::*;
 
-    // invoice related
-    // endpoint!(app, post, "/api/invoices", invoice::save);
-    // endpoint!(app, delete, "/api/invoices", invoice::delete);
-    // endpoint!(app, post, "/api/invoices/list", invoice::list);
-    // endpoint!(app, post, "/api/invoices/items", invoice::save_item);
-    // endpoint!(app, post, "/api/invoices/items/list", invoice::list_item);
-    // endpoint!(
-    //     app,
-    //     post,
-    //     "/api/invoices/items/categories/search",
-    //     invoice::search_cat
-    // );
+    // // authentication
+    // endpoint!(app, post, "/api/changePassword", login::update);
+    // endpoint!(app, post, "/api/sign", login::sign);
+    // endpoint!(app, post, "/api/refreshToken", login::refresh);
 
-    // config related
-    endpoint_get!(app, "/api/config", config::client::get);
-    endpoint!(app, post, "/api/config", config::client::save);
+    // // transactions
+    // endpoint!(app, post, "/api/transactions", transaction::save);
+    // endpoint!(app, post, "/api/transactions/list", transaction::list);
+    // endpoint!(app, delete, "/api/transactions", transaction::delete);
+    // endpoint!(app, post, "/api/accounts/list", account::list);
 
-    // attachments
-    app.at("/attachment").get(service_adapter::attachment::get);
+    // // tags
+    // endpoint!(app, post, "/api/tags/list", tag::list);
 
-    app.at("/api/attachments")
-        .post(service_adapter::attachment::post);
-    endpoint!(app, delete, "/api/attachments", attachment::cleanup);
+    // // account group
+    // endpoint_get!(app, "/api/accountGroups", account_group::list);
+    // endpoint!(app, delete, "/api/accountGroups", account_group::delete);
+    // endpoint!(app, post, "/api/accountGroups", account_group::save);
 
-    endpoint!(app, post, "/api/attachments/list", attachment::list);
+    // // reports
+    // endpoint!(app, post, "/api/reports/sum", report::sum);
+    // endpoint!(app, post, "/api/reports/balance", report::balance);
 
-    app.at("/healthcheck")
-        .get(|_: tide::Request<AppState>| async move {
-            Ok(tide::Response::new(tide::StatusCode::Ok))
-        });
+    // // invoice related
+    // // endpoint!(app, post, "/api/invoices", invoice::save);
+    // // endpoint!(app, delete, "/api/invoices", invoice::delete);
+    // // endpoint!(app, post, "/api/invoices/list", invoice::list);
+    // // endpoint!(app, post, "/api/invoices/items", invoice::save_item);
+    // // endpoint!(app, post, "/api/invoices/items/list", invoice::list_item);
+    // // endpoint!(
+    // //     app,
+    // //     post,
+    // //     "/api/invoices/items/categories/search",
+    // //     invoice::search_cat
+    // // );
 
-    app.at("/public/*").get(serve_react_assert);
-    app.at("/*").get(serve_react_assert);
-    app.at("/").get(serve_react_assert);
+    // // config related
+    // endpoint_get!(app, "/api/config", config::client::get);
+    // endpoint!(app, post, "/api/config", config::client::save);
 
-    app.listen(format!(
-        "{}:{}",
-        std::env::var("HOST").unwrap_or("127.0.0.1".to_string()),
-        port
-    ))
-    .await
-    .expect("To run server");
+    // // attachments
+    // app.at("/attachment").get(service_adapter::attachment::get);
+
+    // app.at("/api/attachments")
+    //     .post(service_adapter::attachment::post);
+    // endpoint!(app, delete, "/api/attachments", attachment::cleanup);
+
+    // endpoint!(app, post, "/api/attachments/list", attachment::list);
+
+    // app.at("/healthcheck")
+    //     .get(|_: tide::Request<AppState>| async move {
+    //         Ok(tide::Response::new(tide::StatusCode::Ok))
+    //     });
+
+    // app.at("/public/*").get(serve_static_asset);
+    // app.at("/*").get(serve_static_asset);
+    // app.at("/").get(serve_static_asset);
+
+    // app.listen(format!(
+    //     "{}:{}",
+    //     std::env::var("HOST").unwrap_or("127.0.0.1".to_string()),
+    //     port
+    // ))
+    // .await
+    // .expect("To run server");
 }

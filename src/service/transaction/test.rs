@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+use axum::extract::{self, State};
 use chrono::DateTime;
 
 use crate::sqlx_ext::Json;
@@ -12,7 +13,7 @@ use crate::utils::random_string;
 use itertools::Itertools;
 use uuid::Uuid;
 
-pub async fn new_transaction(state: &AppState, id: Option<String>) -> model::Transaction {
+pub async fn new_transaction(state: State<AppState>, id: Option<String>) -> model::Transaction {
     // Create attachments
     let mut attachment_ids = Vec::new();
     for _ in 1..10 {
@@ -31,7 +32,7 @@ pub async fn new_transaction(state: &AppState, id: Option<String>) -> model::Tra
         attachments: Json(attachment_ids),
         tags: Json(vec!["tag1".to_string(), "tag2".to_string()]),
     };
-    save::execute(state, vec![tx.clone()])
+    let _ = save::execute(state, vec![tx.clone()].into())
         .await
         .expect("To save transaction");
     tx
@@ -47,14 +48,14 @@ fn normalise_transaction_list(mut v: Vec<Transaction>) -> Vec<Transaction> {
     v.into_iter().map(normalise_transaction).collect_vec()
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn transaction_works() {
-    let state = AppState::new_test().await;
+    let state = State(AppState::new_test().await);
 
-    let tx1 = new_transaction(&state, None).await;
-    let tx2 = new_transaction(&state, Some(tx1.id.clone())).await;
+    let tx1 = new_transaction(state.clone(), None).await;
+    let tx2 = new_transaction(state.clone(), Some(tx1.id.clone())).await;
 
-    let rs = list::execute(&state, Default::default())
+    let extract::Json(rs) = list::execute(state.clone(), Default::default())
         .await
         .expect("To list");
     assert_eq!(rs.total, 1);
@@ -68,8 +69,8 @@ async fn transaction_works() {
         normalise_transaction(tx2.clone())
     );
 
-    let tx3 = new_transaction(&state, None).await;
-    let rs = list::execute(&state, Default::default())
+    let tx3 = new_transaction(state.clone(), None).await;
+    let extract::Json(rs) = list::execute(state.clone(), Default::default())
         .await
         .expect("To list");
     assert_eq!(rs.total, 2);

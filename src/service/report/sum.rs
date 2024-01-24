@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 use sqlx::query_as;
 
 use crate::{service::Result, sqlx_ext::Json, state::AppState};
+use axum::extract;
 
 #[derive(serde::Deserialize)]
 pub struct Input {
@@ -37,19 +38,20 @@ order by time_point
 "#;
 
 pub async fn execute(
-    state: &AppState,
-    Input {
+    state: extract::State<AppState>,
+    extract::Json(Input {
         from,
         to,
         freq,
         accounts,
-    }: Input,
-) -> Result<Vec<DataPoint>> {
+    }): extract::Json<Input>,
+) -> Result<extract::Json<Vec<DataPoint>>> {
     Ok(query_as(SQL)
         .bind(from)
         .bind(to)
         .bind(accounts)
         .bind(freq)
         .fetch_all(&state.conn)
-        .await?)
+        .await?
+        .into())
 }
