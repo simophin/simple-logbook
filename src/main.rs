@@ -1,17 +1,17 @@
 use std::net::IpAddr;
 use std::str::FromStr;
 
-use axum::extract::{Request, State};
+use axum::extract::Request;
 use axum::http::{Method, StatusCode};
 use axum::middleware::from_fn_with_state;
 use axum::response::Response;
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Router;
 use rust_embed::RustEmbed;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
-use tower_http::cors::{self, CorsLayer};
+use tower_http::cors::{self, Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
@@ -31,10 +31,7 @@ mod utils;
 #[prefix = "public/"]
 struct Asset;
 
-async fn serve_static_asset(
-    state: State<AppState>,
-    req: Request,
-) -> Result<Response, (StatusCode, &'static str)> {
+async fn serve_static_asset(req: Request) -> Result<Response, (StatusCode, &'static str)> {
     let path = match req.uri().path() {
         p if p.eq_ignore_ascii_case("/") || !p.starts_with("/public") => "public/index.html",
         p if p.starts_with("/") => &p[1..],
@@ -95,6 +92,7 @@ async fn main() {
             Method::PUT,
             Method::OPTIONS,
         ])
+        .allow_headers(Any)
         .allow_origin(cors::Any);
 
     let app = Router::new()
@@ -105,6 +103,7 @@ async fn main() {
         .nest("/", service::report::router())
         .nest("/", service::tag::router())
         .nest("/", service::transaction::router())
+        .nest("/", service::attachment::router())
         .route("/public", get(serve_static_asset))
         .route("/", get(serve_static_asset))
         .layer(TraceLayer::new_for_http())

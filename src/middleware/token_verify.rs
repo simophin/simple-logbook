@@ -7,7 +7,6 @@ use crate::service::login::creds::Signed;
 use crate::service::login::verify;
 use crate::state::AppState;
 use std::borrow::Cow;
-use std::sync::Arc;
 
 pub async fn execute(state: State<AppState>, request: Request, next: Next) -> Response {
     if !request.uri().path().starts_with("/api")

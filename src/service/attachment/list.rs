@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use crate::service::{self, PaginatedResponse, SortOrder, ToSQL};
 use crate::sqlx_ext::Json;
+use axum::extract;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::Deserialize;
 
@@ -90,8 +91,6 @@ pub struct Attachment {
     pub name: String,
     pub created: DateTime<Utc>,
     pub last_updated: DateTime<Utc>,
-    pub data: Option<Vec<u8>>,
-    pub data_hash: Option<Vec<u8>>,
 }
 
 #[derive(serde::Serialize)]
@@ -180,14 +179,15 @@ use crate::AppState;
 pub use sql::execute as execute_sql;
 
 pub async fn execute(
-    state: &AppState,
-    input: Input,
-) -> crate::service::Result<PaginatedResponse<AttachmentSigned<'static>>> {
-    let config = CredentialsConfig::from_app(state).await;
-    execute_sql(state, input).await.map(|data| {
+    state: extract::State<AppState>,
+    extract::Json(input): extract::Json<Input>,
+) -> crate::service::Result<extract::Json<PaginatedResponse<AttachmentSigned<'static>>>> {
+    let config = CredentialsConfig::from_app(&state).await;
+    execute_sql(&state, input).await.map(|data| {
         data.map(|attachment| AttachmentSigned {
             signed_id: super::sign::sign(&attachment.id, config.as_ref()),
             attachment,
         })
+        .into()
     })
 }

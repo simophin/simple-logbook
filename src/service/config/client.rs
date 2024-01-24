@@ -80,7 +80,7 @@ mod tests {
         );
 
         save::execute(
-            state,
+            state.clone(),
             save::Input {
                 name: "test".to_string(),
                 value: Some("test_value".to_string()),

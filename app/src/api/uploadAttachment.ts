@@ -1,11 +1,11 @@
-import {ExtraRequestProps, request} from "./common";
+import { ExtraRequestProps, request } from "./common";
 import * as t from 'io-ts';
 import * as codec from 'io-ts-types';
 import config from "../config";
 
-const uploadResultType = t.type({
+const uploadResultType = t.array(t.type({
     id: codec.NonEmptyString,
-});
+}));
 
 export default function uploadAttachment(file: File, extraProps?: ExtraRequestProps) {
     const body = new FormData();

@@ -59,7 +59,7 @@ export default function AttachmentSelect({ value, onChange, readonly }: Props) {
         try {
             const result = await Promise.all(_.map(files, (f) => firstValueFrom(uploadAttachment(f, authProps))));
             let newValues = [...value];
-            for (const { id } of result) {
+            for (const { id } of result[0]) {
                 if (newValues.indexOf(id) < 0) {
                     onChange(newValues = [...newValues, id]);
                 }

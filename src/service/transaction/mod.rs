@@ -8,7 +8,7 @@ use crate::state::AppState;
 mod delete;
 mod list;
 pub mod model;
-mod save;
+pub mod save;
 
 #[cfg(test)]
 pub mod test;
@@ -19,6 +19,6 @@ pub fn router() -> Router<AppState> {
         Router::new()
             .route("/", post(save::execute))
             .route("/", axum::routing::delete(delete::execute))
-            .route("/", get(list::execute)),
+            .route("/list", post(list::execute)),
     )
 }

@@ -1,3 +1,8 @@
+use anyhow::Context;
+use axum::{
+    extract::{Multipart, State},
+    Json,
+};
 use serde_derive::Serialize;
 use std::borrow::Cow;
 
@@ -14,14 +19,12 @@ pub struct Output {
     pub id: String,
 }
 
-pub async fn execute(
+pub async fn save(
     state: &AppState,
-    Input {
-        mime_type,
-        data,
-        name,
-    }: Input<'_>,
-) -> crate::service::Result<Output> {
+    mime_type: Option<&str>,
+    data: &[u8],
+    name: &str,
+) -> crate::service::Result<String> {
     let hash_code = sodiumoxide::crypto::hash::hash(&data);
 
     let mut tx = state.conn.begin().await?;
@@ -34,13 +37,13 @@ pub async fn execute(
 
     match row {
         Some((existing_id, existing_data)) if existing_data == data => {
-            return Ok(Output { id: existing_id });
+            return Ok(existing_id);
         }
         _ => {}
     }
 
     let mime_type = match mime_type {
-        Some(v) if v.as_ref() != "application/octet-stream" => v,
+        Some(v) if v != "application/octet-stream" => Cow::Borrowed(v),
         _ => Cow::from(tree_magic::from_u8(data)),
     };
 
@@ -51,7 +54,7 @@ pub async fn execute(
     )
     .bind(&id)
     .bind(mime_type.as_ref())
-    .bind(name.as_ref())
+    .bind(name)
     .bind(hash_code.as_ref())
     .bind(data)
     .execute(&mut *tx)
@@ -59,5 +62,32 @@ pub async fn execute(
 
     tx.commit().await?;
 
-    Ok(Output { id })
+    Ok(id)
+}
+
+pub async fn execute(
+    state: State<AppState>,
+    mut multipart: Multipart,
+) -> crate::service::Result<Json<Vec<Output>>> {
+    let mut outputs = vec![];
+    while let Some(field) = multipart.next_field().await? {
+        let content_type = field.content_type().map(|v| v.to_string());
+        let file_name = field
+            .name()
+            .or(field.file_name())
+            .context("Must have a name")?
+            .to_string();
+
+        let id = save(
+            &state,
+            content_type.as_deref(),
+            field.bytes().await?.as_ref(),
+            &file_name,
+        )
+        .await?;
+
+        outputs.push(Output { id });
+    }
+
+    Ok(outputs.into())
 }
