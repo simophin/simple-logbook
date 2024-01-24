@@ -72,11 +72,7 @@ pub async fn execute(
     let mut outputs = vec![];
     while let Some(field) = multipart.next_field().await? {
         let content_type = field.content_type().map(|v| v.to_string());
-        let file_name = field
-            .name()
-            .or(field.file_name())
-            .context("Must have a name")?
-            .to_string();
+        let file_name = field.file_name().context("Must have a name")?.to_string();
 
         let id = save(
             &state,

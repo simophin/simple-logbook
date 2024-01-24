@@ -1,9 +1,12 @@
 use std::borrow::Cow;
+use std::io::Cursor;
 
 use crate::service::login::creds::{CredentialsConfig, Signed};
 use crate::service::Error;
+use crate::utils::thumbnailer::generate_thumbnail;
 use crate::AppState;
 use anyhow::Context;
+use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::response::Response;
 use serde::Deserialize;
@@ -57,8 +60,19 @@ pub async fn execute(
     Query(Input { preview }): Query<Input>,
 ) -> crate::service::Result<Response> {
     let (mime, data) = get(&state, &token).await?;
+
+    if let Some(max_width) = preview {
+        let (mime, data) = generate_thumbnail(max_width, Cursor::new(data)).await?;
+        return Ok(Response::builder()
+            .header("Content-Type", mime)
+            .header("Cache-Control", "public, max-age=15552000")
+            .body(Body::from_stream(data))
+            .context("Creating response")?);
+    }
+
     Ok(Response::builder()
         .header("Content-Type", mime)
+        .header("Cache-Control", "public, max-age=15552000")
         .body(data.into())
         .context("Creating response")?)
 }
