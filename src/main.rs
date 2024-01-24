@@ -94,7 +94,6 @@ async fn main() {
         ])
         .allow_headers(Any)
         .allow_origin(cors::Any);
-
     let app = Router::new()
         .nest("/", service::account::router())
         .nest("/", service::account_group::router())
@@ -104,8 +103,8 @@ async fn main() {
         .nest("/", service::tag::router())
         .nest("/", service::transaction::router())
         .nest("/", service::attachment::router())
-        .route("/public", get(serve_static_asset))
         .route("/", get(serve_static_asset))
+        .route("/*path", get(serve_static_asset))
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .route_layer(from_fn_with_state(
