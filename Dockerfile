@@ -15,7 +15,7 @@ RUN cargo build --release
 
 FROM alpine:latest
 
-RUN apk --no-cache add curl imagemagick
+RUN apk --no-cache add curl imagemagick libjpeg libpng ghostscript
 
 WORKDIR /app
 HEALTHCHECK --interval=10s --timeout=2s CMD curl -fL http://localhost:4000/healthcheck
