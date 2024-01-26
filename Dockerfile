@@ -5,17 +5,17 @@ COPY app .
 
 RUN yarn install && yarn build
 
-FROM rust
+FROM clux/muslrust:stable
 WORKDIR /rust_app
 
 COPY . .
 COPY --from=0 /app/build app/build
 
 RUN cargo build --release
+RUN ls -lh target
 
-FROM archlinux
+FROM islandora/imagemagick:main
 
-RUN pacman -Sy imagemagick --noconfirm
 WORKDIR /app
 HEALTHCHECK --interval=10s --timeout=2s CMD curl -fL http://localhost:4000/healthcheck
 
